@@ -456,7 +456,7 @@ const AllServices = () => {
                                                             {/* Action Buttons */}
                                                             <div className="flex flex-wrap items-center gap-2 mt-2">
                                                                 <Link
-                                                                    to={`/service/${service.slug}`}
+                                                                    to={`/service/${service._id}`}
                                                                     target="_blank"
                                                                     className="inline-flex items-center gap-1 px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
                                                                 >

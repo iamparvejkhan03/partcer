@@ -85,35 +85,35 @@ const Dashboard = () => {
             
             // Mock data for testing
             const mockStats = {
-                totalUsers: 15420,
-                totalFreelancers: 8230,
-                totalBuyers: 7190,
-                activeUsers: 12500,
-                newUsersToday: 145,
-                totalProjects: 3450,
-                activeProjects: 890,
-                completedProjects: 2100,
-                cancelledProjects: 460,
-                totalServices: 5670,
-                activeServices: 4320,
-                pendingServices: 890,
-                deniedServices: 460,
-                totalRevenue: 2450000,
-                platformFees: 245000,
-                pendingPayouts: 89000,
-                totalOrders: 12450,
-                completedOrders: 9800,
-                pendingOrders: 2100,
-                cancelledOrders: 550,
-                disputes: 23,
-                resolvedDisputes: 18,
-                resolutionRate: 78,
-                avgResponseTime: '2.5 hrs',
-                userGrowth: 12.5,
-                revenueGrowth: 8.3,
-                activeSessions: 3450,
-                bounceRate: 32,
-                avgSessionDuration: '4m 30s'
+                totalUsers: 4,
+                totalFreelancers: 2,
+                totalBuyers: 1,
+                activeUsers: 4,
+                newUsersToday: 3,
+                totalProjects: 2,
+                activeProjects: 1,
+                completedProjects: 0,
+                cancelledProjects: 0,
+                totalServices: 4,
+                activeServices: 4,
+                pendingServices: 0,
+                deniedServices: 0,
+                totalRevenue: 0,
+                platformFees: 0,
+                pendingPayouts: 0,
+                totalOrders: 0,
+                completedOrders: 0,
+                pendingOrders: 0,
+                cancelledOrders: 0,
+                disputes: 0,
+                resolvedDisputes: 0,
+                resolutionRate: 0,
+                avgResponseTime: '0',
+                userGrowth: 0,
+                revenueGrowth: 0,
+                activeSessions: 0,
+                bounceRate: 0,
+                avgSessionDuration: '0'
             };
 
             const mockRecentActivity = [
@@ -611,7 +611,7 @@ const Dashboard = () => {
                     {/* Main Content Grid */}
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
                         {/* Pending Approvals */}
-                        <div className="lg:col-span-2 bg-white rounded-xl border border-gray-200 overflow-hidden">
+                        {/* <div className="lg:col-span-2 bg-white rounded-xl border border-gray-200 overflow-hidden">
                             <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
                                 <h3 className="font-semibold text-gray-900 flex items-center gap-2">
                                     <Clock size={18} className="text-yellow-600" />
@@ -691,10 +691,10 @@ const Dashboard = () => {
                                     </div>
                                 ))}
                             </div>
-                        </div>
+                        </div> */}
 
                         {/* Recent Activity */}
-                        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                        {/* <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
                             <div className="px-6 py-4 border-b border-gray-200">
                                 <h3 className="font-semibold text-gray-900 flex items-center gap-2">
                                     <Activity size={18} className="text-primary" />
@@ -718,11 +718,11 @@ const Dashboard = () => {
                                     </div>
                                 ))}
                             </div>
-                        </div>
+                        </div> */}
                     </div>
 
                     {/* Recent Users Table */}
-                    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden mb-6">
+                    {/* <div className="bg-white rounded-xl border border-gray-200 overflow-hidden mb-6">
                         <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
                             <h3 className="font-semibold text-gray-900 flex items-center gap-2">
                                 <Users size={18} className="text-primary" />
@@ -811,10 +811,10 @@ const Dashboard = () => {
                                 </tbody>
                             </table>
                         </div>
-                    </div>
+                    </div> */}
 
                     {/* Recent Transactions */}
-                    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden mb-6">
+                    {/* <div className="bg-white rounded-xl border border-gray-200 overflow-hidden mb-6">
                         <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
                             <h3 className="font-semibold text-gray-900 flex items-center gap-2">
                                 <DollarSign size={18} className="text-green-600" />
@@ -878,7 +878,7 @@ const Dashboard = () => {
                                 </tbody>
                             </table>
                         </div>
-                    </div>
+                    </div> */}
 
                     {/* Quick Actions & Stats Row */}
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4">

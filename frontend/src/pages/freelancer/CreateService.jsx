@@ -508,9 +508,9 @@ const CreateService = () => {
 
                 // Redirect based on action
                 if (formData.action === 'publish') {
-                    navigate('/freelancer/services');
+                    navigate('/freelancer/services/all');
                 } else {
-                    navigate('/freelancer/services');
+                    navigate('/freelancer/services/all');
                 }
             }
         } catch (error) {

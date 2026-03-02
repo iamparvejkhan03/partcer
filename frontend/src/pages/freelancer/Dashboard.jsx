@@ -25,20 +25,20 @@ const Dashboard = () => {
             
             // Mock data for testing
             const mockStats = {
-                totalRevenue: 12450.75,
-                thisMonthRevenue: 2450.30,
-                pendingPayouts: 1250.00,
-                activeOrders: 8,
-                completedOrders: 42,
-                cancelledOrders: 3,
-                totalOrders: 53,
-                successRate: 93,
-                avgResponseTime: '2.5 hrs',
-                avgRating: 4.8,
-                totalReviews: 38,
-                profileViews: 1250,
-                totalClients: 28,
-                returningClients: 12
+                totalRevenue: 0,
+                thisMonthRevenue: 0,
+                pendingPayouts: 0,
+                activeOrders: 0,
+                completedOrders: 0,
+                cancelledOrders: 0,
+                totalOrders: 0,
+                successRate: 0,
+                avgResponseTime: '0',
+                avgRating: 0,
+                totalReviews: 0,
+                profileViews: 0,
+                totalClients: 0,
+                returningClients: 0
             };
 
             const mockRecentOrders = [
@@ -254,7 +254,7 @@ const Dashboard = () => {
                     {/* Main Content Grid */}
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
                         {/* Recent Orders */}
-                        <div className="lg:col-span-2 bg-white rounded-xl border border-gray-200 overflow-hidden">
+                        {/* <div className="lg:col-span-2 bg-white rounded-xl border border-gray-200 overflow-hidden">
                             <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
                                 <h3 className="font-semibold text-gray-900 flex items-center gap-2">
                                     <ShoppingBag size={18} className="text-primary" />
@@ -287,12 +287,12 @@ const Dashboard = () => {
                                     </div>
                                 ))}
                             </div>
-                        </div>
+                        </div> */}
 
                         {/* Right Column */}
                         <div className="space-y-6">
                             {/* Recent Messages */}
-                            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                            {/* <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
                                 <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
                                     <h3 className="font-semibold text-gray-900 flex items-center gap-2">
                                         <MessageCircle size={18} className="text-primary" />
@@ -330,10 +330,10 @@ const Dashboard = () => {
                                         </div>
                                     ))}
                                 </div>
-                            </div>
+                            </div> */}
 
                             {/* Quick Stats */}
-                            <div className="bg-white rounded-xl border border-gray-200 p-6">
+                            {/* <div className="bg-white rounded-xl border border-gray-200 p-6">
                                 <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
                                     <BarChart3 size={18} className="text-primary" />
                                     Quick Insights
@@ -362,7 +362,7 @@ const Dashboard = () => {
                                         </div>
                                     </div>
                                 </div>
-                            </div>
+                            </div> */}
                         </div>
                     </div>
 
@@ -381,8 +381,8 @@ const Dashboard = () => {
                             className="bg-white p-5 rounded-xl border border-gray-200 hover:shadow-md transition-shadow"
                         >
                             <DollarSign size={24} className="text-green-600 mb-3" />
-                            <h4 className="font-semibold text-gray-900 mb-1">Withdraw Earnings</h4>
-                            <p className="text-sm text-gray-600">Available: ${stats?.pendingPayouts?.toLocaleString()}</p>
+                            <h4 className="font-semibold text-gray-900 mb-1">View All Services</h4>
+                            <p className="text-sm text-gray-600">Check all the services you created</p>
                         </Link>
                         <Link 
                             to="/freelancer/orders/all" 

@@ -25,18 +25,18 @@ const Dashboard = () => {
             
             // Mock data for testing
             const mockStats = {
-                totalSpent: 8750.50,
-                thisMonthSpent: 1245.75,
-                activeOrders: 3,
-                completedOrders: 24,
-                pendingOrders: 2,
-                totalOrders: 29,
-                savedServices: 12,
-                totalReviews: 18,
-                avgRatingGiven: 4.7,
-                messagesUnread: 4,
-                watchlistItems: 8,
-                orderSuccessRate: 92
+                totalSpent: 0,
+                thisMonthSpent: 0,
+                activeOrders: 0,
+                completedOrders: 0,
+                pendingOrders: 0,
+                totalOrders: 0,
+                savedServices: 0,
+                totalReviews: 0,
+                avgRatingGiven: 0,
+                messagesUnread: 0,
+                watchlistItems: 0,
+                orderSuccessRate: 0
             };
 
             const mockRecentOrders = [
@@ -271,7 +271,7 @@ const Dashboard = () => {
                     {/* Main Content Grid */}
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
                         {/* Recent Orders */}
-                        <div className="lg:col-span-2 bg-white rounded-xl border border-gray-200 overflow-hidden">
+                        {/* <div className="lg:col-span-2 bg-white rounded-xl border border-gray-200 overflow-hidden">
                             <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
                                 <h3 className="font-semibold text-gray-900 flex items-center gap-2">
                                     <Package size={18} className="text-primary" />
@@ -313,12 +313,12 @@ const Dashboard = () => {
                                     </div>
                                 ))}
                             </div>
-                        </div>
+                        </div> */}
 
                         {/* Right Column */}
                         <div className="space-y-6">
                             {/* Recent Messages */}
-                            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                            {/* <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
                                 <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
                                     <h3 className="font-semibold text-gray-900 flex items-center gap-2">
                                         <MessageCircle size={18} className="text-primary" />
@@ -364,10 +364,10 @@ const Dashboard = () => {
                                         </div>
                                     ))}
                                 </div>
-                            </div>
+                            </div> */}
 
                             {/* Order Status Summary */}
-                            <div className="bg-white rounded-xl border border-gray-200 p-6">
+                            {/* <div className="bg-white rounded-xl border border-gray-200 p-6">
                                 <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
                                     <Truck size={18} className="text-primary" />
                                     Order Status
@@ -392,14 +392,14 @@ const Dashboard = () => {
                                         </div>
                                     </div>
                                 </div>
-                            </div>
+                            </div> */}
                         </div>
                     </div>
 
                     {/* Quick Actions */}
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                         <Link 
-                            to="/buyer/orders/all" 
+                            to="/buyer/orders" 
                             className="bg-white p-5 rounded-xl border border-gray-200 hover:shadow-md transition-shadow"
                         >
                             <Package size={24} className="text-blue-600 mb-3" />
@@ -411,8 +411,8 @@ const Dashboard = () => {
                             className="bg-white p-5 rounded-xl border border-gray-200 hover:shadow-md transition-shadow"
                         >
                             <Heart size={24} className="text-red-500 mb-3" />
-                            <h4 className="font-semibold text-gray-900 mb-1">Watchlist</h4>
-                            <p className="text-sm text-gray-600">{stats.watchlistItems} saved services</p>
+                            <h4 className="font-semibold text-gray-900 mb-1">Projects</h4>
+                            <p className="text-sm text-gray-600">{stats.watchlistItems} posted projects</p>
                         </Link>
                         <Link 
                             to="/messages" 
