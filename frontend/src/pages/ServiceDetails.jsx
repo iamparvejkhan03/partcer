@@ -202,6 +202,9 @@ const ServiceDetails = () => {
     const handleHireMe = () => {
         if (!service) return;
 
+        toast.error('Please connect your payment gateway.');
+        return;
+
         // Navigate to checkout with selected package and extras
         navigate('/checkout', {
             state: {
