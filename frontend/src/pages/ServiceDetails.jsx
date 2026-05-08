@@ -69,6 +69,12 @@ const ServiceDetails = () => {
     const [showReviewSort, setShowReviewSort] = useState(false);
     const [selectedExtra, setSelectedExtra] = useState([]);
 
+    const [serviceReviews, setServiceReviews] = useState([]);
+    const [reviewStats, setReviewStats] = useState(null);
+    const [reviewsLoading, setReviewsLoading] = useState(false);
+    const [reviewPage, setReviewPage] = useState(1);
+    const [hasMoreReviews, setHasMoreReviews] = useState(false);
+
     const {
         register,
         handleSubmit,
@@ -79,6 +85,47 @@ const ServiceDetails = () => {
     useEffect(() => {
         if (serviceId) {
             fetchServiceDetails();
+        }
+    }, [serviceId]);
+
+    const fetchServiceReviews = async (page = 1) => {
+        try {
+            setReviewsLoading(true);
+            const response = await axiosInstance.get(
+                `/api/v1/reviews/service/${serviceId}?page=${page}&limit=10`
+            );
+
+            if (response.data?.success) {
+                const { reviews = [], pagination = {} } = response.data.data;
+
+                // Calculate stats from reviews since backend returns zeros
+                const totalReviews = reviews.length;
+                const averageRating = totalReviews > 0
+                    ? reviews.reduce((sum, r) => sum + r.rating, 0) / totalReviews
+                    : 0;
+
+                const distribution = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+                reviews.forEach(r => {
+                    if (r.rating >= 1 && r.rating <= 5) {
+                        distribution[r.rating]++;
+                    }
+                });
+
+                setServiceReviews(reviews);
+                setReviewStats({ totalReviews, averageRating, distribution });
+                setHasMoreReviews(pagination.hasMore || false);
+            }
+        } catch (err) {
+            console.error('Error fetching service reviews:', err);
+        } finally {
+            setReviewsLoading(false);
+        }
+    };
+
+    // Call it when service loads
+    useEffect(() => {
+        if (serviceId) {
+            fetchServiceReviews(1);
         }
     }, [serviceId]);
 
@@ -202,14 +249,11 @@ const ServiceDetails = () => {
     const handleHireMe = () => {
         if (!service) return;
 
-        toast.error('Please connect your payment gateway.');
-        return;
-
         // Navigate to checkout with selected package and extras
         navigate('/checkout', {
             state: {
-                service: service._id,
-                package: activePackage,
+                serviceId: service._id,
+                packageIndex: activePackage,
                 extras: selectedExtra
             }
         });
@@ -226,38 +270,37 @@ const ServiceDetails = () => {
     };
 
     const getSortedReviews = () => {
-        if (!service?.reviews) return [];
+        if (!serviceReviews?.length) return [];
 
-        let sortedReviews = [...service.reviews];
+        let sorted = [...serviceReviews];
 
         switch (reviewSort) {
             case 'mostRecent':
-                sortedReviews.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+                sorted.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
                 break;
             case 'oldest':
-                sortedReviews.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+                sorted.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
                 break;
             case 'highestRating':
-                sortedReviews.sort((a, b) => b.rating - a.rating);
+                sorted.sort((a, b) => b.rating - a.rating);
                 break;
             case 'lowestRating':
-                sortedReviews.sort((a, b) => a.rating - b.rating);
+                sorted.sort((a, b) => a.rating - b.rating);
                 break;
             default:
-                sortedReviews.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+                sorted.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
         }
 
-        // Filter by search if search term exists
         if (reviewSearch.trim()) {
-            const searchTerm = reviewSearch.toLowerCase();
-            sortedReviews = sortedReviews.filter(review =>
-                review.user?.name?.toLowerCase().includes(searchTerm) ||
-                review.comment?.toLowerCase().includes(searchTerm) ||
-                review.content?.toLowerCase().includes(searchTerm)
+            const term = reviewSearch.toLowerCase();
+            sorted = sorted.filter(r =>
+                r.reviewer?.displayName?.toLowerCase().includes(term) ||
+                r.reviewer?.firstName?.toLowerCase().includes(term) ||
+                r.comment?.toLowerCase().includes(term)
             );
         }
 
-        return sortedReviews;
+        return sorted;
     };
 
     const handlePrevSlide = () => {
@@ -711,13 +754,15 @@ const ServiceDetails = () => {
                             </div>
 
                             {/* Ratings Summary */}
-                            {service.reviewCount > 0 && service.ratingDistribution && (
+                            {serviceReviews?.length > 0 && (
                                 <div className="bg-gray-50 rounded-xl p-6 mb-6">
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                         <div className="space-y-3">
                                             {[5, 4, 3, 2, 1].map((stars) => {
-                                                const count = service.ratingDistribution[stars] || 0;
-                                                const percentage = totalStarRatings > 0 ? (count / totalStarRatings) * 100 : 0;
+                                                const count = serviceReviews.filter(r => Math.round(Number(r.rating)) === stars).length;
+                                                const percentage = serviceReviews.length > 0
+                                                    ? (count / serviceReviews.length) * 100
+                                                    : 0;
 
                                                 return (
                                                     <div key={stars} className="flex items-center gap-3">
@@ -743,22 +788,30 @@ const ServiceDetails = () => {
                                                 Customer Reviews
                                             </h3>
                                             <div className="text-4xl font-bold text-gray-900 mb-2">
-                                                {service.rating?.toFixed(1)} / 5.0
+                                                {serviceReviews.length > 0
+                                                    ? (serviceReviews.reduce((sum, r) => sum + Number(r.rating), 0) / serviceReviews.length).toFixed(1)
+                                                    : "0.0"
+                                                } / 5.0
                                             </div>
                                             <div className="flex justify-center gap-1 mb-2">
-                                                {[...Array(5)].map((_, i) => (
-                                                    <Star
-                                                        key={i}
-                                                        size={20}
-                                                        className={i < Math.floor(service.rating)
-                                                            ? 'fill-amber-400 text-amber-400'
-                                                            : 'text-gray-300'
-                                                        }
-                                                    />
-                                                ))}
+                                                {[...Array(5)].map((_, i) => {
+                                                    const avg = serviceReviews.length > 0
+                                                        ? serviceReviews.reduce((sum, r) => sum + Number(r.rating), 0) / serviceReviews.length
+                                                        : 0;
+                                                    return (
+                                                        <Star
+                                                            key={i}
+                                                            size={20}
+                                                            className={i < Math.floor(avg)
+                                                                ? 'fill-amber-400 text-amber-400'
+                                                                : 'text-gray-300'
+                                                            }
+                                                        />
+                                                    );
+                                                })}
                                             </div>
                                             <p className="text-gray-600">
-                                                Based on {service.reviewCount} {service.reviewCount === 1 ? 'Review' : 'Reviews'}
+                                                Based on {serviceReviews.length} {serviceReviews.length === 1 ? 'Review' : 'Reviews'}
                                             </p>
                                         </div>
                                     </div>
@@ -766,15 +819,15 @@ const ServiceDetails = () => {
                             )}
 
                             {/* Reviews List */}
-                            {service.reviews?.length > 0 ? (
+                            {serviceReviews?.length > 0 ? (
                                 <div className="space-y-6">
                                     {getSortedReviews().map((review, index) => (
                                         <div key={review._id || index} className="border-b border-gray-200 pb-6 last:border-b-0">
                                             <div className="flex items-start gap-4 mb-4">
                                                 <img
-                                                    src={review.user?.avatar || '/default-avatar.png'}
+                                                    src={review.reviewer?.profileImage || '/default-avatar.png'}
+                                                    alt={review.reviewer?.displayName || 'User'}
                                                     loading='lazy'
-                                                    alt={review.user?.name || 'User'}
                                                     className="w-12 h-12 rounded-full object-cover flex-shrink-0"
                                                     onError={(e) => {
                                                         e.target.src = 'https://via.placeholder.com/48';
@@ -783,7 +836,9 @@ const ServiceDetails = () => {
                                                 <div className="flex-1">
                                                     <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-2">
                                                         <h4 className="font-medium text-gray-900">
-                                                            {review.user?.name || 'Anonymous'}
+                                                            {review.reviewer?.displayName ||
+                                                                `${review.reviewer?.firstName || ''} ${review.reviewer?.lastName || ''}`.trim() ||
+                                                                'Anonymous User'}
                                                         </h4>
                                                         <div className="flex items-center gap-2">
                                                             <div className="flex items-center gap-1">
@@ -809,10 +864,10 @@ const ServiceDetails = () => {
                                                 </div>
                                             </div>
                                             <p className="text-gray-700 mb-4">{review.content}</p>
-                                            <button className="flex items-center gap-2 text-gray-600 hover:text-primary transition-colors">
+                                            {/* <button className="flex items-center gap-2 text-gray-600 hover:text-primary transition-colors">
                                                 <CornerUpLeft size={16} />
                                                 <span>Reply</span>
-                                            </button>
+                                            </button> */}
                                         </div>
                                     ))}
                                 </div>

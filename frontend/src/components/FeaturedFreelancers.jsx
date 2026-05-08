@@ -35,7 +35,7 @@ const FeaturedFreelancers = () => {
             <Container className="pt-8">
                 <Subheading content="Skill-Based Approach" />
                 <Heading content="Learn from Industry Experts" />
-                <HeadingDescription content="Browse our pool of talented freelancers offering job training across tech roles. Find the perfect expert for your specific career goals." />
+                <HeadingDescription content="Browse our pool of talented mentors offering job training across tech roles. Find the perfect expert for your specific career goals." />
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 py-8">
                     {[...Array(8)].map((_, index) => (
@@ -68,7 +68,7 @@ const FeaturedFreelancers = () => {
         <Container className="pt-8">
             <Subheading content="Skill-Based Approach" />
             <Heading content="Learn from Industry Experts" />
-            <HeadingDescription content="Browse our pool of talented freelancers offering job training across tech roles. Find the perfect expert for your specific career goals." />
+            <HeadingDescription content="Browse our pool of talented mentors offering job training across tech roles. Find the perfect expert for your specific career goals." />
 
             {freelancers.length > 0 ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 py-8">
@@ -78,7 +78,7 @@ const FeaturedFreelancers = () => {
                 </div>
             ) : (
                 <div className="text-center py-12">
-                    <p className="text-gray-500">No freelancers available at the moment.</p>
+                    <p className="text-gray-500">No mentors available at the moment.</p>
                 </div>
             )}
 

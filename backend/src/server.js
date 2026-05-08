@@ -19,6 +19,9 @@ import http from "http";
 import { initializeSocket } from "./sockets/socket.js";
 import chatRouter from "./routes/chat.route.js";
 import dashboardRouter from "./routes/dashboard.route.js";
+import orderRouter from "./routes/order.route.js";
+import customOfferRouter from "./routes/customOffer.route.js";
+import reviewRouter from "./routes/review.route.js";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -63,6 +66,9 @@ app.use('/api/v1/skills', skillRouter);
 app.use('/api/v1/projects', projectRouter);
 app.use("/api/v1/dashboard", dashboardRouter);
 app.use('/api/v1/chat', chatRouter);
+app.use("/api/v1/orders", orderRouter);
+app.use("/api/v1/custom-offers", customOfferRouter);
+app.use("/api/v1/reviews", reviewRouter);
 
 // 404 handler - SIMPLIFIED VERSION
 app.use((req, res, next) => {

@@ -72,7 +72,7 @@ export const requireFreelancer = (req, res, next) => {
   if (req.user.userType !== "freelancer") {
     return res.status(403).json({
       success: false,
-      message: "Freelancer access required",
+      message: "Only freelancers can perform this action",
     });
   }
   next();
@@ -82,7 +82,7 @@ export const requireBuyer = (req, res, next) => {
   if (req.user.userType !== "buyer") {
     return res.status(403).json({
       success: false,
-      message: "Buyer access required",
+      message: "Only buyers can perform this action",
     });
   }
   next();
@@ -92,7 +92,7 @@ export const requireAdmin = (req, res, next) => {
   if (req.user.userType !== "admin") {
     return res.status(403).json({
       success: false,
-      message: "Admin access required",
+      message: "Only admins can perform this action",
     });
   }
   next();

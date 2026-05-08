@@ -1,6 +1,5 @@
-import React from 'react';
 import { Link } from 'react-router-dom';
-import { MapPin, Briefcase, DollarSign, XCircle, CheckCircle, Phone, Mail, Calendar, Clock, ChevronRight, Heart, Star } from 'lucide-react';
+import {  ChevronRight, Star } from 'lucide-react';
 import { dummyUserImg } from '../assets';
 
 const FreelancerProfileCard = ({ freelancer }) => {
@@ -20,8 +19,8 @@ const FreelancerProfileCard = ({ freelancer }) => {
                                 </div> */}
                                 <div className="flex items-center justify-start gap-1 mt-2">
                                     <Star size={16} className="fill-yellow-400 text-yellow-400" />
-                                    <span className="font-semibold">{0}</span>
-                                    <span className="text-gray-500">({0} reviews)</span>
+                                    <span className="font-semibold">{freelancer.rating?.toFixed(1) || "0.0"}</span>
+                                    <span className="text-gray-500">({freelancer.reviewCount || 0} reviews)</span>
                                 </div>
                             </div>
                         </div>

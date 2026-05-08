@@ -25,6 +25,7 @@ const FAQs = lazy(() => import('./pages/FAQs'));
 const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
 const ResetPassword = lazy(() => import('./pages/ResetPassword'));
 const SingleFreelancer = lazy(() => import('./pages/FreelancerProfile'));
+const Checkout = lazy(() => import('./pages/Checkout'));
 
 //Freelancer Pages
 const FreelancerLayout = lazy(() => import('./pages/freelancer/Layout'));
@@ -41,6 +42,7 @@ const FreelancerWithdrawals = lazy(() => import('./pages/freelancer/Withdrawals'
 const FreelancerEarnings = lazy(() => import('./pages/freelancer/Earnings'));
 const FreelancerProjects = lazy(() => import('./pages/freelancer/Projects'));
 const FreelancerChat = lazy(() => import('./pages/freelancer/Chat'));
+const FreelancerOrderDetails = lazy(() => import('./pages/freelancer/OrderDetails'));
 
 //Buyer Pages
 const BuyerLayout = lazy(() => import('./pages/buyer/Layout'));
@@ -53,6 +55,7 @@ const CreateProject = lazy(() => import('./pages/buyer/CreateProject'));
 const EditProject = lazy(() => import('./pages/buyer/EditProject'));
 const BuyerAllProjects = lazy(() => import('./pages/buyer/AllProjects'));
 const BuyerChat = lazy(() => import('./pages/buyer/Chat'));
+const BuyerOrderDetails = lazy(() => import('./pages/buyer/OrderDetails'));
 
 //Admin Pages
 const AdminLayout = lazy(() => import('./pages/admin/Layout'));
@@ -180,6 +183,12 @@ createRoot(document.getElementById('root')).render(
                 </Suspense>
               } />
 
+              <Route path='/checkout' element={
+                <Suspense fallback={<LoadingSpinner height={'725px'} />}>
+                  <Checkout />
+                </Suspense>
+              } />
+
               {/* Add this for not found routes */}
               <Route path="*" element={
                 <Suspense fallback={<LoadingSpinner height={'725px'} />}>
@@ -258,6 +267,13 @@ createRoot(document.getElementById('root')).render(
                 </Suspense>
               } />
 
+              {/* Freelancer single orders page */}
+              <Route path='orders/:orderId' element={
+                <Suspense fallback={<LoadingSpinner height={'725px'} />}>
+                  <FreelancerOrderDetails />
+                </Suspense>
+              } />
+
               {/* Freelancer finance routes with nested structure */}
               <Route path='finance'>
                 <Route index element={<Navigate to="earnings" replace />} />
@@ -312,6 +328,13 @@ createRoot(document.getElementById('root')).render(
               <Route path='orders' element={
                 <Suspense fallback={<LoadingSpinner height={'725px'} />}>
                   <BuyerAllOrders />
+                </Suspense>
+              } />
+
+              {/* Buyer all orders page */}
+              <Route path='orders/:orderId' element={
+                <Suspense fallback={<LoadingSpinner height={'725px'} />}>
+                  <BuyerOrderDetails />
                 </Suspense>
               } />
 

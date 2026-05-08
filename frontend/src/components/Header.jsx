@@ -7,7 +7,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { usePopUp } from "../contexts/PopUpContextProvider";
 import MegaMenuDesktop from './MegaMenuDesktop';
 import MegaMenuMobile from './MegaMenuMobile';
-import { logo } from '../assets';
+import { logo, userTypes } from '../assets';
 
 const Header = () => {
     const [scrolled, setScrolled] = useState(false);
@@ -80,7 +80,7 @@ const Header = () => {
                             </div>
 
                             <NavLink to="/freelancers" className="text-white/90 hover:text-white">
-                                Search Freelancer
+                                Search {userTypes?.freelancer}
                             </NavLink>
 
                             <NavLink to="/services" className="text-white/90 hover:text-white">
@@ -199,7 +199,7 @@ const Header = () => {
 
 
                     <NavLink to="/freelancers" className="block text-base text-gray-800 font-normal border-b pb-3">
-                        Search Freelancer
+                        Search {userTypes?.freelancer}
                     </NavLink>
 
                     <NavLink to="/services" className="block text-base text-gray-800 font-normal border-b pb-3">

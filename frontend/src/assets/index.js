@@ -21,6 +21,11 @@ const otherData = {
     address: 'India'
 }
 
+const userTypes = {
+    buyer: 'Student',
+    freelancer: 'Mentor',
+}
+
 export {
     otherData,
     banner,
@@ -39,4 +44,5 @@ export {
     logo,
     dummyUserImg,
     aboutUs,
+    userTypes,
 }

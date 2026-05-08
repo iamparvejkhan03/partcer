@@ -991,7 +991,7 @@ const getFreelancerPublicProfile = asyncHandler(async (req, res) => {
     userType: "freelancer",
     isActive: true,
   }).select(
-    "firstName lastName displayName companyName profileImage tagline bio hourlyRate englishLevel skills languages experience education country city",
+    "firstName lastName displayName companyName profileImage tagline bio hourlyRate englishLevel skills languages completedProjects rating reviewCount experience education country city",
   );
 
   if (!freelancer) {
@@ -1081,7 +1081,7 @@ const searchFreelancers = asyncHandler(async (req, res) => {
 
   const freelancers = await User.find(query)
     .select(
-      "firstName lastName displayName profileImage tagline bio hourlyRate englishLevel skills languages freelancerType createdAt country city experience education rating hired rejected",
+      "firstName lastName displayName profileImage tagline bio hourlyRate englishLevel skills languages freelancerType createdAt country city experience education rating reviewCount hired rejected",
     )
     .sort(sort)
     .skip(skip)

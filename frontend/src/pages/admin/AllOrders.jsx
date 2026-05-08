@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
     ShoppingBag,
@@ -37,14 +37,23 @@ import {
     HelpCircle,
     Flag,
     RotateCcw,
-    X
+    X,
+    Loader,
+    ChevronDown,
+    Check,
+    Send,
+    Package,
+    Truck,
+    ThumbsUp
 } from "lucide-react";
 import { AdminSidebar, AdminHeader, AdminContainer } from '../../components';
 import toast from 'react-hot-toast';
 import axiosInstance from '../../utils/axiosInstance';
+import { format } from 'date-fns';
 
 const Orders = () => {
     const [orders, setOrders] = useState([]);
+    const [allOrders, setAllOrders] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
@@ -58,8 +67,10 @@ const Orders = () => {
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [showRefundModal, setShowRefundModal] = useState(false);
     const [showDisputeModal, setShowDisputeModal] = useState(false);
+    const [showStatusModal, setShowStatusModal] = useState(false);
+    const [showFlagModal, setShowFlagModal] = useState(false);
+    const [showNoteModal, setShowNoteModal] = useState(false);
     const [openActionMenu, setOpenActionMenu] = useState(null);
-    const actionMenuRef = useRef(null);
     const [stats, setStats] = useState({
         total: 0,
         completed: 0,
@@ -73,12 +84,92 @@ const Orders = () => {
         avgOrderValue: 0,
         totalOrders: 0
     });
+    const [pagination, setPagination] = useState({
+        page: 1,
+        limit: 10,
+        total: 0,
+        pages: 0
+    });
+
+    // Modal states
+    const [newStatus, setNewStatus] = useState('');
+    const [statusReason, setStatusReason] = useState('');
+    const [refundAmount, setRefundAmount] = useState('');
+    const [refundReason, setRefundReason] = useState('');
+    const [disputeResolution, setDisputeResolution] = useState('');
+    const [disputeMessage, setDisputeMessage] = useState('');
+    const [flagType, setFlagType] = useState('');
+    const [flagReason, setFlagReason] = useState('');
+    const [adminNote, setAdminNote] = useState('');
+    const [processingAction, setProcessingAction] = useState(false);
+
+    const [showPaymentStatusModal, setShowPaymentStatusModal] = useState(false);
+    const [newPaymentStatus, setNewPaymentStatus] = useState('');
+    const [transactionId, setTransactionId] = useState('');
+    const [paymentStatusReason, setPaymentStatusReason] = useState('');
 
     const navigate = useNavigate();
 
+    // Fetch orders on mount
     useEffect(() => {
         fetchOrders();
     }, []);
+
+    // Filter orders locally when filters change
+    useEffect(() => {
+        if (allOrders.length === 0) return;
+
+        let filtered = [...allOrders];
+
+        // Status filter
+        if (statusFilter !== 'all') {
+            filtered = filtered.filter(order => order.status === statusFilter);
+        }
+
+        // Type filter
+        if (typeFilter !== 'all') {
+            filtered = filtered.filter(order => order.orderType === typeFilter);
+        }
+
+        // Payment filter
+        if (paymentFilter !== 'all') {
+            filtered = filtered.filter(order => order.paymentStatus === paymentFilter);
+        }
+
+        // Date range filter
+        if (dateRange !== 'all') {
+            const days = parseInt(dateRange);
+            const cutoffDate = new Date();
+            cutoffDate.setDate(cutoffDate.getDate() - days);
+
+            filtered = filtered.filter(order => {
+                const orderDate = new Date(order.createdAt);
+                return orderDate >= cutoffDate;
+            });
+        }
+
+        // Search filter
+        if (searchTerm.trim()) {
+            const term = searchTerm.toLowerCase();
+            filtered = filtered.filter(order =>
+                order.orderId?.toLowerCase().includes(term) ||
+                order.buyer?.name?.toLowerCase().includes(term) ||
+                order.seller?.name?.toLowerCase().includes(term) ||
+                order.details?.title?.toLowerCase().includes(term)
+            );
+        }
+
+        setOrders(filtered);
+        setCurrentPage(1);
+        calculateStats(filtered);
+        setPagination(prev => ({
+            ...prev,
+            page: 1,
+            total: filtered.length,
+            pages: Math.ceil(filtered.length / itemsPerPage)
+        }));
+
+    }, [statusFilter, typeFilter, paymentFilter, dateRange, searchTerm, allOrders, itemsPerPage]);
 
     // Click outside handler for dropdown menus
     useEffect(() => {
@@ -95,425 +186,109 @@ const Orders = () => {
         try {
             setLoading(true);
 
-            // Mock data for orders
-            // const mockOrders = [
-            //     {
-            //         id: "ORD-2246872",
-            //         date: "2025-05-13T14:00:00",
-            //         buyer: {
-            //             id: 1001,
-            //             name: "Alex Chen",
-            //             avatar: "https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg",
-            //             email: "alex.c@example.com",
-            //             location: "Singapore",
-            //             verified: true
-            //         },
-            //         seller: {
-            //             id: 2001,
-            //             name: "Sarah Johnson",
-            //             avatar: "https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg",
-            //             email: "sarah.j@example.com",
-            //             location: "United States",
-            //             verified: true,
-            //             level: "top_rated"
-            //         },
-            //         service: {
-            //             id: "SVC-123",
-            //             title: "Professional Website UI/UX Design",
-            //             category: "Design & Creative",
-            //             type: "service",
-            //             package: "Premium Package"
-            //         },
-            //         amount: 500,
-            //         fee: 50,
-            //         netAmount: 450,
-            //         status: "completed",
-            //         paymentStatus: "paid",
-            //         paymentMethod: "credit_card",
-            //         orderType: "service",
-            //         createdAt: "2025-05-13T14:00:00",
-            //         deliveredAt: "2025-05-19T16:30:00",
-            //         completedAt: "2025-05-20T10:15:00",
-            //         disputes: 0,
-            //         refundStatus: null,
-            //         rating: 5,
-            //         review: "Excellent work, delivered ahead of schedule!"
-            //     },
-            //     {
-            //         id: "ORD-9519785",
-            //         date: "2025-05-13T14:55:00",
-            //         buyer: {
-            //             id: 1002,
-            //             name: "Sarah Johnson",
-            //             avatar: "https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg",
-            //             email: "sarah.j@example.com",
-            //             location: "United States",
-            //             verified: true
-            //         },
-            //         seller: {
-            //             id: 2002,
-            //             name: "Michael Chen",
-            //             avatar: "https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg",
-            //             email: "michael.c@example.com",
-            //             location: "Singapore",
-            //             verified: true,
-            //             level: "level_2"
-            //         },
-            //         service: {
-            //             id: "SVC-456",
-            //             title: "Custom E-commerce Development",
-            //             category: "Development & IT",
-            //             type: "service",
-            //             package: "Standard Package"
-            //         },
-            //         amount: 200,
-            //         fee: 20,
-            //         netAmount: 180,
-            //         status: "active",
-            //         paymentStatus: "paid",
-            //         paymentMethod: "paypal",
-            //         orderType: "service",
-            //         createdAt: "2025-05-13T14:55:00",
-            //         deadline: "2025-05-25T14:55:00",
-            //         disputes: 0,
-            //         refundStatus: null
-            //     },
-            //     {
-            //         id: "ORD-6658427",
-            //         date: "2025-05-13T14:54:00",
-            //         buyer: {
-            //             id: 1003,
-            //             name: "Emma Wilson",
-            //             avatar: "https://images.pexels.com/photos/3785077/pexels-photo-3785077.jpeg",
-            //             email: "emma.w@example.com",
-            //             location: "United Kingdom",
-            //             verified: false
-            //         },
-            //         seller: {
-            //             id: 2003,
-            //             name: "David Kim",
-            //             avatar: "https://images.pexels.com/photos/428364/pexels-photo-428364.jpeg",
-            //             email: "david.k@example.com",
-            //             location: "South Korea",
-            //             verified: true,
-            //             level: "level_1"
-            //         },
-            //         service: {
-            //             id: "SVC-789",
-            //             title: "WordPress Website Development",
-            //             category: "Development & IT",
-            //             type: "service",
-            //             package: "Basic Package"
-            //         },
-            //         amount: 150,
-            //         fee: 15,
-            //         netAmount: 135,
-            //         status: "pending",
-            //         paymentStatus: "unpaid",
-            //         paymentMethod: null,
-            //         orderType: "service",
-            //         createdAt: "2025-05-13T14:54:00",
-            //         deadline: "2025-05-27T14:54:00",
-            //         disputes: 0,
-            //         refundStatus: null
-            //     },
-            //     {
-            //         id: "ORD-9854988",
-            //         date: "2025-05-13T14:46:00",
-            //         buyer: {
-            //             id: 1004,
-            //             name: "James Wilson",
-            //             avatar: "https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg",
-            //             email: "james.w@example.com",
-            //             location: "United Kingdom",
-            //             verified: true
-            //         },
-            //         seller: {
-            //             id: 2004,
-            //             name: "Priya Patel",
-            //             avatar: "https://images.pexels.com/photos/1036622/pexels-photo-1036622.jpeg",
-            //             email: "priya.p@example.com",
-            //             location: "India",
-            //             verified: true,
-            //             level: "level_2"
-            //         },
-            //         service: {
-            //             id: "SVC-234",
-            //             title: "Mobile App UI/UX Design",
-            //             category: "Design & Creative",
-            //             type: "service",
-            //             package: "Premium Package"
-            //         },
-            //         amount: 200,
-            //         fee: 20,
-            //         netAmount: 180,
-            //         status: "completed",
-            //         paymentStatus: "paid",
-            //         paymentMethod: "bank_transfer",
-            //         orderType: "service",
-            //         createdAt: "2025-05-13T14:46:00",
-            //         deliveredAt: "2025-05-17T11:20:00",
-            //         completedAt: "2025-05-18T14:20:00",
-            //         disputes: 0,
-            //         refundStatus: null,
-            //         rating: 4.5,
-            //         review: "Great design work, very responsive to feedback."
-            //     },
-            //     {
-            //         id: "ORD-6989952",
-            //         date: "2025-05-13T14:40:00",
-            //         buyer: {
-            //             id: 1005,
-            //             name: "Michael Chen",
-            //             avatar: "https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg",
-            //             email: "michael.c@example.com",
-            //             location: "Singapore",
-            //             verified: true
-            //         },
-            //         seller: {
-            //             id: 2005,
-            //             name: "Elena Petrova",
-            //             avatar: "https://images.pexels.com/photos/3785077/pexels-photo-3785077.jpeg",
-            //             email: "elena.p@example.com",
-            //             location: "Germany",
-            //             verified: true,
-            //             level: "expert"
-            //         },
-            //         service: {
-            //             id: "SVC-567",
-            //             title: "SEO Optimization Service",
-            //             category: "Digital Marketing",
-            //             type: "service",
-            //             package: "Standard Package"
-            //         },
-            //         amount: 300,
-            //         fee: 30,
-            //         netAmount: 270,
-            //         status: "active",
-            //         paymentStatus: "paid",
-            //         paymentMethod: "credit_card",
-            //         orderType: "service",
-            //         createdAt: "2025-05-13T14:40:00",
-            //         deadline: "2025-06-13T14:40:00",
-            //         disputes: 0,
-            //         refundStatus: null
-            //     },
-            //     {
-            //         id: "ORD-3365479",
-            //         date: "2025-05-13T14:30:00",
-            //         buyer: {
-            //             id: 1006,
-            //             name: "Priya Patel",
-            //             avatar: "https://images.pexels.com/photos/1036622/pexels-photo-1036622.jpeg",
-            //             email: "priya.p@example.com",
-            //             location: "India",
-            //             verified: true
-            //         },
-            //         seller: {
-            //             id: 2006,
-            //             name: "James Wilson",
-            //             avatar: "https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg",
-            //             email: "james.w@example.com",
-            //             location: "United Kingdom",
-            //             verified: false,
-            //             level: "new"
-            //         },
-            //         service: {
-            //             id: "SVC-890",
-            //             title: "Logo Design Package",
-            //             category: "Design & Creative",
-            //             type: "custom_offer",
-            //             package: "Basic Package"
-            //         },
-            //         amount: 80,
-            //         fee: 8,
-            //         netAmount: 72,
-            //         status: "cancelled",
-            //         paymentStatus: "refunded",
-            //         paymentMethod: "credit_card",
-            //         orderType: "custom_offer",
-            //         createdAt: "2025-05-13T14:30:00",
-            //         cancelledAt: "2025-05-15T10:20:00",
-            //         cancellationReason: "Buyer requested cancellation",
-            //         disputes: 1,
-            //         refundStatus: "completed",
-            //         refundAmount: 80,
-            //         refundDate: "2025-05-16T09:30:00"
-            //     },
-            //     {
-            //         id: "ORD-6552589",
-            //         date: "2025-05-13T13:00:00",
-            //         buyer: {
-            //             id: 1007,
-            //             name: "David Kim",
-            //             avatar: "https://images.pexels.com/photos/428364/pexels-photo-428364.jpeg",
-            //             email: "david.k@example.com",
-            //             location: "South Korea",
-            //             verified: true
-            //         },
-            //         seller: {
-            //             id: 2007,
-            //             name: "Emma Wilson",
-            //             avatar: "https://images.pexels.com/photos/3785077/pexels-photo-3785077.jpeg",
-            //             email: "emma.w@example.com",
-            //             location: "United Kingdom",
-            //             verified: true,
-            //             level: "level_1"
-            //         },
-            //         service: {
-            //             id: "SVC-901",
-            //             title: "Content Writing - Blog Posts",
-            //             category: "Writing & Translation",
-            //             type: "service",
-            //             package: "Standard Package"
-            //         },
-            //         amount: 125,
-            //         fee: 12.5,
-            //         netAmount: 112.5,
-            //         status: "disputed",
-            //         paymentStatus: "held",
-            //         paymentMethod: "paypal",
-            //         orderType: "service",
-            //         createdAt: "2025-05-13T13:00:00",
-            //         deadline: "2025-05-20T13:00:00",
-            //         disputes: 1,
-            //         disputeReason: "Quality of work not as expected",
-            //         disputeOpenedAt: "2025-05-18T11:30:00",
-            //         disputeStatus: "under_review",
-            //         refundStatus: null
-            //     },
-            //     {
-            //         id: "ORD-9745845",
-            //         date: "2025-05-13T12:30:00",
-            //         buyer: {
-            //             id: 1008,
-            //             name: "Elena Petrova",
-            //             avatar: "https://images.pexels.com/photos/3785077/pexels-photo-3785077.jpeg",
-            //             email: "elena.p@example.com",
-            //             location: "Germany",
-            //             verified: true
-            //         },
-            //         seller: {
-            //             id: 2008,
-            //             name: "Michael Rodriguez",
-            //             avatar: "https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg",
-            //             email: "michael.r@example.com",
-            //             location: "Spain",
-            //             verified: true,
-            //             level: "level_2"
-            //         },
-            //         service: {
-            //             id: "SVC-234",
-            //             title: "Mobile App UI/UX Design",
-            //             category: "Design & Creative",
-            //             type: "project",
-            //             package: "Standard Package"
-            //         },
-            //         amount: 185,
-            //         fee: 18.5,
-            //         netAmount: 166.5,
-            //         status: "pending",
-            //         paymentStatus: "unpaid",
-            //         paymentMethod: null,
-            //         orderType: "project",
-            //         createdAt: "2025-05-13T12:30:00",
-            //         deadline: "2025-05-27T12:30:00",
-            //         disputes: 0,
-            //         refundStatus: null
-            //     },
-            //     {
-            //         id: "ORD-7891389",
-            //         date: "2025-05-13T11:28:00",
-            //         buyer: {
-            //             id: 1009,
-            //             name: "Michael Rodriguez",
-            //             avatar: "https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg",
-            //             email: "michael.r@example.com",
-            //             location: "Spain",
-            //             verified: true
-            //         },
-            //         seller: {
-            //             id: 2009,
-            //             name: "Sarah Johnson",
-            //             avatar: "https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg",
-            //             email: "sarah.j@example.com",
-            //             location: "United States",
-            //             verified: true,
-            //             level: "top_rated"
-            //         },
-            //         service: {
-            //             id: "SVC-567",
-            //             title: "SEO Optimization Service",
-            //             category: "Digital Marketing",
-            //             type: "service",
-            //             package: "Basic Package"
-            //         },
-            //         amount: 45,
-            //         fee: 4.5,
-            //         netAmount: 40.5,
-            //         status: "completed",
-            //         paymentStatus: "paid",
-            //         paymentMethod: "credit_card",
-            //         orderType: "service",
-            //         createdAt: "2025-05-13T11:28:00",
-            //         deliveredAt: "2025-05-17T09:15:00",
-            //         completedAt: "2025-05-18T10:30:00",
-            //         disputes: 0,
-            //         refundStatus: null,
-            //         rating: 4,
-            //         review: "Good work, improved our local search ranking."
-            //     },
-            //     {
-            //         id: "ORD-3669852",
-            //         date: "2025-05-13T11:25:00",
-            //         buyer: {
-            //             id: 1010,
-            //             name: "James Wilson",
-            //             avatar: "https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg",
-            //             email: "james.w@example.com",
-            //             location: "United Kingdom",
-            //             verified: false
-            //         },
-            //         seller: {
-            //             id: 2010,
-            //             name: "David Kim",
-            //             avatar: "https://images.pexels.com/photos/428364/pexels-photo-428364.jpeg",
-            //             email: "david.k@example.com",
-            //             location: "South Korea",
-            //             verified: true,
-            //             level: "level_1"
-            //         },
-            //         service: {
-            //             id: "SVC-890",
-            //             title: "Logo Design Package",
-            //             category: "Design & Creative",
-            //             type: "custom_offer",
-            //             package: "Basic Package"
-            //         },
-            //         amount: 35,
-            //         fee: 3.5,
-            //         netAmount: 31.5,
-            //         status: "pending",
-            //         paymentStatus: "unpaid",
-            //         paymentMethod: null,
-            //         orderType: "custom_offer",
-            //         createdAt: "2025-05-13T11:25:00",
-            //         deadline: "2025-05-20T11:25:00",
-            //         disputes: 0,
-            //         refundStatus: null
-            //     }
-            // ];
+            const response = await axiosInstance.get('/api/v1/orders/admin/all');
 
-            setTimeout(() => {
-                setOrders([]);
-                calculateStats([]);
-                setLoading(false);
-            }, 1000);
+            if (response.data?.success) {
+                const { orders: fetchedOrders } = response.data.data;
 
+                const enhancedOrders = fetchedOrders.map(order => ({
+                    ...order,
+                    buyer: {
+                        id: order.buyer?._id,
+                        name: order.buyer?.displayName || `${order.buyer?.firstName || ''} ${order.buyer?.lastName || ''}`.trim(),
+                        avatar: order.buyer?.profileImage || 'https://via.placeholder.com/40',
+                        email: order.buyer?.email,
+                        location: order.buyer?.country || 'Remote',
+                        verified: order.buyer?.isVerified || false
+                    },
+                    seller: {
+                        id: order.seller?._id,
+                        name: order.seller?.displayName || `${order.seller?.firstName || ''} ${order.seller?.lastName || ''}`.trim(),
+                        avatar: order.seller?.profileImage || 'https://via.placeholder.com/40',
+                        email: order.seller?.email,
+                        location: order.seller?.country || 'Remote',
+                        verified: order.seller?.isVerified || false,
+                        level: order.seller?.freelancerType || 'standard'
+                    },
+                    service: {
+                        id: order.service?._id,
+                        title: order.details?.title || 'Service',
+                        category: order.service?.category?.name || order.details?.category?.name || 'Category',
+                        package: order.details?.package?.name || 'Standard'
+                    },
+                    amount: order.pricing?.subtotal || 0,
+                    fee: order.pricing?.platformFee || 0,
+                    netAmount: order.pricing?.sellerEarnings || 0,
+                    status: order.status,
+                    paymentStatus: order.payment?.status || 'unpaid',
+                    paymentMethod: order.payment?.method || null,
+                    orderType: order.orderType,
+                    createdAt: order.createdAt,
+                    deliveredAt: order.timeline?.deliveredAt,
+                    completedAt: order.timeline?.completedAt,
+                    deadline: order.timeline?.deadline,
+                    cancelledAt: order.timeline?.cancelledAt,
+                    disputes: order.dispute ? 1 : 0,
+                    disputeReason: order.dispute?.reason,
+                    disputeStatus: order.dispute?.status,
+                    refundStatus: order.refund?.status,
+                    refundAmount: order.refund?.amount,
+                    refundDate: order.refund?.processedAt,
+                    cancellationReason: order.timeline?.cancelledAt ? order.cancellationReason : null,
+                    rating: order.review?.rating,
+                    review: order.review?.comment,
+                    adminNotes: order.adminNotes || [],
+                    flags: order.flags || []
+                }));
+
+                setAllOrders(enhancedOrders);
+                setOrders(enhancedOrders);
+                calculateStats(enhancedOrders);
+                setPagination({
+                    page: 1,
+                    limit: itemsPerPage,
+                    total: enhancedOrders.length,
+                    pages: Math.ceil(enhancedOrders.length / itemsPerPage)
+                });
+            }
         } catch (error) {
             console.error('Error fetching orders:', error);
             toast.error('Failed to load orders');
+        } finally {
             setLoading(false);
+        }
+    };
+
+    const handleUpdatePaymentStatus = async () => {
+        if (!newPaymentStatus) {
+            toast.error('Please select a payment status');
+            return;
+        }
+
+        try {
+            setProcessingAction(true);
+            const response = await axiosInstance.patch(
+                `/api/v1/orders/admin/${selectedOrder._id}/payment-status`,
+                {
+                    paymentStatus: newPaymentStatus,
+                    transactionId: transactionId || undefined,
+                    reason: paymentStatusReason
+                }
+            );
+
+            if (response.data?.success) {
+                toast.success(`Payment status updated to ${newPaymentStatus}`);
+                setShowPaymentStatusModal(false);
+                setNewPaymentStatus('');
+                setTransactionId('');
+                setPaymentStatusReason('');
+                fetchOrders();
+                setSelectedOrder(null);
+            }
+        } catch (error) {
+            toast.error(error.response?.data?.message || 'Failed to update payment status');
+        } finally {
+            setProcessingAction(false);
         }
     };
 
@@ -521,6 +296,7 @@ const Orders = () => {
         const completed = ordersData.filter(o => o.status === 'completed');
         const active = ordersData.filter(o => o.status === 'active');
         const disputed = ordersData.filter(o => o.status === 'disputed');
+        const refunded = ordersData.filter(o => o.refundStatus === 'completed');
 
         const stats = {
             total: ordersData.length,
@@ -529,11 +305,11 @@ const Orders = () => {
             pending: ordersData.filter(o => o.status === 'pending').length,
             cancelled: ordersData.filter(o => o.status === 'cancelled').length,
             disputed: disputed.length,
-            refunded: ordersData.filter(o => o.refundStatus === 'completed').length,
-            totalRevenue: completed.reduce((sum, o) => sum + o.netAmount, 0),
-            platformFees: ordersData.reduce((sum, o) => sum + o.fee, 0),
+            refunded: refunded.length,
+            totalRevenue: completed.reduce((sum, o) => sum + (o.amount || 0), 0),
+            platformFees: ordersData.reduce((sum, o) => sum + (o.fee || 0), 0),
             avgOrderValue: completed.length > 0
-                ? completed.reduce((sum, o) => sum + o.amount, 0) / completed.length
+                ? completed.reduce((sum, o) => sum + (o.amount || 0), 0) / completed.length
                 : 0,
             totalOrders: ordersData.length
         };
@@ -542,11 +318,15 @@ const Orders = () => {
 
     const getStatusBadge = (status) => {
         const config = {
-            active: { bg: 'bg-green-100', text: 'text-green-700', label: 'Active', icon: Clock },
+            pending: { bg: 'bg-yellow-100', text: 'text-yellow-700', label: 'Pending', icon: Clock },
+            active: { bg: 'bg-green-100', text: 'text-green-700', label: 'Active', icon: RefreshCw },
+            delivered: { bg: 'bg-purple-100', text: 'text-purple-700', label: 'Delivered', icon: Package },
             completed: { bg: 'bg-blue-100', text: 'text-blue-700', label: 'Completed', icon: CheckCircle },
-            pending: { bg: 'bg-yellow-100', text: 'text-yellow-700', label: 'Pending', icon: AlertCircle },
             cancelled: { bg: 'bg-red-100', text: 'text-red-700', label: 'Cancelled', icon: XCircle },
-            disputed: { bg: 'bg-orange-100', text: 'text-orange-700', label: 'Disputed', icon: Flag }
+            disputed: { bg: 'bg-orange-100', text: 'text-orange-700', label: 'Disputed', icon: Flag },
+            refunded: { bg: 'bg-gray-100', text: 'text-gray-700', label: 'Refunded', icon: DollarSign },
+            expired: { bg: 'bg-gray-100', text: 'text-gray-700', label: 'Expired', icon: Clock },
+            suspended: { bg: 'bg-red-100', text: 'text-red-700', label: 'Suspended', icon: Ban }
         };
         const badge = config[status] || config.pending;
         const Icon = badge.icon;
@@ -560,12 +340,14 @@ const Orders = () => {
 
     const getPaymentStatusBadge = (paymentStatus) => {
         const config = {
+            pending: { bg: 'bg-yellow-100', text: 'text-yellow-700', label: 'Pending' },
+            processing: { bg: 'bg-blue-100', text: 'text-blue-700', label: 'Processing' },
             paid: { bg: 'bg-green-100', text: 'text-green-700', label: 'Paid' },
-            unpaid: { bg: 'bg-yellow-100', text: 'text-yellow-700', label: 'Unpaid' },
+            held: { bg: 'bg-orange-100', text: 'text-orange-700', label: 'Held' },
             refunded: { bg: 'bg-gray-100', text: 'text-gray-700', label: 'Refunded' },
-            held: { bg: 'bg-orange-100', text: 'text-orange-700', label: 'Held' }
+            failed: { bg: 'bg-red-100', text: 'text-red-700', label: 'Failed' }
         };
-        const badge = config[paymentStatus] || config.unpaid;
+        const badge = config[paymentStatus] || config.pending;
         return (
             <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${badge.bg} ${badge.text}`}>
                 {badge.label}
@@ -589,14 +371,11 @@ const Orders = () => {
 
     const formatDate = (dateString) => {
         if (!dateString) return 'N/A';
-        const date = new Date(dateString);
-        return date.toLocaleDateString('en-US', {
-            month: 'short',
-            day: 'numeric',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
+        try {
+            return format(new Date(dateString), 'MMM d, yyyy • h:mm a');
+        } catch {
+            return 'N/A';
+        }
     };
 
     const formatCurrency = (amount) => {
@@ -605,7 +384,7 @@ const Orders = () => {
             currency: 'USD',
             minimumFractionDigits: 2,
             maximumFractionDigits: 2
-        }).format(amount);
+        }).format(amount || 0);
     };
 
     const formatNumber = (num) => {
@@ -623,58 +402,161 @@ const Orders = () => {
         setShowOrderModal(true);
     };
 
-    const handleRefundOrder = async (orderId) => {
+    const handleUpdateStatus = async () => {
+        if (!newStatus) {
+            toast.error('Please select a status');
+            return;
+        }
+
         try {
-            setOrders(orders.map(order =>
-                order.id === orderId
-                    ? {
-                        ...order,
-                        status: 'cancelled',
-                        paymentStatus: 'refunded',
-                        refundStatus: 'completed',
-                        refundDate: new Date().toISOString()
-                    }
-                    : order
-            ));
-            calculateStats(orders);
-            toast.success('Refund processed successfully');
-            setShowRefundModal(false);
-            setSelectedOrder(null);
+            setProcessingAction(true);
+            const response = await axiosInstance.patch(`/api/v1/orders/admin/${selectedOrder._id}/status`, {
+                status: newStatus,
+                reason: statusReason
+            });
+
+            if (response.data?.success) {
+                toast.success(`Order status updated to ${newStatus}`);
+                setShowStatusModal(false);
+                setNewStatus('');
+                setStatusReason('');
+                fetchOrders();
+                setSelectedOrder(null);
+            }
         } catch (error) {
-            toast.error('Failed to process refund');
+            toast.error(error.response?.data?.message || 'Failed to update status');
+        } finally {
+            setProcessingAction(false);
         }
     };
 
-    const handleResolveDispute = async (orderId, resolution) => {
+    const handleProcessRefund = async () => {
+        if (!refundReason) {
+            toast.error('Please provide a reason for refund');
+            return;
+        }
+
         try {
-            setOrders(orders.map(order =>
-                order.id === orderId
-                    ? {
-                        ...order,
-                        status: resolution === 'refund' ? 'cancelled' : 'completed',
-                        disputeStatus: 'resolved',
-                        paymentStatus: resolution === 'refund' ? 'refunded' : 'paid'
-                    }
-                    : order
-            ));
-            calculateStats(orders);
-            toast.success('Dispute resolved successfully');
-            setShowDisputeModal(false);
-            setSelectedOrder(null);
+            setProcessingAction(true);
+            const response = await axiosInstance.post(`/api/v1/orders/admin/${selectedOrder._id}/refund`, {
+                amount: refundAmount || selectedOrder.amount,
+                reason: refundReason,
+                method: 'original'
+            });
+
+            if (response.data?.success) {
+                toast.success('Refund processed successfully');
+                setShowRefundModal(false);
+                setRefundAmount('');
+                setRefundReason('');
+                fetchOrders();
+                setSelectedOrder(null);
+            }
         } catch (error) {
-            toast.error('Failed to resolve dispute');
+            toast.error(error.response?.data?.message || 'Failed to process refund');
+        } finally {
+            setProcessingAction(false);
         }
     };
 
-    const handleDeleteOrder = async (orderId) => {
+    const handleResolveDispute = async () => {
+        if (!disputeResolution) {
+            toast.error('Please select a resolution');
+            return;
+        }
+
         try {
-            setOrders(orders.filter(order => order.id !== orderId));
-            calculateStats(orders);
-            toast.success('Order deleted successfully');
-            setShowDeleteModal(false);
-            setSelectedOrder(null);
+            setProcessingAction(true);
+            const response = await axiosInstance.post(`/api/v1/orders/admin/${selectedOrder._id}/dispute/resolve`, {
+                resolution: disputeResolution,
+                message: disputeMessage,
+                refundAmount: disputeResolution === 'partial_refund' ? parseFloat(refundAmount) : undefined
+            });
+
+            if (response.data?.success) {
+                toast.success('Dispute resolved successfully');
+                setShowDisputeModal(false);
+                setDisputeResolution('');
+                setDisputeMessage('');
+                setRefundAmount('');
+                fetchOrders();
+                setSelectedOrder(null);
+            }
         } catch (error) {
-            toast.error('Failed to delete order');
+            toast.error(error.response?.data?.message || 'Failed to resolve dispute');
+        } finally {
+            setProcessingAction(false);
+        }
+    };
+
+    const handleFlagOrder = async () => {
+        if (!flagType || !flagReason) {
+            toast.error('Please select flag type and provide reason');
+            return;
+        }
+
+        try {
+            setProcessingAction(true);
+            const response = await axiosInstance.post(`/api/v1/orders/admin/${selectedOrder._id}/flag`, {
+                type: flagType,
+                reason: flagReason
+            });
+
+            if (response.data?.success) {
+                toast.success('Order flagged successfully');
+                setShowFlagModal(false);
+                setFlagType('');
+                setFlagReason('');
+                fetchOrders();
+                setSelectedOrder(null);
+            }
+        } catch (error) {
+            toast.error(error.response?.data?.message || 'Failed to flag order');
+        } finally {
+            setProcessingAction(false);
+        }
+    };
+
+    const handleAddNote = async () => {
+        if (!adminNote.trim()) {
+            toast.error('Please enter a note');
+            return;
+        }
+
+        try {
+            setProcessingAction(true);
+            const response = await axiosInstance.post(`/api/v1/orders/admin/${selectedOrder._id}/notes`, {
+                note: adminNote
+            });
+
+            if (response.data?.success) {
+                toast.success('Note added successfully');
+                setShowNoteModal(false);
+                setAdminNote('');
+                fetchOrders();
+            }
+        } catch (error) {
+            toast.error(error.response?.data?.message || 'Failed to add note');
+        } finally {
+            setProcessingAction(false);
+        }
+    };
+
+    const handleDeleteOrder = async () => {
+        try {
+            setProcessingAction(true);
+            const response = await axiosInstance.delete(`/api/v1/orders/admin/${selectedOrder._id}`);
+
+            if (response.data?.success) {
+                toast.success('Order deleted successfully');
+                setShowDeleteModal(false);
+                fetchOrders();
+                setSelectedOrder(null);
+            }
+        } catch (error) {
+            toast.error(error.response?.data?.message || 'Failed to delete order');
+        } finally {
+            setProcessingAction(false);
         }
     };
 
@@ -686,37 +568,21 @@ const Orders = () => {
         navigate(`/admin/users/${sellerId}`);
     };
 
-    const filteredOrders = orders.filter(order => {
-        if (searchTerm) {
-            const term = searchTerm.toLowerCase();
-            const matches =
-                order.id.toLowerCase().includes(term) ||
-                order.buyer.name.toLowerCase().includes(term) ||
-                order.seller.name.toLowerCase().includes(term) ||
-                order.service.title.toLowerCase().includes(term);
-            if (!matches) return false;
-        }
+    const handleRefresh = () => {
+        fetchOrders();
+        toast.success('Orders refreshed');
+    };
 
-        if (statusFilter !== 'all' && order.status !== statusFilter) return false;
-        if (typeFilter !== 'all' && order.orderType !== typeFilter) return false;
-        if (paymentFilter !== 'all' && order.paymentStatus !== paymentFilter) return false;
-
-        if (dateRange !== 'all') {
-            const days = parseInt(dateRange);
-            const orderDate = new Date(order.createdAt);
-            const cutoff = new Date();
-            cutoff.setDate(cutoff.getDate() - days);
-            if (orderDate < cutoff) return false;
-        }
-
-        return true;
-    });
+    const handlePageChange = (newPage) => {
+        setCurrentPage(newPage);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
 
     // Pagination
     const indexOfLastItem = currentPage * itemsPerPage;
     const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-    const currentOrders = filteredOrders.slice(indexOfFirstItem, indexOfLastItem);
-    const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
+    const currentOrders = orders.slice(indexOfFirstItem, indexOfLastItem);
+    const totalPages = Math.ceil(orders.length / itemsPerPage);
 
     if (loading) {
         return (
@@ -726,7 +592,7 @@ const Orders = () => {
                     <AdminHeader />
                     <AdminContainer>
                         <div className="flex justify-center items-center h-64">
-                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+                            <Loader className="w-12 h-12 animate-spin text-primary" />
                         </div>
                     </AdminContainer>
                 </div>
@@ -749,11 +615,11 @@ const Orders = () => {
                             </div>
                             <div className="flex items-center gap-2 mt-4 md:mt-0">
                                 <button
-                                    onClick={() => fetchOrders()}
+                                    onClick={handleRefresh}
                                     className="p-2 border border-gray-300 bg-white rounded-lg hover:bg-gray-50 transition-colors text-gray-600 flex items-center gap-1"
                                     title="Refresh"
                                 >
-                                    <RefreshCw size={18} className="" />
+                                    <RefreshCw size={18} />
                                     <span>Refresh</span>
                                 </button>
                             </div>
@@ -785,12 +651,23 @@ const Orders = () => {
                             </div>
                             <div className="bg-white p-4 rounded-xl border border-gray-200">
                                 <div className="flex items-center gap-3">
-                                    <div className="p-2 bg-yellow-100 rounded-lg">
-                                        <Clock size={20} className="text-yellow-600" />
+                                    <div className="p-2 bg-green-100 rounded-lg">
+                                        <RefreshCw size={20} className="text-green-600" />
                                     </div>
                                     <div>
                                         <p className="text-xs text-gray-600">Active</p>
                                         <p className="text-xl font-bold">{stats.active}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="bg-white p-4 rounded-xl border border-gray-200">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 bg-yellow-100 rounded-lg">
+                                        <Clock size={20} className="text-yellow-600" />
+                                    </div>
+                                    <div>
+                                        <p className="text-xs text-gray-600">Pending</p>
+                                        <p className="text-xl font-bold">{stats.pending}</p>
                                     </div>
                                 </div>
                             </div>
@@ -811,19 +688,8 @@ const Orders = () => {
                                         <DollarSign size={20} className="text-purple-600" />
                                     </div>
                                     <div>
-                                        <p className="text-xs text-gray-600">Revenue</p>
+                                        <p className="text-xs text-gray-600">Order Value</p>
                                         <p className="text-xl font-bold">{formatCurrency(stats.totalRevenue)}</p>
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="bg-white p-4 rounded-xl border border-gray-200">
-                                <div className="flex items-center gap-3">
-                                    <div className="p-2 bg-gray-100 rounded-lg">
-                                        <CreditCard size={20} className="text-gray-600" />
-                                    </div>
-                                    <div>
-                                        <p className="text-xs text-gray-600">Fees</p>
-                                        <p className="text-xl font-bold">{formatCurrency(stats.platformFees)}</p>
                                     </div>
                                 </div>
                             </div>
@@ -855,11 +721,13 @@ const Orders = () => {
                                         className="px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-white min-w-[130px]"
                                     >
                                         <option value="all">All Status</option>
-                                        <option value="active">Active</option>
-                                        <option value="completed">Completed</option>
                                         <option value="pending">Pending</option>
+                                        <option value="active">Active</option>
+                                        <option value="delivered">Delivered</option>
+                                        <option value="completed">Completed</option>
                                         <option value="cancelled">Cancelled</option>
                                         <option value="disputed">Disputed</option>
+                                        <option value="refunded">Refunded</option>
                                     </select>
                                     <select
                                         value={typeFilter}
@@ -883,24 +751,12 @@ const Orders = () => {
                                         className="px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-white min-w-[130px]"
                                     >
                                         <option value="all">All Payments</option>
+                                        <option value="pending">Pending</option>
+                                        <option value="processing">Processing</option>
                                         <option value="paid">Paid</option>
-                                        <option value="unpaid">Unpaid</option>
-                                        <option value="refunded">Refunded</option>
                                         <option value="held">Held</option>
-                                    </select>
-                                    <select
-                                        value={dateRange}
-                                        onChange={(e) => {
-                                            setDateRange(e.target.value);
-                                            setCurrentPage(1);
-                                        }}
-                                        className="px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-white min-w-[130px]"
-                                    >
-                                        <option value="7">Last 7 days</option>
-                                        <option value="30">Last 30 days</option>
-                                        <option value="90">Last 90 days</option>
-                                        <option value="365">Last year</option>
-                                        <option value="all">All time</option>
+                                        <option value="refunded">Refunded</option>
+                                        <option value="failed">Failed</option>
                                     </select>
                                 </div>
                             </div>
@@ -912,23 +768,23 @@ const Orders = () => {
                                 <table className="w-full">
                                     <thead className="bg-gray-50 border-b border-gray-200">
                                         <tr>
-                                            {/* <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase w-[150px]">Order ID</th> */}
-                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase w-[180px]">Buyer</th>
-                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase w-[180px]">Seller</th>
-                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase w-[250px]">Service</th>
-                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase w-[120px]">Amount</th>
-                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase w-[120px]">Status</th>
-                                            {/* <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase w-[100px]">Payment</th> */}
-                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase w-[100px]">Actions</th>
+                                            {/* <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Order ID</th> */}
+                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Buyer</th>
+                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Seller</th>
+                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Service</th>
+                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
+                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Payment</th>
+                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-200">
                                         {currentOrders.length > 0 ? (
                                             currentOrders.map((order) => (
-                                                <tr key={order.id} className="hover:bg-gray-50 transition-colors">
+                                                <tr key={order._id} className="hover:bg-gray-50 transition-colors">
                                                     {/* <td className="px-4 py-3">
                                                         <div>
-                                                            <div className="font-medium text-gray-900 text-xs">{order.id}</div>
+                                                            <div className="font-medium text-gray-900 text-xs">{order.orderId}</div>
                                                             <div className="text-xs text-gray-500 mt-0.5">
                                                                 {formatDate(order.createdAt)}
                                                             </div>
@@ -941,10 +797,14 @@ const Orders = () => {
                                                                 src={order.buyer.avatar}
                                                                 alt={order.buyer.name}
                                                                 className="w-8 h-8 rounded-full object-cover flex-shrink-0"
+                                                                onError={(e) => { e.target.src = 'https://via.placeholder.com/32'; }}
                                                             />
                                                             <div>
                                                                 <div className="font-medium text-gray-900 text-base flex items-center gap-1">
                                                                     <span className="truncate max-w-[100px]">{order.buyer.name}</span>
+                                                                    {order.buyer.verified && (
+                                                                        <CheckCircle size={12} className="text-blue-500" />
+                                                                    )}
                                                                 </div>
                                                                 <div className="text-xs text-gray-500 truncate max-w-[100px]">{order.buyer.location}</div>
                                                             </div>
@@ -956,10 +816,14 @@ const Orders = () => {
                                                                 src={order.seller.avatar}
                                                                 alt={order.seller.name}
                                                                 className="w-8 h-8 rounded-full object-cover flex-shrink-0"
+                                                                onError={(e) => { e.target.src = 'https://via.placeholder.com/32'; }}
                                                             />
                                                             <div>
                                                                 <div className="font-medium text-gray-900 text-base flex items-center gap-1">
-                                                                    <span className="truncate max-w-[100px]">{order.seller.name}</span>
+                                                                    <span className="truncate max-w-[100px]"><Link to={`/freelancer/${order?.seller?.id}`}>{order.seller.name}</Link></span>
+                                                                    {order.seller.verified && (
+                                                                        <CheckCircle size={12} className="text-blue-500" />
+                                                                    )}
                                                                 </div>
                                                                 <div className="text-xs text-gray-500 truncate max-w-[100px]">{order.seller.location}</div>
                                                             </div>
@@ -971,7 +835,7 @@ const Orders = () => {
                                                     </td>
                                                     <td className="px-4 py-3">
                                                         <div className="font-bold text-gray-900 text-sm">{formatCurrency(order.amount)}</div>
-                                                        <div className="text-xs text-gray-500">Fee: {formatCurrency(order.fee)}</div>
+                                                        {/* <div className="text-xs text-gray-500">Fee: {formatCurrency(order.fee)}</div> */}
                                                     </td>
                                                     <td className="px-4 py-3">
                                                         {getStatusBadge(order.status)}
@@ -982,9 +846,14 @@ const Orders = () => {
                                                             </div>
                                                         )}
                                                     </td>
-                                                    {/* <td className="px-4 py-3">
+                                                    <td className="px-4 py-3">
                                                         {getPaymentStatusBadge(order.paymentStatus)}
-                                                    </td> */}
+                                                        {order.refundStatus === 'completed' && (
+                                                            <div className="text-xs text-gray-500 mt-0.5">
+                                                                Refunded: {formatCurrency(order.refundAmount)}
+                                                            </div>
+                                                        )}
+                                                    </td>
                                                     <td className="px-4 py-3">
                                                         <div className="flex items-center gap-0.5">
                                                             <button
@@ -998,16 +867,27 @@ const Orders = () => {
                                                             {/* Three Dots Dropdown */}
                                                             <div className="relative" data-action-menu>
                                                                 <button
-                                                                    onClick={() => setOpenActionMenu(openActionMenu === order.id ? null : order.id)}
+                                                                    onClick={() => setOpenActionMenu(openActionMenu === order._id ? null : order._id)}
                                                                     className="p-1 text-gray-600 hover:text-primary hover:bg-gray-100 rounded"
                                                                     title="More Actions"
                                                                 >
                                                                     <MoreVertical size={18} />
                                                                 </button>
 
-                                                                {openActionMenu === order.id && (
-                                                                    <div className="absolute right-0 mt-1 w-40 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
+                                                                {openActionMenu === order._id && (
+                                                                    <div className="absolute right-0 mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
                                                                         <button
+                                                                            onClick={() => {
+                                                                                setSelectedOrder(order);
+                                                                                setShowPaymentStatusModal(true);
+                                                                                setOpenActionMenu(null);
+                                                                            }}
+                                                                            className="w-full px-2 py-1.5 text-left text-xs text-green-600 hover:bg-green-50 flex items-center gap-1"
+                                                                        >
+                                                                            <CreditCard size={12} />
+                                                                            Update Payment Status
+                                                                        </button>
+                                                                        {/* <button
                                                                             onClick={() => {
                                                                                 handleViewBuyer(order.buyer.id);
                                                                                 setOpenActionMenu(null);
@@ -1026,23 +906,34 @@ const Orders = () => {
                                                                         >
                                                                             <Briefcase size={12} />
                                                                             View Seller
+                                                                        </button> */}
+
+                                                                        <hr className="my-1 border-gray-200" />
+
+                                                                        <button
+                                                                            onClick={() => {
+                                                                                setSelectedOrder(order);
+                                                                                setShowStatusModal(true);
+                                                                                setOpenActionMenu(null);
+                                                                            }}
+                                                                            className="w-full px-2 py-1.5 text-left text-xs text-blue-600 hover:bg-blue-50 flex items-center gap-1"
+                                                                        >
+                                                                            <RefreshCw size={12} />
+                                                                            Update Status
                                                                         </button>
 
                                                                         {order.status === 'disputed' && (
-                                                                            <>
-                                                                                <hr className="my-1 border-gray-200" />
-                                                                                <button
-                                                                                    onClick={() => {
-                                                                                        setSelectedOrder(order);
-                                                                                        setShowDisputeModal(true);
-                                                                                        setOpenActionMenu(null);
-                                                                                    }}
-                                                                                    className="w-full px-2 py-1.5 text-left text-xs text-orange-600 hover:bg-orange-50 flex items-center gap-1"
-                                                                                >
-                                                                                    <Flag size={12} />
-                                                                                    Resolve
-                                                                                </button>
-                                                                            </>
+                                                                            <button
+                                                                                onClick={() => {
+                                                                                    setSelectedOrder(order);
+                                                                                    setShowDisputeModal(true);
+                                                                                    setOpenActionMenu(null);
+                                                                                }}
+                                                                                className="w-full px-2 py-1.5 text-left text-xs text-orange-600 hover:bg-orange-50 flex items-center gap-1"
+                                                                            >
+                                                                                <Flag size={12} />
+                                                                                Resolve Dispute
+                                                                            </button>
                                                                         )}
 
                                                                         {order.paymentStatus === 'paid' && order.status !== 'cancelled' && (
@@ -1055,9 +946,33 @@ const Orders = () => {
                                                                                 className="w-full px-2 py-1.5 text-left text-xs text-red-600 hover:bg-red-50 flex items-center gap-1"
                                                                             >
                                                                                 <RotateCcw size={12} />
-                                                                                Refund
+                                                                                Process Refund
                                                                             </button>
                                                                         )}
+
+                                                                        <button
+                                                                            onClick={() => {
+                                                                                setSelectedOrder(order);
+                                                                                setShowFlagModal(true);
+                                                                                setOpenActionMenu(null);
+                                                                            }}
+                                                                            className="w-full px-2 py-1.5 text-left text-xs text-orange-600 hover:bg-orange-50 flex items-center gap-1"
+                                                                        >
+                                                                            <Flag size={12} />
+                                                                            Flag Order
+                                                                        </button>
+
+                                                                        <button
+                                                                            onClick={() => {
+                                                                                setSelectedOrder(order);
+                                                                                setShowNoteModal(true);
+                                                                                setOpenActionMenu(null);
+                                                                            }}
+                                                                            className="w-full px-2 py-1.5 text-left text-xs text-green-600 hover:bg-green-50 flex items-center gap-1"
+                                                                        >
+                                                                            <FileText size={12} />
+                                                                            Add Note
+                                                                        </button>
 
                                                                         <hr className="my-1 border-gray-200" />
 
@@ -1070,7 +985,7 @@ const Orders = () => {
                                                                             className="w-full px-2 py-1.5 text-left text-xs text-red-600 hover:bg-red-50 flex items-center gap-1"
                                                                         >
                                                                             <Trash2 size={12} />
-                                                                            Delete
+                                                                            Delete Order
                                                                         </button>
                                                                     </div>
                                                                 )}
@@ -1101,10 +1016,10 @@ const Orders = () => {
                         <div className="md:hidden space-y-4 mb-6">
                             {currentOrders.length > 0 ? (
                                 currentOrders.map((order) => (
-                                    <div key={order.id} className="bg-white rounded-xl border border-gray-200 p-4">
+                                    <div key={order._id} className="bg-white rounded-xl border border-gray-200 p-4">
                                         <div className="flex justify-between items-start mb-2">
                                             <div>
-                                                <span className="text-xs font-medium text-gray-500">{order.id}</span>
+                                                <span className="text-xs font-medium text-gray-500">{order.orderId}</span>
                                                 <h3 className="font-medium text-gray-900 text-sm mt-1">{order.service.title}</h3>
                                             </div>
                                             {getStatusBadge(order.status)}
@@ -1141,13 +1056,13 @@ const Orders = () => {
                                                 {/* Three Dots Dropdown - Mobile */}
                                                 <div className="relative" data-action-menu>
                                                     <button
-                                                        onClick={() => setOpenActionMenu(openActionMenu === order.id ? null : order.id)}
+                                                        onClick={() => setOpenActionMenu(openActionMenu === order._id ? null : order._id)}
                                                         className="p-2 text-gray-600 hover:text-primary hover:bg-gray-100 rounded-lg"
                                                     >
                                                         <MoreVertical size={18} />
                                                     </button>
 
-                                                    {openActionMenu === order.id && (
+                                                    {openActionMenu === order._id && (
                                                         <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
                                                             <button
                                                                 onClick={() => handleViewBuyer(order.buyer.id)}
@@ -1162,6 +1077,20 @@ const Orders = () => {
                                                             >
                                                                 <Briefcase size={14} />
                                                                 View Seller
+                                                            </button>
+
+                                                            <hr className="my-1 border-gray-200" />
+
+                                                            <button
+                                                                onClick={() => {
+                                                                    setSelectedOrder(order);
+                                                                    setShowStatusModal(true);
+                                                                    setOpenActionMenu(null);
+                                                                }}
+                                                                className="w-full px-4 py-2 text-left text-xs text-blue-600 hover:bg-blue-50 flex items-center gap-2"
+                                                            >
+                                                                <RefreshCw size={14} />
+                                                                Update Status
                                                             </button>
 
                                                             {order.status === 'disputed' && (
@@ -1191,6 +1120,30 @@ const Orders = () => {
                                                                     Process Refund
                                                                 </button>
                                                             )}
+
+                                                            <button
+                                                                onClick={() => {
+                                                                    setSelectedOrder(order);
+                                                                    setShowFlagModal(true);
+                                                                    setOpenActionMenu(null);
+                                                                }}
+                                                                className="w-full px-4 py-2 text-left text-xs text-orange-600 hover:bg-orange-50 flex items-center gap-2"
+                                                            >
+                                                                <Flag size={14} />
+                                                                Flag Order
+                                                            </button>
+
+                                                            <button
+                                                                onClick={() => {
+                                                                    setSelectedOrder(order);
+                                                                    setShowNoteModal(true);
+                                                                    setOpenActionMenu(null);
+                                                                }}
+                                                                className="w-full px-4 py-2 text-left text-xs text-green-600 hover:bg-green-50 flex items-center gap-2"
+                                                            >
+                                                                <FileText size={14} />
+                                                                Add Note
+                                                            </button>
 
                                                             <hr className="my-1 border-gray-200" />
 
@@ -1226,10 +1179,10 @@ const Orders = () => {
                             )}
 
                             {/* Mobile Pagination */}
-                            {filteredOrders.length > 0 && (
+                            {orders.length > 0 && (
                                 <div className="flex items-center justify-between mt-4">
                                     <button
-                                        onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                                        onClick={() => handlePageChange(currentPage - 1)}
                                         disabled={currentPage === 1}
                                         className="px-3 py-1 border border-gray-300 rounded-lg disabled:opacity-50"
                                     >
@@ -1239,7 +1192,7 @@ const Orders = () => {
                                         Page {currentPage} of {totalPages}
                                     </span>
                                     <button
-                                        onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                                        onClick={() => handlePageChange(currentPage + 1)}
                                         disabled={currentPage === totalPages}
                                         className="px-3 py-1 border border-gray-300 rounded-lg disabled:opacity-50"
                                     >
@@ -1249,8 +1202,69 @@ const Orders = () => {
                             )}
                         </div>
 
+                        {/* Desktop Pagination */}
+                        {orders.length > 0 && (
+                            <div className="hidden md:flex px-6 py-4 border-t border-gray-200 items-center justify-between">
+                                <div className="text-sm text-gray-500">
+                                    Showing {indexOfFirstItem + 1} to {Math.min(indexOfLastItem, orders.length)} of {orders.length} entries
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        onClick={() => handlePageChange(currentPage - 1)}
+                                        disabled={currentPage === 1}
+                                        className="px-3 py-1 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                                    >
+                                        <ChevronLeft size={16} />
+                                    </button>
+                                    {[...Array(Math.min(5, totalPages))].map((_, i) => {
+                                        let pageNum;
+                                        if (totalPages <= 5) {
+                                            pageNum = i + 1;
+                                        } else if (currentPage <= 3) {
+                                            pageNum = i + 1;
+                                        } else if (currentPage >= totalPages - 2) {
+                                            pageNum = totalPages - 4 + i;
+                                        } else {
+                                            pageNum = currentPage - 2 + i;
+                                        }
+
+                                        return (
+                                            <button
+                                                key={i}
+                                                onClick={() => handlePageChange(pageNum)}
+                                                className={`w-8 h-8 rounded-lg ${currentPage === pageNum
+                                                    ? 'bg-primary text-white'
+                                                    : 'hover:bg-gray-100'
+                                                    }`}
+                                            >
+                                                {pageNum}
+                                            </button>
+                                        );
+                                    })}
+                                    {totalPages > 5 && currentPage < totalPages - 2 && (
+                                        <>
+                                            <span>...</span>
+                                            <button
+                                                onClick={() => handlePageChange(totalPages)}
+                                                className="w-8 h-8 rounded-lg hover:bg-gray-100"
+                                            >
+                                                {totalPages}
+                                            </button>
+                                        </>
+                                    )}
+                                    <button
+                                        onClick={() => handlePageChange(currentPage + 1)}
+                                        disabled={currentPage === totalPages}
+                                        className="px-3 py-1 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                                    >
+                                        <ChevronRight size={16} />
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
                         {/* Order Statistics Summary */}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        {/* <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
                             <div className="bg-white p-4 rounded-xl border border-gray-200">
                                 <h4 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
                                     <TrendingUp size={16} className="text-blue-600" />
@@ -1267,12 +1281,12 @@ const Orders = () => {
                                         <span className="text-sm text-gray-600">Avg. Order Value</span>
                                         <span className="font-medium text-gray-900">{formatCurrency(stats.avgOrderValue)}</span>
                                     </div>
-                                    {/* <div className="flex justify-between">
+                                    <div className="flex justify-between">
                                         <span className="text-sm text-gray-600">Dispute Rate</span>
                                         <span className="font-medium text-orange-600">
                                             {stats.total > 0 ? ((stats.disputed / stats.total) * 100).toFixed(1) : 0}%
                                         </span>
-                                    </div> */}
+                                    </div>
                                 </div>
                             </div>
 
@@ -1282,10 +1296,10 @@ const Orders = () => {
                                     Financial Summary
                                 </h4>
                                 <div className="space-y-2">
-                                    {/* <div className="flex justify-between">
+                                    <div className="flex justify-between">
                                         <span className="text-sm text-gray-600">Platform Fees</span>
                                         <span className="font-medium text-green-600">{formatCurrency(stats.platformFees)}</span>
-                                    </div> */}
+                                    </div>
                                     <div className="flex justify-between">
                                         <span className="text-sm text-gray-600">Refunded Amount</span>
                                         <span className="font-medium text-red-600">
@@ -1301,7 +1315,7 @@ const Orders = () => {
                                 </div>
                             </div>
 
-                            {/* <div className="bg-white p-4 rounded-xl border border-gray-200">
+                            <div className="bg-white p-4 rounded-xl border border-gray-200">
                                 <h4 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
                                     <Flag size={16} className="text-orange-600" />
                                     Disputes & Issues
@@ -1312,45 +1326,20 @@ const Orders = () => {
                                         <span className="font-medium text-orange-600">{stats.disputed}</span>
                                     </div>
                                     <div className="flex justify-between">
-                                        <span className="text-sm text-gray-600">Pending Refunds</span>
-                                        <span className="font-medium text-yellow-600">
-                                            {orders.filter(o => o.refundStatus === 'pending').length}
+                                        <span className="text-sm text-gray-600">Flagged Orders</span>
+                                        <span className="font-medium text-orange-600">
+                                            {orders.filter(o => o.flags?.length > 0).length}
                                         </span>
                                     </div>
                                     <div className="flex justify-between">
-                                        <span className="text-sm text-gray-600">Resolution Rate</span>
+                                        <span className="text-sm text-gray-600">Admin Notes</span>
                                         <span className="font-medium text-gray-900">
-                                            {stats.disputed > 0 ? '78%' : '100%'}
+                                            {orders.filter(o => o.adminNotes?.length > 0).length}
                                         </span>
                                     </div>
-                                </div>
-                            </div> */}
-
-                            <div className="bg-white p-4 rounded-xl border border-gray-200">
-                                <h4 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
-                                    <Users size={16} className="text-purple-600" />
-                                    User Impact
-                                </h4>
-                                <div className="space-y-2">
-                                    <div className="flex justify-between">
-                                        <span className="text-sm text-gray-600">Unique Buyers</span>
-                                        <span className="font-medium text-gray-900">
-                                            {[...new Set(orders.map(o => o.buyer.id))].length}
-                                        </span>
-                                    </div>
-                                    <div className="flex justify-between">
-                                        <span className="text-sm text-gray-600">Unique Sellers</span>
-                                        <span className="font-medium text-gray-900">
-                                            {[...new Set(orders.map(o => o.seller.id))].length}
-                                        </span>
-                                    </div>
-                                    {/* <div className="flex justify-between">
-                                        <span className="text-sm text-gray-600">Repeat Buyers</span>
-                                        <span className="font-medium text-gray-900">34</span>
-                                    </div> */}
                                 </div>
                             </div>
-                        </div>
+                        </div> */}
                     </div>
                 </AdminContainer>
             </div>
@@ -1362,7 +1351,7 @@ const Orders = () => {
                         <div className="p-6 border-b border-gray-200 flex justify-between items-center sticky top-0 bg-white">
                             <div>
                                 <h3 className="text-xl font-bold text-gray-900">Order Details</h3>
-                                <p className="text-sm text-gray-500 mt-1">Order ID: {selectedOrder.id}</p>
+                                <p className="text-sm text-gray-500 mt-1">Order ID: {selectedOrder.orderId}</p>
                             </div>
                             <button
                                 onClick={() => setShowOrderModal(false)}
@@ -1375,9 +1364,15 @@ const Orders = () => {
                         <div className="p-6 space-y-6">
                             {/* Order Status */}
                             <div className="flex flex-wrap items-center justify-between gap-4">
-                                <div className="flex items-center gap-2">
-                                    {getStatusBadge(selectedOrder.status)}
-                                    {getPaymentStatusBadge(selectedOrder.paymentStatus)}
+                                <div className="flex flex-col items-start gap-2">
+                                    <div className='flex items-center justify-center gap-2 text-sm text-gray-600'>
+                                        Order Status:
+                                        <span>{getStatusBadge(selectedOrder.status)}</span>
+                                    </div>
+                                    <div className='flex items-center justify-center gap-2 text-sm text-gray-600'>
+                                        Payment Status:
+                                        <span>{getPaymentStatusBadge(selectedOrder.paymentStatus)}</span>
+                                    </div>
                                 </div>
                                 <div className="text-sm text-gray-500">
                                     Created: {formatDate(selectedOrder.createdAt)}
@@ -1396,12 +1391,13 @@ const Orders = () => {
                                             src={selectedOrder.buyer.avatar}
                                             alt={selectedOrder.buyer.name}
                                             className="w-12 h-12 rounded-full object-cover"
+                                            onError={(e) => { e.target.src = 'https://via.placeholder.com/48'; }}
                                         />
                                         <div>
                                             <div className="flex items-center gap-1">
                                                 <p className="font-medium text-gray-900">{selectedOrder.buyer.name}</p>
                                                 {selectedOrder.buyer.verified && (
-                                                    <span className="text-blue-500 text-xs">✓</span>
+                                                    <CheckCircle size={14} className="text-blue-500" />
                                                 )}
                                             </div>
                                             <p className="text-sm text-gray-600">{selectedOrder.buyer.email}</p>
@@ -1409,12 +1405,12 @@ const Orders = () => {
                                                 <MapPin size={10} />
                                                 {selectedOrder.buyer.location}
                                             </p>
-                                            <button
+                                            {/* <button
                                                 onClick={() => handleViewBuyer(selectedOrder.buyer.id)}
                                                 className="mt-2 text-xs text-primary hover:text-primary-dark"
                                             >
                                                 View Profile →
-                                            </button>
+                                            </button> */}
                                         </div>
                                     </div>
                                 </div>
@@ -1429,12 +1425,13 @@ const Orders = () => {
                                             src={selectedOrder.seller.avatar}
                                             alt={selectedOrder.seller.name}
                                             className="w-12 h-12 rounded-full object-cover"
+                                            onError={(e) => { e.target.src = 'https://via.placeholder.com/48'; }}
                                         />
                                         <div>
                                             <div className="flex items-center gap-1">
                                                 <p className="font-medium text-gray-900">{selectedOrder.seller.name}</p>
                                                 {selectedOrder.seller.verified && (
-                                                    <span className="text-blue-500 text-xs">✓</span>
+                                                    <CheckCircle size={14} className="text-blue-500" />
                                                 )}
                                             </div>
                                             <p className="text-sm text-gray-600">{selectedOrder.seller.email}</p>
@@ -1442,12 +1439,12 @@ const Orders = () => {
                                                 <MapPin size={10} />
                                                 {selectedOrder.seller.location}
                                             </p>
-                                            <button
+                                            {/* <button
                                                 onClick={() => handleViewSeller(selectedOrder.seller.id)}
                                                 className="mt-2 text-xs text-primary hover:text-primary-dark"
                                             >
                                                 View Profile →
-                                            </button>
+                                            </button> */}
                                         </div>
                                     </div>
                                 </div>
@@ -1488,14 +1485,14 @@ const Orders = () => {
                                         <span className="text-sm text-gray-600">Order Amount</span>
                                         <span className="font-medium text-gray-900">{formatCurrency(selectedOrder.amount)}</span>
                                     </div>
-                                    <div className="flex justify-between">
+                                    {/* <div className="flex justify-between">
                                         <span className="text-sm text-gray-600">Platform Fee</span>
                                         <span className="font-medium text-red-600">-{formatCurrency(selectedOrder.fee)}</span>
                                     </div>
                                     <div className="flex justify-between pt-2 border-t">
                                         <span className="text-sm font-medium text-gray-700">Net Amount</span>
                                         <span className="font-bold text-green-600">{formatCurrency(selectedOrder.netAmount)}</span>
-                                    </div>
+                                    </div> */}
                                 </div>
                             </div>
 
@@ -1538,7 +1535,7 @@ const Orders = () => {
                             </div>
 
                             {/* Dispute Info */}
-                            {selectedOrder.status === 'disputed' && (
+                            {selectedOrder.status === 'disputed' && selectedOrder.disputeReason && (
                                 <div className="bg-orange-50 p-4 rounded-lg">
                                     <div className="flex items-start gap-2">
                                         <Flag size={16} className="text-orange-600 mt-0.5" />
@@ -1569,6 +1566,47 @@ const Orders = () => {
                                 </div>
                             )}
 
+                            {/* Admin Notes */}
+                            {selectedOrder.adminNotes?.length > 0 && (
+                                <div className="bg-gray-50 p-4 rounded-lg">
+                                    <h4 className="font-medium mb-3 flex items-center gap-2">
+                                        <FileText size={16} />
+                                        Admin Notes
+                                    </h4>
+                                    <div className="space-y-2">
+                                        {selectedOrder.adminNotes.map((note, idx) => (
+                                            <div key={idx} className="p-2 bg-white rounded border">
+                                                <p className="text-sm text-gray-700">{note.note}</p>
+                                                <p className="text-xs text-gray-500 mt-1">
+                                                    Added on {formatDate(note.addedAt)}
+                                                </p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Flags */}
+                            {selectedOrder.flags?.length > 0 && (
+                                <div className="bg-orange-50 p-4 rounded-lg">
+                                    <h4 className="font-medium mb-3 flex items-center gap-2">
+                                        <Flag size={16} className="text-orange-600" />
+                                        Flags
+                                    </h4>
+                                    <div className="space-y-2">
+                                        {selectedOrder.flags.map((flag, idx) => (
+                                            <div key={idx} className="p-2 bg-white rounded border border-orange-200">
+                                                <p className="text-sm font-medium text-orange-800">{flag.type}</p>
+                                                <p className="text-sm text-gray-700">{flag.reason}</p>
+                                                <p className="text-xs text-gray-500 mt-1">
+                                                    Flagged on {formatDate(flag.flaggedAt)}
+                                                </p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
                             {/* Review */}
                             {selectedOrder.rating && (
                                 <div className="bg-gray-50 p-4 rounded-lg">
@@ -1594,6 +1632,16 @@ const Orders = () => {
 
                             {/* Actions */}
                             <div className="flex flex-wrap gap-3 pt-4">
+                                <button
+                                    onClick={() => {
+                                        setShowOrderModal(false);
+                                        setShowStatusModal(true);
+                                    }}
+                                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center justify-center gap-2"
+                                >
+                                    <RefreshCw size={18} />
+                                    Update Status
+                                </button>
                                 {selectedOrder.status === 'disputed' && (
                                     <button
                                         onClick={() => {
@@ -1618,13 +1666,15 @@ const Orders = () => {
                                         Process Refund
                                     </button>
                                 )}
-                                <button className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 flex items-center justify-center gap-2">
-                                    <MessageSquare size={18} />
-                                    Message Buyer
-                                </button>
-                                <button className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 flex items-center justify-center gap-2">
-                                    <MessageSquare size={18} />
-                                    Message Seller
+                                <button
+                                    onClick={() => {
+                                        setShowOrderModal(false);
+                                        setShowNoteModal(true);
+                                    }}
+                                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 flex items-center justify-center gap-2"
+                                >
+                                    <FileText size={18} />
+                                    Add Note
                                 </button>
                             </div>
                         </div>
@@ -1632,111 +1682,92 @@ const Orders = () => {
                 </div>
             )}
 
-            {/* Refund Modal */}
-            {showRefundModal && selectedOrder && (
+            {/* Payment Status Modal */}
+            {showPaymentStatusModal && selectedOrder && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
                     <div className="bg-white rounded-xl max-w-md w-full p-6">
-                        <h3 className="text-xl font-bold text-gray-900 mb-2">Process Refund</h3>
-                        <p className="text-gray-600 mb-4">
-                            Are you sure you want to process a refund for order "{selectedOrder.id}"?
-                        </p>
-                        <div className="bg-gray-50 p-3 rounded-lg mb-4">
-                            <div className="flex justify-between mb-2">
-                                <span className="text-sm text-gray-600">Order Amount:</span>
-                                <span className="font-medium">{formatCurrency(selectedOrder.amount)}</span>
-                            </div>
-                            <div className="flex justify-between">
-                                <span className="text-sm text-gray-600">Refund Amount:</span>
-                                <span className="font-bold text-red-600">{formatCurrency(selectedOrder.amount)}</span>
-                            </div>
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-xl font-bold text-gray-900">Update Payment Status</h3>
+                            <button
+                                onClick={() => {
+                                    setShowPaymentStatusModal(false);
+                                    setNewPaymentStatus('');
+                                    setTransactionId('');
+                                    setPaymentStatusReason('');
+                                    setSelectedOrder(null);
+                                }}
+                                className="text-gray-400 hover:text-gray-600"
+                            >
+                                <X size={20} />
+                            </button>
                         </div>
+
+                        <p className="text-gray-600 mb-4">
+                            Order ID: {selectedOrder.orderId}<br />
+                            Current Status: <span className="font-medium">{selectedOrder.paymentStatus}</span>
+                        </p>
+
                         <div className="mb-4">
                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Reason for refund
+                                New Payment Status *
                             </label>
-                            <textarea
-                                id="refundReason"
-                                rows={3}
+                            <select
+                                value={newPaymentStatus}
+                                onChange={(e) => setNewPaymentStatus(e.target.value)}
                                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-                                placeholder="Enter reason for refund..."
+                            >
+                                <option value="">Select status</option>
+                                <option value="pending">Pending</option>
+                                <option value="processing">Processing</option>
+                                <option value="paid">Paid</option>
+                                <option value="held">Held</option>
+                                <option value="refunded">Refunded</option>
+                                <option value="failed">Failed</option>
+                            </select>
+                        </div>
+
+                        <div className="mb-4">
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Transaction ID (Optional)
+                            </label>
+                            <input
+                                type="text"
+                                value={transactionId}
+                                onChange={(e) => setTransactionId(e.target.value)}
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                                placeholder="e.g., PAY-1234567890"
                             />
                         </div>
-                        <div className="flex gap-3">
-                            <button
-                                onClick={() => {
-                                    setShowRefundModal(false);
-                                    setSelectedOrder(null);
-                                }}
-                                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                onClick={() => handleRefundOrder(selectedOrder.id)}
-                                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
-                            >
-                                Process Refund
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
 
-            {/* Dispute Resolution Modal */}
-            {showDisputeModal && selectedOrder && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-xl max-w-md w-full p-6">
-                        <h3 className="text-xl font-bold text-gray-900 mb-2">Resolve Dispute</h3>
-                        <p className="text-gray-600 mb-4">
-                            Order ID: {selectedOrder.id}
-                        </p>
-                        <div className="bg-orange-50 p-3 rounded-lg mb-4">
-                            <p className="text-sm text-orange-700">
-                                <span className="font-medium">Dispute Reason:</span> {selectedOrder.disputeReason}
+                        <div className="mb-4">
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Reason (Optional)
+                            </label>
+                            <textarea
+                                value={paymentStatusReason}
+                                onChange={(e) => setPaymentStatusReason(e.target.value)}
+                                rows={2}
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                                placeholder="Reason for status change..."
+                            />
+                        </div>
+
+                        <div className="bg-yellow-50 p-3 rounded-lg mb-4">
+                            <p className="text-xs text-yellow-700 flex items-start gap-2">
+                                <AlertCircle size={14} className="flex-shrink-0 mt-0.5" />
+                                <span>
+                                    Changing payment status will affect order processing and notifications to both buyer and seller.
+                                </span>
                             </p>
                         </div>
-                        <div className="space-y-3 mb-4">
-                            <label className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
-                                <input
-                                    type="radio"
-                                    name="resolution"
-                                    value="refund"
-                                    className="w-4 h-4 text-primary"
-                                />
-                                <div>
-                                    <span className="font-medium text-gray-900">Full Refund to Buyer</span>
-                                    <p className="text-xs text-gray-500">Release payment back to buyer</p>
-                                </div>
-                            </label>
-                            <label className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
-                                <input
-                                    type="radio"
-                                    name="resolution"
-                                    value="release"
-                                    className="w-4 h-4 text-primary"
-                                />
-                                <div>
-                                    <span className="font-medium text-gray-900">Release to Seller</span>
-                                    <p className="text-xs text-gray-500">Release payment to seller</p>
-                                </div>
-                            </label>
-                            <label className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
-                                <input
-                                    type="radio"
-                                    name="resolution"
-                                    value="partial"
-                                    className="w-4 h-4 text-primary"
-                                />
-                                <div>
-                                    <span className="font-medium text-gray-900">Partial Refund</span>
-                                    <p className="text-xs text-gray-500">Split payment between both parties</p>
-                                </div>
-                            </label>
-                        </div>
+
                         <div className="flex gap-3">
                             <button
                                 onClick={() => {
-                                    setShowDisputeModal(false);
+                                    setShowPaymentStatusModal(false);
+                                    setNewPaymentStatus('');
+                                    setTransactionId('');
+                                    setPaymentStatusReason('');
                                     setSelectedOrder(null);
                                 }}
                                 className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
@@ -1744,52 +1775,524 @@ const Orders = () => {
                                 Cancel
                             </button>
                             <button
-                                onClick={() => {
-                                    const selectedResolution = document.querySelector('input[name="resolution"]:checked')?.value;
-                                    if (!selectedResolution) {
-                                        toast.error('Please select a resolution');
-                                        return;
-                                    }
-                                    handleResolveDispute(selectedOrder.id, selectedResolution);
-                                }}
-                                className="flex-1 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark"
+                                onClick={handleUpdatePaymentStatus}
+                                disabled={!newPaymentStatus || processingAction}
+                                className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
                             >
-                                Resolve Dispute
+                                {processingAction ? 'Updating...' : 'Update Status'}
                             </button>
                         </div>
                     </div>
                 </div>
             )}
 
-            {/* Delete Confirmation Modal */}
-            {showDeleteModal && selectedOrder && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-xl max-w-md w-full p-6">
-                        <h3 className="text-xl font-bold text-gray-900 mb-2">Delete Order</h3>
-                        <p className="text-gray-600 mb-6">
-                            Are you sure you want to delete order "{selectedOrder.id}"? This action cannot be undone.
-                        </p>
-                        <div className="flex gap-3">
-                            <button
-                                onClick={() => {
-                                    setShowDeleteModal(false);
-                                    setSelectedOrder(null);
-                                }}
-                                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                onClick={() => handleDeleteOrder(selectedOrder.id)}
-                                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
-                            >
-                                Delete
-                            </button>
+            {/* Status Update Modal */}
+            {
+                showStatusModal && selectedOrder && (
+                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                        <div className="bg-white rounded-xl max-w-md w-full p-6">
+                            <div className="flex justify-between items-center mb-4">
+                                <h3 className="text-xl font-bold text-gray-900">Update Order Status</h3>
+                                <button
+                                    onClick={() => {
+                                        setShowStatusModal(false);
+                                        setNewStatus('');
+                                        setStatusReason('');
+                                        setSelectedOrder(null);
+                                    }}
+                                    className="text-gray-400 hover:text-gray-600"
+                                >
+                                    <X size={20} />
+                                </button>
+                            </div>
+
+                            <div className="mb-4">
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    New Status *
+                                </label>
+                                <select
+                                    value={newStatus}
+                                    onChange={(e) => setNewStatus(e.target.value)}
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                                >
+                                    <option value="">Select status</option>
+                                    <option value="pending">Pending</option>
+                                    <option value="active">Active</option>
+                                    <option value="delivered">Delivered</option>
+                                    <option value="completed">Completed</option>
+                                    <option value="cancelled">Cancelled</option>
+                                    <option value="disputed">Disputed</option>
+                                    <option value="refunded">Refunded</option>
+                                    <option value="suspended">Suspended</option>
+                                </select>
+                            </div>
+
+                            <div className="mb-4">
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Reason (Optional)
+                                </label>
+                                <textarea
+                                    value={statusReason}
+                                    onChange={(e) => setStatusReason(e.target.value)}
+                                    rows={3}
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                                    placeholder="Provide reason for status change..."
+                                />
+                            </div>
+
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={() => {
+                                        setShowStatusModal(false);
+                                        setNewStatus('');
+                                        setStatusReason('');
+                                        setSelectedOrder(null);
+                                    }}
+                                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={handleUpdateStatus}
+                                    disabled={!newStatus || processingAction}
+                                    className="flex-1 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark disabled:opacity-50"
+                                >
+                                    {processingAction ? 'Updating...' : 'Update Status'}
+                                </button>
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
-        </section>
+                )
+            }
+
+            {/* Refund Modal */}
+            {
+                showRefundModal && selectedOrder && (
+                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                        <div className="bg-white rounded-xl max-w-md w-full p-6">
+                            <div className="flex justify-between items-center mb-4">
+                                <h3 className="text-xl font-bold text-gray-900">Process Refund</h3>
+                                <button
+                                    onClick={() => {
+                                        setShowRefundModal(false);
+                                        setRefundAmount('');
+                                        setRefundReason('');
+                                        setSelectedOrder(null);
+                                    }}
+                                    className="text-gray-400 hover:text-gray-600"
+                                >
+                                    <X size={20} />
+                                </button>
+                            </div>
+
+                            <p className="text-gray-600 mb-4">
+                                Process a refund for order "{selectedOrder.orderId}"
+                            </p>
+
+                            <div className="bg-gray-50 p-3 rounded-lg mb-4">
+                                <div className="flex justify-between mb-2">
+                                    <span className="text-sm text-gray-600">Order Amount:</span>
+                                    <span className="font-medium">{formatCurrency(selectedOrder.amount)}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span className="text-sm text-gray-600">Platform Fee:</span>
+                                    <span className="font-medium">{formatCurrency(selectedOrder.fee)}</span>
+                                </div>
+                            </div>
+
+                            <div className="mb-4">
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Refund Amount (Optional)
+                                </label>
+                                <div className="relative">
+                                    <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">$</span>
+                                    <input
+                                        type="number"
+                                        value={refundAmount}
+                                        onChange={(e) => setRefundAmount(e.target.value)}
+                                        placeholder={`Full amount: ${selectedOrder.amount}`}
+                                        min="0"
+                                        max={selectedOrder.amount}
+                                        step="0.01"
+                                        className="w-full pl-8 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                                    />
+                                </div>
+                                <p className="text-xs text-gray-500 mt-1">Leave empty for full refund</p>
+                            </div>
+
+                            <div className="mb-4">
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Reason for refund *
+                                </label>
+                                <textarea
+                                    value={refundReason}
+                                    onChange={(e) => setRefundReason(e.target.value)}
+                                    rows={3}
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                                    placeholder="Enter reason for refund..."
+                                />
+                            </div>
+
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={() => {
+                                        setShowRefundModal(false);
+                                        setRefundAmount('');
+                                        setRefundReason('');
+                                        setSelectedOrder(null);
+                                    }}
+                                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={handleProcessRefund}
+                                    disabled={!refundReason || processingAction}
+                                    className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
+                                >
+                                    {processingAction ? 'Processing...' : 'Process Refund'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )
+            }
+
+            {/* Dispute Resolution Modal */}
+            {
+                showDisputeModal && selectedOrder && (
+                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                        <div className="bg-white rounded-xl max-w-md w-full p-6">
+                            <div className="flex justify-between items-center mb-4">
+                                <h3 className="text-xl font-bold text-gray-900">Resolve Dispute</h3>
+                                <button
+                                    onClick={() => {
+                                        setShowDisputeModal(false);
+                                        setDisputeResolution('');
+                                        setDisputeMessage('');
+                                        setRefundAmount('');
+                                        setSelectedOrder(null);
+                                    }}
+                                    className="text-gray-400 hover:text-gray-600"
+                                >
+                                    <X size={20} />
+                                </button>
+                            </div>
+
+                            <p className="text-gray-600 mb-4">
+                                Order ID: {selectedOrder.orderId}
+                            </p>
+
+                            <div className="bg-orange-50 p-3 rounded-lg mb-4">
+                                <p className="text-sm text-orange-700">
+                                    <span className="font-medium">Dispute Reason:</span> {selectedOrder.disputeReason}
+                                </p>
+                            </div>
+
+                            <div className="space-y-3 mb-4">
+                                <label className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
+                                    <input
+                                        type="radio"
+                                        name="resolution"
+                                        value="refund_buyer"
+                                        onChange={(e) => setDisputeResolution(e.target.value)}
+                                        className="w-4 h-4 text-primary"
+                                    />
+                                    <div>
+                                        <span className="font-medium text-gray-900">Full Refund to Buyer</span>
+                                        <p className="text-xs text-gray-500">Release payment back to buyer</p>
+                                    </div>
+                                </label>
+                                <label className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
+                                    <input
+                                        type="radio"
+                                        name="resolution"
+                                        value="release_seller"
+                                        onChange={(e) => setDisputeResolution(e.target.value)}
+                                        className="w-4 h-4 text-primary"
+                                    />
+                                    <div>
+                                        <span className="font-medium text-gray-900">Release to Seller</span>
+                                        <p className="text-xs text-gray-500">Release payment to seller</p>
+                                    </div>
+                                </label>
+                                <label className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
+                                    <input
+                                        type="radio"
+                                        name="resolution"
+                                        value="partial_refund"
+                                        onChange={(e) => setDisputeResolution(e.target.value)}
+                                        className="w-4 h-4 text-primary"
+                                    />
+                                    <div>
+                                        <span className="font-medium text-gray-900">Partial Refund</span>
+                                        <p className="text-xs text-gray-500">Split payment between both parties</p>
+                                    </div>
+                                </label>
+                            </div>
+
+                            {disputeResolution === 'partial_refund' && (
+                                <div className="mb-4">
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        Refund Amount *
+                                    </label>
+                                    <div className="relative">
+                                        <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">$</span>
+                                        <input
+                                            type="number"
+                                            value={refundAmount}
+                                            onChange={(e) => setRefundAmount(e.target.value)}
+                                            placeholder="Enter amount"
+                                            min="0"
+                                            max={selectedOrder.amount}
+                                            step="0.01"
+                                            className="w-full pl-8 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                                        />
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="mb-4">
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Resolution Message
+                                </label>
+                                <textarea
+                                    value={disputeMessage}
+                                    onChange={(e) => setDisputeMessage(e.target.value)}
+                                    rows={3}
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                                    placeholder="Add a message about the resolution..."
+                                />
+                            </div>
+
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={() => {
+                                        setShowDisputeModal(false);
+                                        setDisputeResolution('');
+                                        setDisputeMessage('');
+                                        setRefundAmount('');
+                                        setSelectedOrder(null);
+                                    }}
+                                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={handleResolveDispute}
+                                    disabled={!disputeResolution || processingAction || (disputeResolution === 'partial_refund' && !refundAmount)}
+                                    className="flex-1 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark disabled:opacity-50"
+                                >
+                                    {processingAction ? 'Resolving...' : 'Resolve Dispute'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )
+            }
+
+            {/* Flag Order Modal */}
+            {
+                showFlagModal && selectedOrder && (
+                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                        <div className="bg-white rounded-xl max-w-md w-full p-6">
+                            <div className="flex justify-between items-center mb-4">
+                                <h3 className="text-xl font-bold text-gray-900">Flag Order</h3>
+                                <button
+                                    onClick={() => {
+                                        setShowFlagModal(false);
+                                        setFlagType('');
+                                        setFlagReason('');
+                                        setSelectedOrder(null);
+                                    }}
+                                    className="text-gray-400 hover:text-gray-600"
+                                >
+                                    <X size={20} />
+                                </button>
+                            </div>
+
+                            <p className="text-gray-600 mb-4">
+                                Flag this order for review or violation.
+                            </p>
+
+                            <div className="mb-4">
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Flag Type *
+                                </label>
+                                <select
+                                    value={flagType}
+                                    onChange={(e) => setFlagType(e.target.value)}
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                                >
+                                    <option value="">Select type</option>
+                                    <option value="suspicious">Suspicious Activity</option>
+                                    <option value="high_risk">High Risk</option>
+                                    <option value="violation">Terms Violation</option>
+                                    <option value="fraud">Potential Fraud</option>
+                                    <option value="other">Other</option>
+                                </select>
+                            </div>
+
+                            <div className="mb-4">
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Reason *
+                                </label>
+                                <textarea
+                                    value={flagReason}
+                                    onChange={(e) => setFlagReason(e.target.value)}
+                                    rows={3}
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                                    placeholder="Provide detailed reason for flagging..."
+                                />
+                            </div>
+
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={() => {
+                                        setShowFlagModal(false);
+                                        setFlagType('');
+                                        setFlagReason('');
+                                        setSelectedOrder(null);
+                                    }}
+                                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={handleFlagOrder}
+                                    disabled={!flagType || !flagReason || processingAction}
+                                    className="flex-1 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:opacity-50"
+                                >
+                                    {processingAction ? 'Flagging...' : 'Flag Order'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )
+            }
+
+            {/* Add Note Modal */}
+            {
+                showNoteModal && selectedOrder && (
+                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                        <div className="bg-white rounded-xl max-w-md w-full p-6">
+                            <div className="flex justify-between items-center mb-4">
+                                <h3 className="text-xl font-bold text-gray-900">Add Admin Note</h3>
+                                <button
+                                    onClick={() => {
+                                        setShowNoteModal(false);
+                                        setAdminNote('');
+                                        setSelectedOrder(null);
+                                    }}
+                                    className="text-gray-400 hover:text-gray-600"
+                                >
+                                    <X size={20} />
+                                </button>
+                            </div>
+
+                            <p className="text-gray-600 mb-4">
+                                Add a private note about this order (only visible to admins).
+                            </p>
+
+                            <div className="mb-4">
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Note *
+                                </label>
+                                <textarea
+                                    value={adminNote}
+                                    onChange={(e) => setAdminNote(e.target.value)}
+                                    rows={4}
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                                    placeholder="Enter your note..."
+                                />
+                            </div>
+
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={() => {
+                                        setShowNoteModal(false);
+                                        setAdminNote('');
+                                        setSelectedOrder(null);
+                                    }}
+                                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={handleAddNote}
+                                    disabled={!adminNote.trim() || processingAction}
+                                    className="flex-1 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark disabled:opacity-50"
+                                >
+                                    {processingAction ? 'Adding...' : 'Add Note'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )
+            }
+
+            {/* Delete Confirmation Modal */}
+            {
+                showDeleteModal && selectedOrder && (
+                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                        <div className="bg-white rounded-xl max-w-md w-full p-6">
+                            <div className="flex justify-between items-center mb-4">
+                                <h3 className="text-xl font-bold text-gray-900">Delete Order</h3>
+                                <button
+                                    onClick={() => {
+                                        setShowDeleteModal(false);
+                                        setSelectedOrder(null);
+                                    }}
+                                    className="text-gray-400 hover:text-gray-600"
+                                >
+                                    <X size={20} />
+                                </button>
+                            </div>
+
+                            <div className="mb-6">
+                                <div className="flex items-center gap-3 mb-4 text-red-600 bg-red-50 p-3 rounded-lg">
+                                    <AlertCircle size={20} />
+                                    <p className="text-sm font-medium">This action cannot be undone</p>
+                                </div>
+
+                                <p className="text-gray-700 mb-4">
+                                    Are you sure you want to permanently delete order <span className="font-mono font-medium">{selectedOrder.orderId}</span>?
+                                </p>
+
+                                <div className="bg-gray-50 p-3 rounded-lg text-sm">
+                                    <p className="text-gray-600">This will:</p>
+                                    <ul className="list-disc list-inside text-gray-600 mt-2 space-y-1">
+                                        <li>Remove all order data from database</li>
+                                        <li>Delete all associated files from storage</li>
+                                        <li>Remove any reviews associated with this order</li>
+                                        <li>This action is irreversible</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={() => {
+                                        setShowDeleteModal(false);
+                                        setSelectedOrder(null);
+                                    }}
+                                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={handleDeleteOrder}
+                                    disabled={processingAction}
+                                    className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
+                                >
+                                    {processingAction ? 'Deleting...' : 'Delete Permanently'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )
+            }
+        </section >
     );
 };
 

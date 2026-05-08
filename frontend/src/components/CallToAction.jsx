@@ -21,7 +21,7 @@ const CallToAction = () => {
 
                             <div className="wr-description text-gray-300 text-lg max-w-2xl">
                                 <p>
-                                    Login now to search freelancers, explore services, and begin your journey.
+                                    Login now to search mentors, explore services, and begin your journey.
                                 </p>
                             </div>
                         </div>

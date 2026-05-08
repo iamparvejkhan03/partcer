@@ -13,7 +13,7 @@ function Layout(){
             <Toaster />
             {/* <BuyerHeader /> */}
             {/* <MobileNav /> */}
-            <Outlet />
+            {/* <Outlet /> */}
             <Footer />
             {isSearchFormPopUpOpen && <SearchFormPopUp closePopup={closePopup} />}
         </>

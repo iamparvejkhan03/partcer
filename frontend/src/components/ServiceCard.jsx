@@ -157,17 +157,12 @@ const ServiceCard = ({ service }) => {
                         <div className="flex items-center gap-1">
                             <div className="flex items-center justify-center gap-1">
                                 <Star size={16} className="fill-yellow-400 text-yellow-400" />
-                                <span className="font-semibold">{0}</span>
-                                <span className="text-gray-500">({0} reviews)</span>
+                                <span className="font-semibold">{service.rating > 0 ? service.rating.toFixed(1) : '0.0'}</span>
+                                <span className="text-gray-500">({service.reviewCount} reviews)</span>
                             </div>
                             {/* <span className="text-sm font-medium text-gray-700">
                                 {service.rating > 0 ? service.rating.toFixed(1) : 'New'}
                             </span> */}
-                            {service.reviewCount > 0 && (
-                                <span className="text-xs text-gray-500">
-                                    ({service.reviewCount})
-                                </span>
-                            )}
                         </div>
                     </div>
 

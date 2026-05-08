@@ -12,6 +12,9 @@ import Profile from "./freelancer/Profile";
 import Billing from "./freelancer/Billing";
 import Portfolio from "./freelancer/Portfolio";
 import FreelancerProfile from "./FreelancerProfile";
+import Checkout from "./Checkout";
+import BuyerOrderDetails from "./buyer/OrderDetails";
+import FreelancerOrderDetails from "./freelancer/OrderDetails";
 
 export {
     Home,
@@ -28,4 +31,7 @@ export {
     Billing,
     Portfolio,
     FreelancerProfile,
+    Checkout,
+    BuyerOrderDetails,
+    FreelancerOrderDetails,
 }

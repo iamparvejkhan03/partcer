@@ -366,7 +366,12 @@ serviceSchema.pre("save", function (next) {
 
 // Get main image
 serviceSchema.virtual("mainImage").get(function () {
-  const mainImage = this.gallery.find((img) => img.isMain);
+  // Check if gallery exists and is an array with items
+  if (!this.gallery || !Array.isArray(this.gallery) || this.gallery.length === 0) {
+    return null;
+  }
+  
+  const mainImage = this.gallery.find((img) => img && img.isMain === true);
   return mainImage ? mainImage.url : this.gallery[0]?.url || null;
 });
 

@@ -13,7 +13,7 @@ const Hero = ({closePopup}) => {
         }
     });
     const navigate = useNavigate();
-    const [type, setType] = useState(['Freelancer', 'Service', 'Project']);
+    const [type, setType] = useState(['Mentor', 'Service', 'Project']);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
@@ -35,7 +35,7 @@ const Hero = ({closePopup}) => {
             }
 
             if (searchData.type) {
-                if (searchData.type === 'Freelancer') {
+                if (searchData.type === 'Mentor') {
                     // params.append('type', 'freelancer');
                     navigate(`/freelancers?${params.toString()}`);
                 } else if (searchData.type === 'Service') {
@@ -78,7 +78,7 @@ const Hero = ({closePopup}) => {
                         </h1>
 
                         <p className="mt-6 text-gray-300 text-xl text-center md:text-left">
-                            Connect with expert Indian freelancers for 1:1 training and career support. Freelancers with real experience, here to train and support you.
+                            Connect with expert Indian mentors for 1:1 training and career support. Mentors with real experience, here to train and support you.
                         </p>
 
                         {/* Buttons */}

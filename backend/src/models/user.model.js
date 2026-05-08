@@ -170,7 +170,22 @@ const userSchema = new Schema(
     status: {
       type: String,
       enum: ["active", "inactive", "deleted", "suspended", "banned"],
-      default: "active"
+      default: "active",
+    },
+
+    rating: {
+      type: Number,
+      default: 0,
+      min: 0,
+      max: 5,
+    },
+    reviewCount: {
+      type: Number,
+      default: 0,
+    },
+    completedProjects: {
+      type: Number,
+      default: 0,
     },
 
     // ==================== TOKENS & SECURITY ====================

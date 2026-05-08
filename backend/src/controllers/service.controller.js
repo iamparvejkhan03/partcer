@@ -323,7 +323,7 @@ const getServiceById = asyncHandler(async (req, res) => {
   const service = await Service.findById(serviceId)
     .populate(
       "seller",
-      "firstName lastName displayName profileImage email phone country city createdAt lastLogin isVerified languages englishLevel bio freelancerType skills",
+      "firstName lastName displayName profileImage email phone country city createdAt lastLogin isVerified languages englishLevel bio freelancerType skills reviewCount rating",
     )
     .populate("category", "name slug")
     .populate("subCategory", "name slug");

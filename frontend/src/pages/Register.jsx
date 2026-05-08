@@ -22,6 +22,7 @@ import axiosInstance from '../utils/axiosInstance';
 import { toast } from 'react-hot-toast';
 import { useAuth } from '../contexts/AuthContext';
 import useCountryStates from '../hooks/useCountryStates';
+import { userTypes } from '../assets';
 
 function Register() {
     const [showPassword, setShowPassword] = useState(false);
@@ -451,7 +452,7 @@ function Register() {
                                         <div>
                                             <p className={`font-semibold ${userType === 'freelancer' ? 'text-primary' : 'text-gray-700'
                                                 }`}>
-                                                Freelancer
+                                                {userTypes.freelancer}
                                             </p>
                                             <p className="text-xs text-gray-500">
                                                 I want to offer my skills & services
@@ -481,7 +482,7 @@ function Register() {
                                         <div>
                                             <p className={`font-semibold ${userType === 'buyer' ? 'text-primary' : 'text-gray-700'
                                                 }`}>
-                                                Buyer
+                                                {userTypes.buyer}
                                             </p>
                                             <p className="text-xs text-gray-500">
                                                 I want to hire talent & get support

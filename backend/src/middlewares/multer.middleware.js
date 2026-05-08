@@ -38,6 +38,24 @@ const fileFilter = (req, file, cb) => {
       cb(new Error("Only PDF, JPEG, or PNG files are allowed for verification documents"), false);
     }
   }
+
+  else if (file.fieldname === "attachment" || file.fieldname === "attachments") {
+    // Generic attachment field (used in various places - we'll allow common document and image types)
+    const allowedTypes = [
+      'application/pdf',
+      'image/jpeg', 
+      'image/png',
+      'image/webp',
+      'image/jpg',
+      'application/msword',
+      'text/plain',
+    ];
+    if (allowedTypes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error("Only PDF, JPEG, or PNG files are allowed for generic attachments"), false);
+    }
+  }
   
   else if (file.fieldname === "portfolioImage") {
     // Portfolio items (can be images or PDFs)
