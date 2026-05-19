@@ -1,38 +1,34 @@
-// routes/review.routes.js
 import { Router } from "express";
 import {
-  auth,
-  authFreelancer,
-  authBuyer,
-  authAdmin,
+    auth,
+    authAdmin,
 } from "../middlewares/auth.middleware.js";
 import {
-  // User review controllers
-  addOrderReview,
-  getOrderReviews,
-  getUserReviews,
-  getMyReviews,
-  updateReview,
-  deleteReview,
-  respondToReview,
-  updateResponse,
-  markHelpful,
-  unmarkHelpful,
-  flagReview,
+    // User review controllers
+    addOrderReview,
+    getOrderReviews,
+    getUserReviews,
+    getMyReviews,
+    updateReview,
+    deleteReview,
+    respondToReview,
+    updateResponse,
+    markHelpful,
+    unmarkHelpful,
+    flagReview,
 
-  // Admin review controllers
-  adminGetAllReviews,
-  adminGetFlaggedReviews,
-  adminGetNeedingModeration,
-  adminGetReviewDetails,
-  adminModerateReview,
-  adminEditReview,
-  adminResolveFlag,
-  adminHardDeleteReview,
-  adminRestoreReview,
-  adminSearchReviews,
-  adminGetReviewStats,
-  getServiceReviews,
+    // Admin review controllers
+    adminGetAllReviews,
+    adminGetFlaggedReviews,
+    adminGetNeedingModeration,
+    adminGetReviewDetails,
+    adminModerateReview,
+    adminEditReview,
+    adminResolveFlag,
+    adminHardDeleteReview,
+    adminRestoreReview,
+    adminSearchReviews,
+    adminGetReviewStats,
 } from "../controllers/review.controller.js";
 
 const reviewRouter = Router();
@@ -42,9 +38,6 @@ const reviewRouter = Router();
 // Get reviews for a user (public profile)
 reviewRouter.get("/user/:userId", getUserReviews);
 
-// Get reviews for a service (public)
-reviewRouter.get("/service/:serviceId", getServiceReviews);
-
 // ==================== PROTECTED ROUTES (require login) ====================
 
 // Get reviews for an order (participants only)
@@ -53,7 +46,7 @@ reviewRouter.get("/order/:orderId", auth, getOrderReviews);
 // Get current user's reviews
 reviewRouter.get("/me", auth, getMyReviews);
 
-// Add review for an order (buyer or freelancer who was part of the order)
+// Add review for an order (student or mentor who was part of the order)
 reviewRouter.post("/order/:orderId", auth, addOrderReview);
 
 // Update/delete own review
@@ -83,11 +76,7 @@ reviewRouter.get("/admin/stats", authAdmin, adminGetReviewStats);
 reviewRouter.get("/admin/flagged", authAdmin, adminGetFlaggedReviews);
 
 // Get reviews needing moderation
-reviewRouter.get(
-  "/admin/needing-moderation",
-  authAdmin,
-  adminGetNeedingModeration,
-);
+reviewRouter.get("/admin/needing-moderation", authAdmin, adminGetNeedingModeration);
 
 // Search reviews
 reviewRouter.get("/admin/search", authAdmin, adminSearchReviews);
@@ -102,11 +91,7 @@ reviewRouter.patch("/admin/:reviewId/moderate", authAdmin, adminModerateReview);
 reviewRouter.put("/admin/:reviewId", authAdmin, adminEditReview);
 
 // Resolve flag
-reviewRouter.patch(
-  "/admin/:reviewId/flags/:flagId/resolve",
-  authAdmin,
-  adminResolveFlag,
-);
+reviewRouter.patch("/admin/:reviewId/flags/:flagId/resolve", authAdmin, adminResolveFlag);
 
 // Restore soft-deleted review
 reviewRouter.post("/admin/:reviewId/restore", authAdmin, adminRestoreReview);

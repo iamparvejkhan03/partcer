@@ -34,9 +34,9 @@ const Faqs = () => {
     const categories = [
         { id: 'all', name: 'All Questions', icon: HelpCircle, count: 32 },
         { id: 'getting-started', name: 'Getting Started', icon: UserPlus, count: 4 },
-        { id: 'buyers', name: 'For Buyers', icon: Users, count: 6 },
-        { id: 'sellers', name: 'For Sellers', icon: Briefcase, count: 6 },
-        { id: 'services', name: 'Services & Delivery', icon: Video, count: 5 },
+        { id: 'students', name: 'For Students', icon: Users, count: 6 },
+        { id: 'mentors', name: 'For Mentors', icon: Briefcase, count: 6 },
+        // { id: 'services', name: 'Services & Delivery', icon: Video, count: 5 },
         { id: 'payments', name: 'Payments & Pricing', icon: DollarSign, count: 4 },
         { id: 'account', name: 'Account & Security', icon: Shield, count: 4 },
         { id: 'support', name: 'Support & Help', icon: Headphones, count: 3 },
@@ -54,129 +54,129 @@ const Faqs = () => {
         {
             id: 2,
             category: 'getting-started',
-            question: "How do I get started as a buyer?",
+            question: "How do I get started as a student?",
             answer: "Simply sign up for free, browse through our pool of freelance trainers, use filters to find experts in your specific needs, review their profiles and place an order for the service you need."
         },
         {
             id: 3,
             category: 'getting-started',
-            question: "How do I get started as a seller?",
-            answer: "Sign up, create your seller profile, showcase your expertise and experience, create gigs for the training services you offer, and start receiving orders."
+            question: "How do I get started as a mentor?",
+            answer: "Sign up, create your mentor profile, showcase your expertise and experience, create gigs for the training services you offer, and start receiving orders."
         },
         {
             id: 4,
             category: 'getting-started',
             question: "Is there any registration fee?",
-            answer: "No, registration is completely free for both buyers and sellers. You only pay when you purchase a service, and sellers only pay a small commission when they complete an order."
+            answer: "No, registration is completely free for both students and mentors. You only pay when you purchase a service, and mentors only pay a small commission when they complete an order."
         },
 
-        // For Buyers
+        // For students
         {
             id: 5,
-            category: 'buyers',
-            question: "How do I find the right freelancer for my needs?",
-            answer: "Use our search and filter options to find freelancers by category, skills, price, delivery time, and ratings. Read reviews from previous buyers and check their portfolio samples before placing an order."
+            category: 'students',
+            question: "How do I find the right mentor for my needs?",
+            answer: "Use our search and filter options to find mentors by category, skills, price, delivery time, and ratings. Read reviews from previous students and check their portfolio samples before placing an order."
         },
         {
             id: 6,
-            category: 'buyers',
-            question: "Can I communicate with a freelancer before ordering?",
-            answer: "Yes! You can use our messaging system to ask questions, discuss your requirements, and clarify any doubts before placing an order. This helps ensure the freelancer understands your needs."
-        },
-        {
-            id: 7,
-            category: 'buyers',
-            question: "What if I'm not satisfied with the service?",
-            answer: "Your satisfaction matters. If the delivered work doesn't meet the requirements, you can request revisions. Most freelancers offer free revisions as part of their service."
-        },
-        {
-            id: 8,
-            category: 'buyers',
-            question: "How do I know if a freelancer is qualified?",
-            answer: "Check their profile for experience, education, certifications, and work history. Many freelancers also include portfolio samples."
-        },
-        {
-            id: 9,
-            category: 'buyers',
-            question: "Can I request custom requirements not listed in their gig?",
-            answer: "Absolutely! Message the freelancer directly with your specific needs. Many are happy to create custom offers tailored to your requirements."
+            category: 'students',
+            question: "Can I communicate with a mentor before ordering?",
+            answer: "Yes! You can use our messaging system to ask questions, discuss your requirements, and clarify any doubts before placing an order. This helps ensure the mentor understands your needs."
         },
         // {
+        //     id: 7,
+        //     category: 'students',
+        //     question: "What if I'm not satisfied with the service?",
+        //     answer: "Your satisfaction matters. If the delivered work doesn't meet the requirements, you can request revisions. Most mentors offer free revisions as part of their service."
+        // },
+        {
+            id: 8,
+            category: 'students',
+            question: "How do I know if a mentor is qualified?",
+            answer: "Check their profile for experience, education, certifications, and work history. Many mentors also include portfolio samples."
+        },
+        // {
+        //     id: 9,
+        //     category: 'students',
+        //     question: "Can I request custom requirements not listed in their gig?",
+        //     answer: "Absolutely! Message the mentor directly with your specific needs. Many are happy to create custom offers tailored to your requirements."
+        // },
+        // {
         //     id: 10,
-        //     category: 'buyers',
+        //     category: 'students',
         //     question: "What types of training services can I find?",
         //     answer: "You can find services including mock interviews, resume writing and review, LinkedIn profile optimization, coding mentorship, portfolio reviews, career coaching, salary negotiation guidance, and more."
         // },
 
-        // For Sellers (Freelance Trainers)
+        // For mentors (Freelance Trainers)
         {
             id: 11,
-            category: 'sellers',
-            question: "How do I become a seller on your platform?",
+            category: 'mentors',
+            question: "How do I become a mentor on your platform?",
             answer: "Sign up, complete your profile with your professional experience and expertise, and create gigs describing the training services you offer. This is how you can start receiving orders."
         },
         {
             id: 12,
-            category: 'sellers',
+            category: 'mentors',
             question: "What services can I offer?",
             answer: "You can offer any job training and support service related to tech- coding mentorship, portfolio building, career coaching, interview preparation, and more."
         },
         {
             id: 13,
-            category: 'sellers',
+            category: 'mentors',
             question: "How much commission does the platform charge?",
-            answer: "We charge a competitive service fee on each completed order. This fee helps us maintain the platform and provide support to both buyers and sellers."
+            answer: "We charge a competitive service fee on each completed order. This fee helps us maintain the platform and provide support to both students and mentors."
         },
         {
             id: 14,
-            category: 'sellers',
+            category: 'mentors',
             question: "How do I get paid?",
             answer: "Payments are processed securely through our platform. Funds are released to you after order completion. You can withdraw your earnings via bank transfer, or other available methods."
         },
         {
             id: 15,
-            category: 'sellers',
-            question: "How can I attract more buyers?",
-            answer: "Create detailed gig descriptions with clear deliverables, use relevant keywords, add portfolio samples, respond quickly to inquiries, and deliver high-quality work on time."
+            category: 'mentors',
+            question: "How can I attract more students?",
+            answer: "Create detailed descriptions with clear deliverables, use relevant keywords, add portfolio samples, respond quickly to inquiries, and deliver high-quality work on time."
         },
-        {
-            id: 16,
-            category: 'sellers',
-            question: "Can I offer packages for different budgets?",
-            answer: "Yes! You can create multiple packages (basic, standard, premium) with different price points and deliverables to cater to various buyer needs and budgets."
-        },
+        // {
+        //     id: 16,
+        //     category: 'mentors',
+        //     question: "Can I offer packages for different budgets?",
+        //     answer: "Yes! You can create multiple packages (basic, standard, premium) with different price points and deliverables to cater to various student needs and budgets."
+        // },
 
         // Services & Delivery
-        {
-            id: 17,
-            category: 'services',
-            question: "How do I place an order for a service?",
-            answer: "Browse freelancer gigs, select the service you need, choose any applicable extras or packages, complete the payment, and you're all set. The freelancer will begin working on your order."
-        },
-        {
-            id: 18,
-            category: 'services',
-            question: "What is the typical delivery time?",
-            answer: "Delivery times vary by freelancer and service type. Each gig displays the estimated delivery time. Some services may be delivered within 24 hours, while others may take a few days."
-        },
-        {
-            id: 19,
-            category: 'services',
-            question: "Can I request revisions?",
-            answer: "Yes, most freelancers include revisions in their service. The number of revisions is usually specified in the gig description. Use the revision request feature if you need changes."
-        },
-        {
-            id: 20,
-            category: 'services',
-            question: "How do I deliver my work as a freelancer?",
-            answer: "Once you've completed the service, upload the deliverables through our platform. The buyer will be notified and can approve, or request revisions."
-        },
-        {
-            id: 21,
-            category: 'services',
-            question: "What if the freelancer doesn't deliver on time?",
-            answer: "If an order is late, you can cancel it or extend the delivery time in agreement with the freelancer. Our support team can assist if there are disputes."
-        },
+        // {
+        //     id: 17,
+        //     category: 'services',
+        //     question: "How do I place an order for a service?",
+        //     answer: "Browse mentor gigs, select the service you need, choose any applicable extras or packages, complete the payment, and you're all set. The mentor will begin working on your order."
+        // },
+        // {
+        //     id: 18,
+        //     category: 'services',
+        //     question: "What is the typical delivery time?",
+        //     answer: "Delivery times vary by mentor and service type. Each gig displays the estimated delivery time. Some services may be delivered within 24 hours, while others may take a few days."
+        // },
+        // {
+        //     id: 19,
+        //     category: 'services',
+        //     question: "Can I request revisions?",
+        //     answer: "Yes, most mentors include revisions in their service. The number of revisions is usually specified in the gig description. Use the revision request feature if you need changes."
+        // },
+        // {
+        //     id: 20,
+        //     category: 'services',
+        //     question: "How do I deliver my work as a mentor?",
+        //     answer: "Once you've completed the service, upload the deliverables through our platform. The student will be notified and can approve, or request revisions."
+        // },
+        // {
+        //     id: 21,
+        //     category: 'services',
+        //     question: "What if the mentor doesn't deliver on time?",
+        //     answer: "If an order is late, you can cancel it or extend the delivery time in agreement with the mentor. Our support team can assist if there are disputes."
+        // },
 
         // Payments & Pricing
         {
@@ -189,7 +189,7 @@ const Faqs = () => {
             id: 23,
             category: 'payments',
             question: "Is my payment secure?",
-            answer: "Absolutely! Payments are held securely until you confirm that the service is completed satisfactorily. This protects both buyers and sellers."
+            answer: "Absolutely! Payments are held securely until you confirm that the service is completed satisfactorily. This protects both students and mentors."
         },
         {
             id: 24,
@@ -201,7 +201,7 @@ const Faqs = () => {
             id: 25,
             category: 'payments',
             question: "Are there any hidden fees?",
-            answer: "No hidden fees! The price you see at checkout is what you pay. Sellers see their earnings after our transparent commission is deducted."
+            answer: "No hidden fees! The price you see at checkout is what you pay. Mentors see their earnings after our transparent commission is deducted."
         },
 
         // Account & Security
@@ -226,8 +226,8 @@ const Faqs = () => {
         // {
         //     id: 29,
         //     category: 'account',
-        //     question: "How do I verify my identity as a seller?",
-        //     answer: "Go to your seller settings and follow the verification process. You'll need to provide valid ID proof and possibly a selfie for verification."
+        //     question: "How do I verify my identity as a mentor?",
+        //     answer: "Go to your mentor settings and follow the verification process. You'll need to provide valid ID proof and possibly a selfie for verification."
         // },
 
         // Support & Help

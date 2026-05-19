@@ -76,158 +76,14 @@ const featuresData = [
     },
 ];
 
-// Mock services data
-const mockServices = Array.from({ length: 12 }).map((_, index) => ({
-    id: index + 1,
-    title: [
-        "Professional Logo Design for Your Business",
-        "WordPress Website Development",
-        "Social Media Marketing Campaign",
-        "SEO Optimization Services",
-        "Mobile App UI/UX Design",
-        "Video Editing & Production",
-        "Content Writing & Blog Posts",
-        "E-commerce Website Development",
-        "Brand Identity Package",
-        "3D Animation & Motion Graphics",
-        "Music Production & Sound Design",
-        "Data Analysis & Visualization"
-    ][index],
-    freelancer: {
-        name: ["Mike Shaw", "Sarah Johnson", "David Wilson", "Emma Brown", "James Lee", "Lisa Taylor"][index % 6],
-        profileImage: [
-            "https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg",
-            "https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg",
-            "https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg",
-            "https://images.pexels.com/photos/712513/pexels-photo-712513.jpeg",
-            "https://images.pexels.com/photos/3785077/pexels-photo-3785077.jpeg",
-            "https://images.pexels.com/photos/1181690/pexels-photo-1181690.jpeg"
-        ][index % 6],
-        isVerified: Math.random() > 0.3,
-        isOnline: Math.random() > 0.5,
-        slug: `freelancer-${index + 1}`
-    },
-    image: [
-        "https://images.pexels.com/photos/270348/pexels-photo-270348.jpeg",
-        "https://images.pexels.com/photos/577585/pexels-photo-577585.jpeg",
-        "https://images.pexels.com/photos/267350/pexels-photo-267350.jpeg",
-        "https://images.pexels.com/photos/270360/pexels-photo-270360.jpeg",
-        "https://images.pexels.com/photos/1181271/pexels-photo-1181271.jpeg",
-        "https://images.pexels.com/photos/1779487/pexels-photo-1779487.jpeg"
-    ][index % 6],
-    rating: {
-        score: parseFloat((Math.random() * 2 + 3).toFixed(1)), // Random 3-5 stars
-        count: Math.floor(Math.random() * 100) + 1,
-        maxScore: 5.0
-    },
-    location: ["India", "United States", "United Kingdom", "Canada", "Australia", "Germany"][index % 6],
-    price: parseFloat((Math.random() * 200 + 20).toFixed(2)), // $20-$220
-    slug: `service-${index + 1}`,
-    isSaved: Math.random() > 0.7,
-    category: ["graphic-design", "web-development", "digital-marketing", "seo", "ui-ux", "video-animation"][index % 6],
-    tags: [
-        ["logo-design", "branding"],
-        ["wordpress", "web-development"],
-        ["social-media", "marketing"],
-        ["seo", "content-writing"],
-        ["ui-ux", "mobile-app"],
-        ["video-editing", "animation"]
-    ][index % 6],
-    deliveryTime: Math.floor(Math.random() * 30) + 1,
-    createdAt: new Date(Date.now() - (index * 86400000)).toISOString()
-}));
-
-// Mock freelancer data
-const mockFreelancers = Array.from({ length: 9 }).map((_, index) => ({
-    id: index + 1,
-    name: ["Darrell Steward", "Martha Josef", "Jackson Graham"][index % 3],
-    image: [
-        "https://images.pexels.com/photos/27523254/pexels-photo-27523254.jpeg",
-        "https://images.pexels.com/photos/7034450/pexels-photo-7034450.jpeg",
-        "https://images.pexels.com/photos/30316397/pexels-photo-30316397.jpeg"][index % 3],
-    location: ["Los Angeles, United States", "New York, USA", "London, UK"][index % 3],
-    experience: ["2 Years", "5 Years", "1 Year"][index % 3],
-    budget: ["3L", "5L", "2L"][index % 3],
-    rejected: [12, 5, 8][index % 3],
-    hired: [10, 25, 15][index % 3],
-    bio: "Hi, I am Martha Josef. My professional experience is in UI UX & Product Design. I started my career as a Graphic Designer, but gradually developed my skills as a UI UX Designer.",
-    skills: ["Angular", "JavaScript", "UI", "React", "TypeScript"].slice(0, 3 + (index % 3)),
-}));
-
 const CategoryCarousel = lazy(() => import("../components/CategoryCarousel"));
 const FAQSection = lazy(() => import("../components/FAQSection"));
-const FeaturedServices = lazy(() => import("../components/FeaturedServices"));
+// const FeaturedServices = lazy(() => import("../components/FeaturedServices"));
 const FeaturedFreelancers = lazy(() => import("../components/FeaturedFreelancers"));
 
 function Home() {
     const [loading, setLoading] = useState(false);
-    const [allServices, setAllServices] = useState([]);
-    const [filteredServices, setFilteredServices] = useState([]);
-    const [allFreelancers, setAllFreelancers] = useState([]);
-    const [filteredFreelancers, setFilteredFreelancers] = useState([]);
     const { closePopup } = usePopUp();
-
-    // Load services
-    useEffect(() => {
-        const fetchServices = async () => {
-            setLoading(true);
-
-            // Mock API call
-            setTimeout(() => {
-                setAllServices(mockServices);
-                setFilteredServices(mockServices);
-                setLoading(false);
-            }, 1000);
-        };
-
-        fetchServices();
-    }, []);
-
-    // Effect to load freelancers (mock data or API)
-    useEffect(() => {
-        const fetchFreelancers = async () => {
-            setLoading(true);
-
-            // Mock API call - replace with actual API
-            setTimeout(() => {
-                const mockData = Array.from({ length: 12 }).map((_, index) => ({
-                    id: index + 1,
-                    name: ["Darrell Steward", "Martha Josef", "Jackson Graham", "Sarah Johnson"][index % 4],
-                    location: ["Los Angeles, United States", "New York, USA", "London, UK", "Sydney, Australia"][index % 4],
-                    experience: ["2 Years", "5 Years", "1 Year", "3 Years"][index % 4],
-                    budget: ["3L", "5L", "2L", "4L"][index % 4],
-                    hourlyRate: [3000, 5000, 2000, 4000][index % 4],
-                    type: ["agency", "independent"][index % 2],
-                    englishLevel: ["basic", "conversational", "fluent"][index % 3],
-                    rating: [4.5, 4.8, 4.2, 4.9][index % 4],
-                    rejected: [12, 5, 8, 3][index % 4],
-                    hired: [10, 25, 15, 30][index % 4],
-                    bio: "Hi, I am Martha Josef. My professional experience is in UI UX & Product Design.",
-                    skills: [
-                        ["Angular", "JavaScript", "UI", "React"],
-                        ["JavaScript", "React", "Node.js", "TypeScript"],
-                        ["UI/UX", "Figma", "Adobe XD", "Sketch"],
-                        ["Python", "Django", "PostgreSQL", "AWS"]
-                    ][index % 4],
-                    languages: [
-                        ["english", "spanish"],
-                        ["english", "french"],
-                        ["english", "german"],
-                        ["english", "japanese"]
-                    ][index % 4],
-                    createdAt: new Date(Date.now() - (index * 86400000)).toISOString(), // Different dates
-                    phone: "(405) 555-0128",
-                    email: "jackson.graham@example.com"
-                }));
-
-                setAllFreelancers(mockFreelancers);
-                setFilteredFreelancers(mockFreelancers);
-                setLoading(false);
-            }, 1000);
-        };
-
-        fetchFreelancers();
-    }, []);
 
     return (
         <>
@@ -252,27 +108,27 @@ function Home() {
             <Container>
                 <Subheading content={'Tech-Focused Categories'} />
                 <Heading content={'Unlock Your Career Potential'} />
-                <HeadingDescription content={'Explore expert-led training and support services. From coding mentorship to interview prep, find the right freelance professional to guide you.'} />
+                <HeadingDescription content={'Explore expert-led training and support services. From coding mentorship to interview prep, find the right mentors to guide you.'} />
 
                 <CategoryCarousel />
             </Container>
 
             {/* Services Section */}
-            <Suspense fallback={<LoadingSpinner height={`725px`} />}>
+            {/* <Suspense fallback={<LoadingSpinner height={`725px`} />}>
                 <FeaturedServices />
-            </Suspense>
+            </Suspense> */}
 
             {/* Freelancers Section */}
             <Suspense fallback={<LoadingSpinner height={`725px`} />}>
                 <FeaturedFreelancers />
-            </Suspense>
+            </Suspense> 
 
             {/* Features Section */}
             <Container className="mt-8 mb-16">
                 <div className="w-full flex flex-col items-center justify-center text-center">
                     <Subheading content={'More Than Just a Marketplace'} />
-                    <Heading content={'Why Freelancers & Buyers Trust Us'} className="text-black" />
-                    <HeadingDescription content={"India's most supportive freelance marketplace for job training. Here's what makes us different."} className="text-" />
+                    <Heading content={'Why Mentors & Students Trust Us'} className="text-black" />
+                    <HeadingDescription content={"India's most supportive marketplace for job training. Here's what makes us different."} className="text-" />
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 items-center justify-center gap-6 md:gap-4 mt-10">

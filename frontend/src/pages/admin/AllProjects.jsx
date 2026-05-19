@@ -7,7 +7,6 @@ import {
     Trash2,
     MoreVertical,
     Search,
-    Filter,
     RefreshCw,
     ChevronLeft,
     ChevronRight,
@@ -16,51 +15,34 @@ import {
     Clock,
     AlertCircle,
     Star,
-    DollarSign,
     Users,
-    ShoppingBag,
     TrendingUp,
-    Eye as ViewIcon,
-    Download,
-    Plus,
-    Copy,
     PauseCircle,
     PlayCircle,
-    Shield,
-    ShieldOff,
-    Ban,
     Award,
-    MessageSquare,
     FileText,
     Calendar,
-    MapPin,
-    Globe,
-    Tag,
     Layers,
     FolderOpen,
-    CheckSquare,
-    XSquare,
-    HelpCircle,
     UserCheck,
     UserX,
-    Flag,
-    ThumbsUp,
-    ThumbsDown,
     X,
-    Loader
+    Loader,
+    Wrench,
+    Tag
 } from "lucide-react";
 import { AdminSidebar, AdminHeader, AdminContainer } from '../../components';
 import toast from 'react-hot-toast';
 import axiosInstance from '../../utils/axiosInstance';
+import { userTypes } from '../../assets';
 
-const AdminProjects = () => {
+const AllProjects = () => {
     const [projects, setProjects] = useState([]);
     const [allProjects, setAllProjects] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
     const [categoryFilter, setCategoryFilter] = useState('all');
-    const [verificationFilter, setVerificationFilter] = useState('all');
     const [dateRange, setDateRange] = useState('all');
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage] = useState(10);
@@ -71,9 +53,9 @@ const AdminProjects = () => {
     const [showRejectModal, setShowRejectModal] = useState(false);
     const [showSuspendModal, setShowSuspendModal] = useState(false);
     const [openActionMenu, setOpenActionMenu] = useState(null);
-    const [showApplicantsModal, setShowApplicantsModal] = useState(false);
-    const [applicants, setApplicants] = useState([]);
-    const [loadingApplicants, setLoadingApplicants] = useState(false);
+    const [showProposalsModal, setShowProposalsModal] = useState(false);
+    const [proposals, setProposals] = useState([]);
+    const [loadingProposals, setLoadingProposals] = useState(false);
     const [categories, setCategories] = useState([]);
     const [stats, setStats] = useState({
         total: 0,
@@ -82,19 +64,36 @@ const AdminProjects = () => {
         completed: 0,
         cancelled: 0,
         draft: 0,
-        featured: 0,
-        reported: 0,
-        totalBudget: 0,
-        avgBudget: 0,
-        totalApplicants: 0,
-        hiredCount: 0
+        filled: 0,
+        totalProposals: 0,
+        totalViews: 0
     });
 
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
-    const actionMenuRef = useRef(null);
 
-    // Get page from URL or default to 1
+    // Helper functions for new model
+    const getPeriodLabel = (period) => {
+        const map = {
+            one_time: 'One-time',
+            per_day: 'Per day',
+            weekly: 'Weekly',
+            monthly: 'Monthly'
+        };
+        return map[period] || period;
+    };
+
+    const getDurationLabel = (period, duration) => {
+        if (period === 'one_time') return 'Single session';
+        if (duration === 'standard') return 'Standard (2-3 hrs)';
+        return 'Full day (6-8 hrs)';
+    };
+
+    const getServiceDisplay = (service) => {
+        return service || 'N/A';
+    };
+
+    // Get page from URL
     useEffect(() => {
         const page = searchParams.get('page');
         if (page) {
@@ -129,8 +128,6 @@ const AdminProjects = () => {
     const fetchProjects = async () => {
         try {
             setLoading(true);
-
-            // Build query params for pagination only
             const params = new URLSearchParams();
             params.append('page', currentPage);
             params.append('limit', itemsPerPage);
@@ -141,9 +138,8 @@ const AdminProjects = () => {
                 const { projects: fetchedProjects, stats: fetchedStats, pagination } = response.data.data;
 
                 setProjects(fetchedProjects || []);
-                setAllProjects(fetchedProjects || []); // Store for local filtering
+                setAllProjects(fetchedProjects || []);
 
-                // Update stats from API
                 const statsData = fetchedStats || [];
                 const calculatedStats = {
                     total: pagination?.total || 0,
@@ -152,12 +148,9 @@ const AdminProjects = () => {
                     completed: statsData.find(s => s._id === 'completed')?.count || 0,
                     cancelled: statsData.find(s => s._id === 'cancelled')?.count || 0,
                     draft: statsData.find(s => s._id === 'draft')?.count || 0,
-                    featured: 0,
-                    reported: 0,
-                    totalBudget: statsData.reduce((sum, s) => sum + (s.totalBudget || 0), 0),
-                    avgBudget: 0,
-                    totalApplicants: statsData.reduce((sum, s) => sum + (s.totalApplicants || 0), 0),
-                    hiredCount: 0
+                    filled: statsData.find(s => s._id === 'filled')?.count || 0,
+                    totalProposals: statsData.reduce((sum, s) => sum + (s.totalProposals || 0), 0),
+                    totalViews: statsData.reduce((sum, s) => sum + (s.totalViews || 0), 0)
                 };
                 setStats(calculatedStats);
             }
@@ -182,34 +175,32 @@ const AdminProjects = () => {
         }
     };
 
-    const fetchProjectApplicants = async (projectId) => {
+    const fetchProjectProposals = async (projectId) => {
         try {
-            setLoadingApplicants(true);
-            const response = await axiosInstance.get(`/api/v1/projects/admin/${projectId}/applicants`);
+            setLoadingProposals(true);
+            const response = await axiosInstance.get(`/api/v1/projects/admin/${projectId}/proposals`);
 
             if (response.data.success) {
-                setApplicants(response.data.data?.applicants || []);
+                setProposals(response.data.data?.proposals || []);
             }
         } catch (error) {
-            console.error('Error fetching applicants:', error);
-            toast.error('Failed to load applicants');
-            setApplicants([]);
+            console.error('Error fetching proposals:', error);
+            toast.error('Failed to load proposals');
+            setProposals([]);
         } finally {
-            setLoadingApplicants(false);
+            setLoadingProposals(false);
         }
     };
 
     const handleApproveProject = async (projectId) => {
         try {
             await axiosInstance.patch(`/api/v1/projects/admin/${projectId}/status`, {
-                status: 'active',
-                verification: 'verified'
+                status: 'active'
             });
-
             toast.success('Project approved successfully');
             setShowApproveModal(false);
             setSelectedProject(null);
-            fetchProjects(); // Refresh list
+            fetchProjects();
         } catch (error) {
             const errorMessage = error?.response?.data?.message || 'Failed to approve project';
             toast.error(errorMessage);
@@ -220,14 +211,12 @@ const AdminProjects = () => {
         try {
             await axiosInstance.patch(`/api/v1/projects/admin/${projectId}/status`, {
                 status: 'rejected',
-                verification: 'rejected',
-                rejectionReason: reason
+                cancellationReason: reason
             });
-
             toast.success('Project rejected');
             setShowRejectModal(false);
             setSelectedProject(null);
-            fetchProjects(); // Refresh list
+            fetchProjects();
         } catch (error) {
             const errorMessage = error?.response?.data?.message || 'Failed to reject project';
             toast.error(errorMessage);
@@ -239,10 +228,9 @@ const AdminProjects = () => {
             await axiosInstance.patch(`/api/v1/projects/admin/${projectId}/status`, {
                 status: 'suspended'
             });
-
             toast.success('Project suspended');
             setOpenActionMenu(null);
-            fetchProjects(); // Refresh list
+            fetchProjects();
         } catch (error) {
             const errorMessage = error?.response?.data?.message || 'Failed to suspend project';
             toast.error(errorMessage);
@@ -254,28 +242,11 @@ const AdminProjects = () => {
             await axiosInstance.patch(`/api/v1/projects/admin/${projectId}/status`, {
                 status: 'active'
             });
-
             toast.success('Project activated');
             setOpenActionMenu(null);
-            fetchProjects(); // Refresh list
+            fetchProjects();
         } catch (error) {
             const errorMessage = error?.response?.data?.message || 'Failed to activate project';
-            toast.error(errorMessage);
-        }
-    };
-
-    const handleFeatureProject = async (projectId) => {
-        try {
-            const project = projects.find(p => p._id === projectId);
-            await axiosInstance.patch(`/api/v1/projects/admin/${projectId}/status`, {
-                featured: !project?.featured
-            });
-
-            toast.success(`Project ${project?.featured ? 'unfeatured' : 'featured'} successfully`);
-            setOpenActionMenu(null);
-            fetchProjects(); // Refresh list
-        } catch (error) {
-            const errorMessage = error?.response?.data?.message || 'Failed to update featured status';
             toast.error(errorMessage);
         }
     };
@@ -283,11 +254,10 @@ const AdminProjects = () => {
     const handleDeleteProject = async (projectId) => {
         try {
             await axiosInstance.delete(`/api/v1/projects/admin/${projectId}`);
-
             toast.success('Project deleted successfully');
             setShowDeleteModal(false);
             setSelectedProject(null);
-            fetchProjects(); // Refresh list
+            fetchProjects();
         } catch (error) {
             const errorMessage = error?.response?.data?.message || 'Failed to delete project';
             toast.error(errorMessage);
@@ -302,7 +272,8 @@ const AdminProjects = () => {
             draft: { bg: 'bg-gray-100', text: 'text-gray-700', label: 'Draft', icon: FileText },
             cancelled: { bg: 'bg-red-100', text: 'text-red-700', label: 'Cancelled', icon: XCircle },
             suspended: { bg: 'bg-orange-100', text: 'text-orange-700', label: 'Suspended', icon: PauseCircle },
-            rejected: { bg: 'bg-red-100', text: 'text-red-700', label: 'Rejected', icon: XCircle }
+            rejected: { bg: 'bg-red-100', text: 'text-red-700', label: 'Rejected', icon: XCircle },
+            filled: { bg: 'bg-purple-100', text: 'text-purple-700', label: 'Filled', icon: UserCheck }
         };
         const badge = config[status] || config.pending;
         const Icon = badge.icon;
@@ -312,14 +283,6 @@ const AdminProjects = () => {
                 {badge.label}
             </span>
         );
-    };
-
-    const getBudgetDisplay = (project) => {
-        if (project.projectType === 'fixed') {
-            return `$${project.budget}`;
-        } else {
-            return `$${project.hourlyRate}/hr (est. ${project.estimatedHours} hrs)`;
-        }
     };
 
     const formatDate = (dateString) => {
@@ -352,16 +315,6 @@ const AdminProjects = () => {
         });
     };
 
-    const formatCurrency = (amount) => {
-        if (!amount) return '$0';
-        return new Intl.NumberFormat('en-US', {
-            style: 'currency',
-            currency: 'USD',
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 0
-        }).format(amount);
-    };
-
     const formatNumber = (num) => {
         if (!num) return '0';
         if (num >= 1000000) {
@@ -373,7 +326,7 @@ const AdminProjects = () => {
         return num.toString();
     };
 
-    // Local filtering only - no API calls
+    // Local filtering
     const getFilteredProjects = () => {
         let filtered = [...projects];
 
@@ -385,6 +338,7 @@ const AdminProjects = () => {
                 project.buyer?.firstName?.toLowerCase().includes(term) ||
                 project.buyer?.lastName?.toLowerCase().includes(term) ||
                 project.category?.name?.toLowerCase().includes(term) ||
+                project.service?.toLowerCase().includes(term) ||
                 project.skills?.some(skill =>
                     typeof skill === 'string'
                         ? skill.toLowerCase().includes(term)
@@ -422,18 +376,14 @@ const AdminProjects = () => {
         setShowProjectModal(true);
     };
 
-    const handleViewApplicants = async (project) => {
+    const handleViewProposals = async (project) => {
         setSelectedProject(project);
-        setShowApplicantsModal(true);
-        await fetchProjectApplicants(project._id);
+        setShowProposalsModal(true);
+        await fetchProjectProposals(project._id);
     };
 
     const handleEditProject = (projectId) => {
         navigate(`/admin/projects/edit/${projectId}`);
-    };
-
-    const handleViewBuyer = (buyerId) => {
-        navigate(`/admin/users/${buyerId}`);
     };
 
     const handlePageChange = (newPage) => {
@@ -494,8 +444,8 @@ const AdminProjects = () => {
                             </div>
                         </div>
 
-                        {/* Stats Cards */}
-                        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-6">
+                        {/* Stats Cards - Updated for new model */}
+                        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-4 mb-6">
                             <div className="bg-white p-4 rounded-xl border border-gray-200">
                                 <div className="flex items-center gap-3">
                                     <div className="p-2 bg-blue-100 rounded-lg">
@@ -509,8 +459,8 @@ const AdminProjects = () => {
                             </div>
                             <div className="bg-white p-4 rounded-xl border border-gray-200">
                                 <div className="flex items-center gap-3">
-                                    <div className="p-2 bg-green-100 rounded-lg">
-                                        <CheckCircle size={20} className="text-green-600" />
+                                    <div className="p-2 bg-yellow-100 rounded-lg">
+                                        <Clock size={20} className="text-yellow-600" />
                                     </div>
                                     <div>
                                         <p className="text-xs text-gray-600">Active</p>
@@ -520,19 +470,8 @@ const AdminProjects = () => {
                             </div>
                             <div className="bg-white p-4 rounded-xl border border-gray-200">
                                 <div className="flex items-center gap-3">
-                                    <div className="p-2 bg-yellow-100 rounded-lg">
-                                        <Clock size={20} className="text-yellow-600" />
-                                    </div>
-                                    <div>
-                                        <p className="text-xs text-gray-600">Pending</p>
-                                        <p className="text-xl font-bold">{stats.pending}</p>
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="bg-white p-4 rounded-xl border border-gray-200">
-                                <div className="flex items-center gap-3">
-                                    <div className="p-2 bg-blue-100 rounded-lg">
-                                        <CheckCircle size={20} className="text-blue-600" />
+                                    <div className="p-2 bg-green-100 rounded-lg">
+                                        <CheckCircle size={20} className="text-green-600" />
                                     </div>
                                     <div>
                                         <p className="text-xs text-gray-600">Completed</p>
@@ -543,35 +482,24 @@ const AdminProjects = () => {
                             <div className="bg-white p-4 rounded-xl border border-gray-200">
                                 <div className="flex items-center gap-3">
                                     <div className="p-2 bg-purple-100 rounded-lg">
-                                        <Award size={20} className="text-purple-600" />
+                                        <Users size={20} className="text-purple-600" />
                                     </div>
                                     <div>
-                                        <p className="text-xs text-gray-600">Featured</p>
-                                        <p className="text-xl font-bold">{stats.featured}</p>
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="bg-white p-4 rounded-xl border border-gray-200">
-                                <div className="flex items-center gap-3">
-                                    <div className="p-2 bg-red-100 rounded-lg">
-                                        <Flag size={20} className="text-red-600" />
-                                    </div>
-                                    <div>
-                                        <p className="text-xs text-gray-600">Reported</p>
-                                        <p className="text-xl font-bold">{stats.reported}</p>
+                                        <p className="text-xs text-gray-600">Interested</p>
+                                        <p className="text-xl font-bold">{stats.totalProposals}</p>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        {/* Filters - Local only, no API calls */}
+                        {/* Filters */}
                         <div className="bg-white p-4 rounded-xl border border-gray-200 mb-6">
                             <div className="flex flex-col lg:flex-row gap-4">
                                 <div className="flex-1 relative">
                                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
                                     <input
                                         type="text"
-                                        placeholder="Search by title, buyer, company, skills..."
+                                        placeholder="Search by title, student, service, skills..."
                                         value={searchTerm}
                                         onChange={(e) => {
                                             setSearchTerm(e.target.value);
@@ -581,7 +509,7 @@ const AdminProjects = () => {
                                     />
                                 </div>
                                 <div className="flex flex-wrap gap-2">
-                                    <select
+                                    {/* <select
                                         value={statusFilter}
                                         onChange={(e) => {
                                             setStatusFilter(e.target.value);
@@ -596,8 +524,9 @@ const AdminProjects = () => {
                                         <option value="draft">Draft</option>
                                         <option value="cancelled">Cancelled</option>
                                         <option value="suspended">Suspended</option>
+                                        <option value="filled">Filled</option>
                                         <option value="rejected">Rejected</option>
-                                    </select>
+                                    </select> */}
                                     <select
                                         value={categoryFilter}
                                         onChange={(e) => {
@@ -611,20 +540,6 @@ const AdminProjects = () => {
                                             <option key={category._id} value={category._id}>{category.name}</option>
                                         ))}
                                     </select>
-                                    <select
-                                        value={dateRange}
-                                        onChange={(e) => {
-                                            setDateRange(e.target.value);
-                                            setCurrentPage(1);
-                                        }}
-                                        className="px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-white min-w-[130px]"
-                                    >
-                                        <option value="7">Last 7 days</option>
-                                        <option value="30">Last 30 days</option>
-                                        <option value="90">Last 90 days</option>
-                                        <option value="365">Last year</option>
-                                        <option value="all">All time</option>
-                                    </select>
                                 </div>
                             </div>
                         </div>
@@ -636,10 +551,10 @@ const AdminProjects = () => {
                                     <thead className="bg-gray-50 border-b border-gray-200">
                                         <tr>
                                             <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase w-[300px]">Project</th>
-                                            <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase w-[180px]">Buyer</th>
-                                            <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase w-[140px]">Category</th>
-                                            <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase w-[140px]">Budget</th>
-                                            <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase w-[100px]">Applicants</th>
+                                            <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase w-[180px]">{userTypes?.buyer}</th>
+                                            <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase w-[140px]">Service / Period</th>
+                                            <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase w-[100px]">Interested</th>
+                                            <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase w-[100px]">Posted</th>
                                             <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase w-[100px]">Status</th>
                                             <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase w-[120px]">Actions</th>
                                         </tr>
@@ -667,13 +582,12 @@ const AdminProjects = () => {
                                                                 <div className="font-medium text-gray-900 line-clamp-2 text-sm">
                                                                     {project.title}
                                                                 </div>
-                                                                <div className="flex items-center gap-2 mt-1">
-                                                                    {project.featured && (
-                                                                        <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full flex items-center gap-1 whitespace-nowrap">
-                                                                            <Award size={10} />
-                                                                            Featured
+                                                                <div className="flex flex-wrap gap-1 mt-1">
+                                                                    {project.skills?.slice(0, 2).map((skill, idx) => (
+                                                                        <span key={idx} className="text-xs bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded">
+                                                                            {typeof skill === 'string' ? skill : skill.name}
                                                                         </span>
-                                                                    )}
+                                                                    ))}
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -683,7 +597,7 @@ const AdminProjects = () => {
                                                             {project.buyer?.profileImage ? (
                                                                 <img
                                                                     src={project.buyer.profileImage}
-                                                                    alt={project.buyer.displayName || 'Buyer'}
+                                                                    alt={project.buyer.displayName || ` ${userTypes?.buyer}`}
                                                                     className="w-8 h-8 rounded-full object-cover flex-shrink-0"
                                                                 />
                                                             ) : (
@@ -705,26 +619,29 @@ const AdminProjects = () => {
                                                     </td>
                                                     <td className="px-4 py-4">
                                                         <div>
-                                                            <div className="text-sm text-gray-900">{project.category?.name || project.category}</div>
-                                                            {project.subCategory && (
-                                                                <div className="text-xs text-gray-500">{project.subCategory?.name || project.subCategory}</div>
-                                                            )}
+                                                            <div className="text-sm font-medium text-gray-900">{getServiceDisplay(project.service)}</div>
+                                                            <div className="text-xs text-gray-500">
+                                                                {getPeriodLabel(project.period)} · {getDurationLabel(project.period, project.duration)}
+                                                            </div>
                                                         </div>
-                                                    </td>
-                                                    <td className="px-4 py-4">
-                                                        <div className="font-medium text-gray-900 text-sm">{getBudgetDisplay(project)}</div>
-                                                        <div className="text-xs text-gray-500">{project.duration}</div>
                                                     </td>
                                                     <td className="px-4 py-4">
                                                         <div className="space-y-1">
                                                             <div className="flex items-center gap-2 text-xs whitespace-nowrap">
                                                                 <Users size={12} className="flex-shrink-0" />
-                                                                <span>{project.applicantsCount || 0} applicants</span>
+                                                                <span>{project.proposalsCount || 0} interested</span>
                                                             </div>
-                                                            <div className="flex items-center gap-2 text-xs whitespace-nowrap">
-                                                                <UserCheck size={12} className="flex-shrink-0 text-green-600" />
-                                                                <span>{project.shortlistedCount || 0} shortlisted</span>
-                                                            </div>
+                                                            {/* {project.proposals?.filter(p => p.status === 'pending').length > 0 && (
+                                                                <div className="flex items-center gap-2 text-xs whitespace-nowrap">
+                                                                    <Clock size={12} className="flex-shrink-0 text-yellow-600" />
+                                                                    <span>{project.proposals.filter(p => p.status === 'pending').length} pending</span>
+                                                                </div>
+                                                            )} */}
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-4 py-4">
+                                                        <div className="text-sm text-gray-600">
+                                                            {formatDate(project.createdAt)}
                                                         </div>
                                                     </td>
                                                     <td className="px-4 py-4">
@@ -787,17 +704,8 @@ const AdminProjects = () => {
                                                                             </>
                                                                         )}
 
-                                                                        {project.status === 'active' && (
+                                                                        {/* {project.status === 'active' && (
                                                                             <>
-                                                                                <button
-                                                                                    onClick={() => {
-                                                                                        handleFeatureProject(project._id);
-                                                                                    }}
-                                                                                    className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-purple-50 hover:text-purple-700 flex items-center gap-2"
-                                                                                >
-                                                                                    <Award size={14} />
-                                                                                    {project.featured ? 'Remove Featured' : 'Mark Featured'}
-                                                                                </button>
                                                                                 <button
                                                                                     onClick={() => {
                                                                                         setSelectedProject(project);
@@ -811,7 +719,7 @@ const AdminProjects = () => {
                                                                                 </button>
                                                                                 <hr className="my-1 border-gray-200" />
                                                                             </>
-                                                                        )}
+                                                                        )} */}
 
                                                                         {project.status === 'suspended' && (
                                                                             <button
@@ -834,11 +742,11 @@ const AdminProjects = () => {
                                                                         </button>
 
                                                                         <button
-                                                                            onClick={() => handleViewApplicants(project)}
+                                                                            onClick={() => handleViewProposals(project)}
                                                                             className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2"
                                                                         >
                                                                             <Users size={14} />
-                                                                            View Applicants
+                                                                            View Interested
                                                                         </button>
 
                                                                         <hr className="my-1 border-gray-200" />
@@ -929,19 +837,13 @@ const AdminProjects = () => {
                                             <div className="flex-1">
                                                 <h3 className="font-medium text-gray-900 line-clamp-2 text-sm">{project.title}</h3>
                                                 <div className="flex items-center gap-2 mt-1">
-                                                    {project.featured && (
-                                                        <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full flex items-center gap-1">
-                                                            <Award size={10} />
-                                                            Featured
-                                                        </span>
-                                                    )}
                                                     {getStatusBadge(project.status)}
                                                 </div>
                                                 <div className="flex items-center gap-1 mt-1">
                                                     {project.buyer?.profileImage ? (
                                                         <img
                                                             src={project.buyer.profileImage}
-                                                            alt={project.buyer.displayName || 'Buyer'}
+                                                            alt={project.buyer.displayName || ` ${userTypes?.buyer}`}
                                                             className="w-4 h-4 rounded-full object-cover"
                                                         />
                                                     ) : (
@@ -954,30 +856,35 @@ const AdminProjects = () => {
                                                             `${project.buyer?.firstName || ''} ${project.buyer?.lastName || ''}`.trim() ||
                                                             'N/A'}
                                                     </span>
-                                                    {project.buyer?.isVerified && (
-                                                        <CheckCircle size={10} className="text-blue-500" />
-                                                    )}
                                                 </div>
                                             </div>
                                         </div>
 
                                         <div className="grid grid-cols-2 gap-2 mb-3 text-xs">
                                             <div>
-                                                <span className="text-gray-500">Budget:</span>
-                                                <span className="ml-1 font-medium">{getBudgetDisplay(project)}</span>
+                                                <span className="text-gray-500">Service:</span>
+                                                <span className="ml-1 font-medium">{getServiceDisplay(project.service)}</span>
                                             </div>
                                             <div>
-                                                <span className="text-gray-500">Applicants:</span>
-                                                <span className="ml-1">{project.applicantsCount || 0}</span>
+                                                <span className="text-gray-500">Period:</span>
+                                                <span className="ml-1">{getPeriodLabel(project.period)}</span>
                                             </div>
                                             <div>
-                                                <span className="text-gray-500">Category:</span>
-                                                <span className="ml-1">{project.category?.name || project.category}</span>
+                                                <span className="text-gray-500">Interested:</span>
+                                                <span className="ml-1">{project.proposalsCount || 0}</span>
                                             </div>
                                             <div>
                                                 <span className="text-gray-500">Posted:</span>
                                                 <span className="ml-1">{formatDate(project.createdAt)}</span>
                                             </div>
+                                        </div>
+
+                                        <div className="flex flex-wrap gap-1 mb-3">
+                                            {project.skills?.slice(0, 3).map((skill, idx) => (
+                                                <span key={idx} className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded">
+                                                    {typeof skill === 'string' ? skill : skill.name}
+                                                </span>
+                                            ))}
                                         </div>
 
                                         <div className="flex items-center justify-between border-t pt-3">
@@ -995,7 +902,6 @@ const AdminProjects = () => {
                                                     <Edit size={18} />
                                                 </button>
 
-                                                {/* Three Dots Dropdown - Mobile */}
                                                 <div className="relative">
                                                     <button
                                                         onClick={() => setOpenActionMenu(openActionMenu === project._id ? null : project._id)}
@@ -1032,30 +938,6 @@ const AdminProjects = () => {
                                                                     </button>
                                                                 </>
                                                             )}
-
-                                                            {project.status === 'active' && (
-                                                                <>
-                                                                    <button
-                                                                        onClick={() => handleFeatureProject(project._id)}
-                                                                        className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-purple-50 hover:text-purple-700 flex items-center gap-2"
-                                                                    >
-                                                                        <Award size={14} />
-                                                                        {project.featured ? 'Remove Featured' : 'Mark Featured'}
-                                                                    </button>
-                                                                    <button
-                                                                        onClick={() => {
-                                                                            setSelectedProject(project);
-                                                                            setShowSuspendModal(true);
-                                                                            setOpenActionMenu(null);
-                                                                        }}
-                                                                        className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-orange-50 hover:text-orange-700 flex items-center gap-2"
-                                                                    >
-                                                                        <PauseCircle size={14} />
-                                                                        Suspend
-                                                                    </button>
-                                                                </>
-                                                            )}
-
                                                             <button
                                                                 onClick={() => navigate(`/project/${project._id}`)}
                                                                 className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2"
@@ -1063,17 +945,14 @@ const AdminProjects = () => {
                                                                 <FolderOpen size={14} />
                                                                 View Project
                                                             </button>
-
                                                             <button
-                                                                onClick={() => handleViewApplicants(project)}
+                                                                onClick={() => handleViewProposals(project)}
                                                                 className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2"
                                                             >
                                                                 <Users size={14} />
-                                                                View Applicants
+                                                                View Interested
                                                             </button>
-
                                                             <hr className="my-1 border-gray-200" />
-
                                                             <button
                                                                 onClick={() => {
                                                                     setSelectedProject(project);
@@ -1128,98 +1007,11 @@ const AdminProjects = () => {
                                 </div>
                             )}
                         </div>
-
-                        {/* Project Statistics Summary */}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div className="bg-white p-4 rounded-xl border border-gray-200">
-                                <h4 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
-                                    <DollarSign size={16} className="text-green-600" />
-                                    Budget Overview
-                                </h4>
-                                <div className="space-y-2">
-                                    <div className="flex justify-between">
-                                        <span className="text-sm text-gray-600">Total Budget</span>
-                                        <span className="font-medium text-gray-900">{formatCurrency(stats.totalBudget)}</span>
-                                    </div>
-                                    <div className="flex justify-between">
-                                        <span className="text-sm text-gray-600">Average Budget</span>
-                                        <span className="font-medium text-gray-900">{formatCurrency(stats.totalBudget / stats.total)}</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="bg-white p-4 rounded-xl border border-gray-200">
-                                <h4 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
-                                    <Users size={16} className="text-blue-600" />
-                                    Applications
-                                </h4>
-                                <div className="space-y-2">
-                                    <div className="flex justify-between">
-                                        <span className="text-sm text-gray-600">Total Applicants</span>
-                                        <span className="font-medium text-gray-900">{stats.totalApplicants}</span>
-                                    </div>
-                                    <div className="flex justify-between">
-                                        <span className="text-sm text-gray-600">Hired</span>
-                                        <span className="font-medium text-green-600">{stats.hiredCount}</span>
-                                    </div>
-                                    <div className="flex justify-between">
-                                        <span className="text-sm text-gray-600">Avg per Project</span>
-                                        <span className="font-medium text-gray-900">
-                                            {stats.total > 0 ? Math.round(stats.totalApplicants / stats.total) : 0}
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="bg-white p-4 rounded-xl border border-gray-200">
-                                <h4 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
-                                    <TrendingUp size={16} className="text-purple-600" />
-                                    Completion Rate
-                                </h4>
-                                <div className="space-y-2">
-                                    <div className="flex justify-between">
-                                        <span className="text-sm text-gray-600">Completed</span>
-                                        <span className="font-medium text-blue-600">{stats.completed}</span>
-                                    </div>
-                                    <div className="flex justify-between">
-                                        <span className="text-sm text-gray-600">Active</span>
-                                        <span className="font-medium text-green-600">{stats.active}</span>
-                                    </div>
-                                    <div className="flex justify-between">
-                                        <span className="text-sm text-gray-600">Success Rate</span>
-                                        <span className="font-medium text-gray-900">
-                                            {stats.total > 0 ? Math.round((stats.completed / stats.total) * 100) : 0}%
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* <div className="bg-white p-4 rounded-xl border border-gray-200">
-                                <h4 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
-                                    <Flag size={16} className="text-red-600" />
-                                    Moderation
-                                </h4>
-                                <div className="space-y-2">
-                                    <div className="flex justify-between">
-                                        <span className="text-sm text-gray-600">Pending Review</span>
-                                        <span className="font-medium text-yellow-600">{stats.pending}</span>
-                                    </div>
-                                    <div className="flex justify-between">
-                                        <span className="text-sm text-gray-600">Reported</span>
-                                        <span className="font-medium text-red-600">{stats.reported}</span>
-                                    </div>
-                                    <div className="flex justify-between">
-                                        <span className="text-sm text-gray-600">Draft</span>
-                                        <span className="font-medium text-gray-600">{stats.draft}</span>
-                                    </div>
-                                </div>
-                            </div> */}
-                        </div>
                     </div>
                 </AdminContainer>
             </div>
 
-            {/* Project Details Modal */}
+            {/* Project Details Modal - Updated for new model */}
             {showProjectModal && selectedProject && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
                     <div className="bg-white rounded-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
@@ -1253,36 +1045,33 @@ const AdminProjects = () => {
                                     )}
                                 </div>
                                 <div className="flex-1">
-                                    <div className="flex items-center gap-2 flex-wrap">
-                                        <h4 className="text-lg font-bold text-gray-900">{selectedProject.title}</h4>
-                                        {selectedProject.featured && (
-                                            <span className="px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full flex items-center gap-1">
-                                                <Award size={12} />
-                                                Featured
-                                            </span>
-                                        )}
-                                    </div>
-                                    <div
-                                        className="prose max-w-none text-gray-700"
-                                        dangerouslySetInnerHTML={{ __html: selectedProject.description }}
-                                    />
+                                    <h4 className="text-lg font-bold text-gray-900">{selectedProject.title}</h4>
                                     <div className="flex items-center gap-2 mt-2">
                                         {getStatusBadge(selectedProject.status)}
                                     </div>
                                 </div>
                             </div>
 
+                            {/* Description */}
+                            <div>
+                                <h5 className="font-medium text-gray-700 mb-2">Description</h5>
+                                <div
+                                    className="prose max-w-none text-gray-700 text-sm"
+                                    dangerouslySetInnerHTML={{ __html: selectedProject.description }}
+                                />
+                            </div>
+
                             {/* Buyer Info */}
                             <div className="bg-gray-50 p-4 rounded-lg">
                                 <h4 className="font-medium mb-3 flex items-center gap-2">
                                     <Users size={16} />
-                                    Buyer Information
+                                    {userTypes?.buyer} Information
                                 </h4>
                                 <div className="flex items-start gap-3">
                                     {selectedProject.buyer?.profileImage ? (
                                         <img
                                             src={selectedProject.buyer.profileImage}
-                                            alt={selectedProject.buyer.displayName || 'Buyer'}
+                                            alt={selectedProject.buyer.displayName || ` ${userTypes?.buyer}`}
                                             className="w-12 h-12 rounded-full object-cover"
                                         />
                                     ) : (
@@ -1306,56 +1095,43 @@ const AdminProjects = () => {
                                         {selectedProject.buyer?.email && (
                                             <p className="text-sm text-gray-600">{selectedProject.buyer.email}</p>
                                         )}
-                                        <div className="flex items-center gap-3 mt-1 text-xs">
-                                            <span className="flex items-center gap-1">
-                                                <Star size={12} className="fill-yellow-400 text-yellow-400" />
-                                                {selectedProject.buyer?.rating || 0}
-                                            </span>
-                                            <span className="flex items-center gap-1">
-                                                <Briefcase size={12} />
-                                                {selectedProject.buyer?.projectsPosted || 0} projects
-                                            </span>
+                                        <div className="flex items-center gap-1 mt-1">
+                                            <div className="flex">
+                                                {[1, 2, 3, 4, 5].map((star) => (
+                                                    <Star
+                                                        key={star}
+                                                        size={14}
+                                                        className={star <= Math.round(selectedProject.buyer.rating || 0)
+                                                            ? 'fill-yellow-400 text-yellow-400'
+                                                            : 'text-gray-300'
+                                                        }
+                                                    />
+                                                ))}
+                                            </div>
+                                            <span className="text-sm font-medium">{selectedProject.buyer.rating || 0}</span>
+                                            <span className="text-xs text-gray-500">({selectedProject.buyer.reviewCount || 0} reviews)</span>
                                         </div>
-                                        {/* <div className="flex gap-2 mt-2">
-                                            <button
-                                                onClick={() => handleViewBuyer(selectedProject.buyer?._id)}
-                                                className="text-sm text-primary hover:text-primary-dark"
-                                            >
-                                                View Profile
-                                            </button>
-                                        </div> */}
                                     </div>
                                 </div>
                             </div>
 
-                            {/* Project Details Grid */}
+                            {/* Project Details Grid - Updated */}
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <p className="text-xs text-gray-500">Category</p>
                                     <p className="font-medium">{selectedProject.category?.name || selectedProject.category}</p>
-                                    {selectedProject.subCategory && (
-                                        <p className="text-sm text-gray-600">{selectedProject.subCategory?.name || selectedProject.subCategory}</p>
-                                    )}
                                 </div>
                                 <div>
-                                    <p className="text-xs text-gray-500">Budget</p>
-                                    <p className="font-medium text-primary">{getBudgetDisplay(selectedProject)}</p>
+                                    <p className="text-xs text-gray-500">Service</p>
+                                    <p className="font-medium">{getServiceDisplay(selectedProject.service)}</p>
                                 </div>
                                 <div>
-                                    <p className="text-xs text-gray-500">Location</p>
-                                    <p className="font-medium">{selectedProject.location || 'Remote'}</p>
+                                    <p className="text-xs text-gray-500">Period</p>
+                                    <p className="font-medium">{getPeriodLabel(selectedProject.period)}</p>
                                 </div>
                                 <div>
                                     <p className="text-xs text-gray-500">Duration</p>
-                                    <p className="font-medium">{selectedProject.duration}</p>
-                                </div>
-                                <div>
-                                    <p className="text-xs text-gray-500">Experience Level</p>
-                                    <p className="font-medium capitalize">{selectedProject.experienceLevel}</p>
-                                </div>
-                                <div>
-                                    <p className="text-xs text-gray-500">Deadline</p>
-                                    <p className="font-medium">{selectedProject.deadline ? formatDateTime(selectedProject.deadline) : 'Not set'}</p>
+                                    <p className="font-medium">{getDurationLabel(selectedProject.period, selectedProject.duration)}</p>
                                 </div>
                                 <div>
                                     <p className="text-xs text-gray-500">Created</p>
@@ -1381,40 +1157,39 @@ const AdminProjects = () => {
                                 </div>
                             )}
 
+                            {/* Additional Info */}
+                            {selectedProject.additionalInfo && (
+                                <div>
+                                    <p className="text-xs text-gray-500 mb-2">Additional Information</p>
+                                    <p className="text-sm text-gray-700">{selectedProject.additionalInfo}</p>
+                                </div>
+                            )}
+
                             {/* Stats Grid */}
                             <div className="bg-gray-50 p-4 rounded-lg">
                                 <h4 className="font-medium mb-3 flex items-center gap-2">
                                     <TrendingUp size={16} />
                                     Project Statistics
                                 </h4>
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                <div className="grid grid-cols-2 md:grid-cols-2 gap-4">
                                     <div>
                                         <p className="text-xs text-gray-500">Views</p>
                                         <p className="font-medium">{formatNumber(selectedProject.views)}</p>
                                     </div>
-                                    <div>
+                                    {/* <div>
                                         <p className="text-xs text-gray-500">Saves</p>
                                         <p className="font-medium">{selectedProject.saves || 0}</p>
-                                    </div>
+                                    </div> */}
                                     <div>
-                                        <p className="text-xs text-gray-500">Applicants</p>
-                                        <p className="font-medium">{selectedProject.applicantsCount || 0}</p>
+                                        <p className="text-xs text-gray-500">Interested</p>
+                                        <p className="font-medium">{selectedProject.proposalsCount || 0}</p>
                                     </div>
-                                    <div>
-                                        <p className="text-xs text-gray-500">Shortlisted</p>
-                                        <p className="font-medium">{selectedProject.shortlistedCount || 0}</p>
-                                    </div>
+                                    {/* <div>
+                                        <p className="text-xs text-gray-500">Accepted</p>
+                                        <p className="font-medium">{selectedProject.proposals?.filter(p => p.status === 'accepted').length || 0}</p>
+                                    </div> */}
                                 </div>
                             </div>
-
-                            {/* Cancellation Reason */}
-                            {selectedProject.status === 'cancelled' && selectedProject.cancellationReason && (
-                                <div className="bg-orange-50 p-4 rounded-lg">
-                                    <p className="text-sm text-orange-700">
-                                        <span className="font-medium">Cancellation Reason:</span> {selectedProject.cancellationReason}
-                                    </p>
-                                </div>
-                            )}
 
                             {/* Actions */}
                             <div className="flex flex-wrap gap-3 pt-4">
@@ -1428,56 +1203,32 @@ const AdminProjects = () => {
                                 <button
                                     onClick={() => {
                                         setShowProjectModal(false);
-                                        handleViewApplicants(selectedProject);
+                                        handleViewProposals(selectedProject);
                                     }}
                                     className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 flex items-center justify-center gap-2"
                                 >
                                     <Users size={18} />
-                                    View Applicants
+                                    View Interested
                                 </button>
-                                {selectedProject.status === 'pending' && (
-                                    <>
-                                        <button
-                                            onClick={() => {
-                                                setShowProjectModal(false);
-                                                setShowApproveModal(true);
-                                            }}
-                                            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center justify-center gap-2"
-                                        >
-                                            <CheckCircle size={18} />
-                                            Approve
-                                        </button>
-                                        <button
-                                            onClick={() => {
-                                                setShowProjectModal(false);
-                                                setShowRejectModal(true);
-                                            }}
-                                            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 flex items-center justify-center gap-2"
-                                        >
-                                            <XCircle size={18} />
-                                            Reject
-                                        </button>
-                                    </>
-                                )}
                             </div>
                         </div>
                     </div>
                 </div>
             )}
 
-            {/* Applicants Modal */}
-            {showApplicantsModal && selectedProject && (
+            {/* Proposals/Interested Modal - Updated */}
+            {showProposalsModal && selectedProject && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-4">
                     <div className="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
                         <div className="p-6 border-b border-gray-200 flex justify-between items-center sticky top-0 bg-white">
                             <div>
-                                <h3 className="text-xl font-bold text-gray-900">Applicants for Project</h3>
+                                <h3 className="text-xl font-bold text-gray-900">Interested Mentors</h3>
                                 <p className="text-sm text-gray-500 mt-1">{selectedProject.title}</p>
                             </div>
                             <button
                                 onClick={() => {
-                                    setShowApplicantsModal(false);
-                                    setApplicants([]);
+                                    setShowProposalsModal(false);
+                                    setProposals([]);
                                 }}
                                 className="p-2 hover:bg-gray-100 rounded-lg"
                             >
@@ -1486,49 +1237,47 @@ const AdminProjects = () => {
                         </div>
 
                         <div className="p-6">
-                            {loadingApplicants ? (
+                            {loadingProposals ? (
                                 <div className="flex justify-center items-center py-12">
                                     <Loader className="animate-spin h-8 w-8 text-primary" />
                                 </div>
                             ) : (
                                 <>
-                                    {/* Summary Stats */}
-                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                                    {/* <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                                         <div className="bg-gray-50 p-3 rounded-lg">
-                                            <p className="text-xs text-gray-500">Total Applicants</p>
-                                            <p className="text-xl font-bold">{applicants.length}</p>
-                                        </div>
-                                        <div className="bg-gray-50 p-3 rounded-lg">
-                                            <p className="text-xs text-gray-500">Shortlisted</p>
-                                            <p className="text-xl font-bold text-blue-600">
-                                                {applicants.filter(a => a.status === 'shortlisted').length}
-                                            </p>
-                                        </div>
-                                        <div className="bg-gray-50 p-3 rounded-lg">
-                                            <p className="text-xs text-gray-500">Hired</p>
-                                            <p className="text-xl font-bold text-green-600">
-                                                {applicants.filter(a => a.status === 'hired').length}
-                                            </p>
+                                            <p className="text-xs text-gray-500">Total Interested</p>
+                                            <p className="text-xl font-bold">{proposals.length}</p>
                                         </div>
                                         <div className="bg-gray-50 p-3 rounded-lg">
                                             <p className="text-xs text-gray-500">Pending</p>
                                             <p className="text-xl font-bold text-yellow-600">
-                                                {applicants.filter(a => a.status === 'pending').length}
+                                                {proposals.filter(p => p.status === 'pending').length}
                                             </p>
                                         </div>
-                                    </div>
+                                        <div className="bg-gray-50 p-3 rounded-lg">
+                                            <p className="text-xs text-gray-500">Accepted</p>
+                                            <p className="text-xl font-bold text-green-600">
+                                                {proposals.filter(p => p.status === 'accepted').length}
+                                            </p>
+                                        </div>
+                                        <div className="bg-gray-50 p-3 rounded-lg">
+                                            <p className="text-xs text-gray-500">Rejected</p>
+                                            <p className="text-xl font-bold text-red-600">
+                                                {proposals.filter(p => p.status === 'rejected').length}
+                                            </p>
+                                        </div>
+                                    </div> */}
 
-                                    {/* Applicants List */}
-                                    {applicants.length > 0 ? (
+                                    {proposals.length > 0 ? (
                                         <div className="space-y-4">
-                                            {applicants.map((applicant) => (
-                                                <div key={applicant._id} className="border border-gray-200 rounded-lg p-4">
+                                            {proposals.map((proposal) => (
+                                                <div key={proposal._id} className="border border-gray-200 rounded-lg p-4">
                                                     <div className="flex flex-col md:flex-row md:items-start gap-4">
                                                         <div className="flex items-start gap-3 md:w-1/3">
-                                                            {applicant.avatar || applicant.freelancer?.profileImage ? (
+                                                            {proposal.freelancerAvatar ? (
                                                                 <img
-                                                                    src={applicant.avatar || applicant.freelancer?.profileImage}
-                                                                    alt={applicant.name}
+                                                                    src={proposal.freelancerAvatar}
+                                                                    alt={proposal.freelancerName}
                                                                     className="w-12 h-12 rounded-full object-cover"
                                                                 />
                                                             ) : (
@@ -1537,85 +1286,76 @@ const AdminProjects = () => {
                                                                 </div>
                                                             )}
                                                             <div>
-                                                                <h4 className="font-medium text-gray-900">{applicant.name}</h4>
-                                                                <p className="text-sm text-gray-600">{applicant.title}</p>
+                                                                <h4 className="font-medium text-gray-900">{proposal.freelancerName}</h4>
+                                                                <p className="text-sm text-gray-600">{proposal.freelancer?.title || 'Mentor'}</p>
                                                                 <div className="flex items-center gap-1 mt-1">
-                                                                    <Star size={12} className="fill-yellow-400 text-yellow-400" />
-                                                                    <span className="text-xs font-medium">{applicant.rating || 0}</span>
-                                                                    <span className="text-xs text-gray-500">({applicant.reviews || 0} reviews)</span>
-                                                                </div>
-                                                                <div className="mt-1">
-                                                                    {applicant.status === 'pending' && (
+                                            <div className="flex">
+                                                {[1, 2, 3, 4, 5].map((star) => (
+                                                    <Star
+                                                        key={star}
+                                                        size={14}
+                                                        className={star <= Math.round(proposal.freelancer.rating || 0)
+                                                            ? 'fill-yellow-400 text-yellow-400'
+                                                            : 'text-gray-300'
+                                                        }
+                                                    />
+                                                ))}
+                                            </div>
+                                            <span className="text-sm font-medium">{proposal.freelancer.rating || 0}</span>
+                                            <span className="text-xs text-gray-500">({proposal.freelancer.reviewCount || 0} reviews)</span>
+                                        </div>
+                                                                {/* <div className="mt-1">
+                                                                    {proposal.status === 'pending' && (
                                                                         <span className="inline-flex items-center px-2 py-0.5 bg-yellow-100 text-yellow-700 text-xs rounded-full">
                                                                             Pending
                                                                         </span>
                                                                     )}
-                                                                    {applicant.status === 'shortlisted' && (
-                                                                        <span className="inline-flex items-center px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded-full">
-                                                                            Shortlisted
-                                                                        </span>
-                                                                    )}
-                                                                    {applicant.status === 'hired' && (
+                                                                    {proposal.status === 'accepted' && (
                                                                         <span className="inline-flex items-center px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full">
-                                                                            Hired
+                                                                            Accepted
                                                                         </span>
                                                                     )}
-                                                                    {applicant.status === 'rejected' && (
+                                                                    {proposal.status === 'rejected' && (
                                                                         <span className="inline-flex items-center px-2 py-0.5 bg-red-100 text-red-700 text-xs rounded-full">
                                                                             Rejected
                                                                         </span>
                                                                     )}
-                                                                </div>
+                                                                </div> */}
                                                             </div>
                                                         </div>
 
                                                         <div className="md:w-2/3 space-y-2">
                                                             <div className="grid grid-cols-2 gap-2 text-sm">
                                                                 <div>
-                                                                    <span className="text-gray-500">Proposed:</span>
-                                                                    <span className="ml-1 font-medium">
-                                                                        {formatCurrency(applicant.proposedBudget)}
-                                                                    </span>
+                                                                    <span className="text-gray-500">Period:</span>
+                                                                    <span className="ml-1 font-medium capitalize">{getPeriodLabel(proposal.selectedPeriod)}</span>
                                                                 </div>
                                                                 <div>
-                                                                    <span className="text-gray-500">Timeline:</span>
-                                                                    <span className="ml-1">{applicant.proposedTimeline || 'N/A'}</span>
+                                                                    <span className="text-gray-500">Duration:</span>
+                                                                    <span className="ml-1">{proposal.selectedDuration === 'standard' ? 'Standard' : 'Full day'}</span>
+                                                                </div>
+                                                                <div>
+                                                                    <span className="text-gray-500">Service:</span>
+                                                                    <span className="ml-1">{proposal.selectedService}</span>
+                                                                </div>
+                                                                <div>
+                                                                    <span className="text-gray-500">Applied:</span>
+                                                                    <span className="ml-1">{formatDate(proposal.createdAt)}</span>
                                                                 </div>
                                                             </div>
 
-                                                            <p className="text-sm text-gray-700 line-clamp-2">
-                                                                {applicant.coverLetter}
+                                                            <p className="text-sm text-gray-700 line-clamp-3">
+                                                                {proposal.proposal}
                                                             </p>
-
-                                                            {applicant.skills && applicant.skills.length > 0 && (
-                                                                <div className="flex flex-wrap gap-1">
-                                                                    {applicant.skills.slice(0, 3).map((skill, idx) => (
-                                                                        <span key={idx} className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded">
-                                                                            {typeof skill === 'string' ? skill : skill.name}
-                                                                        </span>
-                                                                    ))}
-                                                                </div>
-                                                            )}
 
                                                             <div className="flex gap-2 mt-2">
                                                                 <button
-                                                                    onClick={() => navigate(`/admin/users/${applicant.freelancer?._id || applicant._id}`)}
+                                                                    onClick={() => navigate(`/freelancer/${proposal.freelancer?._id}`)}
                                                                     className="px-3 py-1 text-xs bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
                                                                 >
                                                                     View Profile
                                                                 </button>
                                                             </div>
-
-                                                            {applicant.response && (
-                                                                <div className={`mt-2 p-2 rounded text-sm ${applicant.response.type === 'hired' ? 'bg-green-50 text-green-700' :
-                                                                    applicant.response.type === 'rejected' ? 'bg-red-50 text-red-700' :
-                                                                        'bg-blue-50 text-blue-700'
-                                                                    }`}>
-                                                                    <p className="font-medium">Response sent:</p>
-                                                                    <p>{applicant.response.message}</p>
-                                                                    <p className="text-xs mt-1">{formatDate(applicant.response.date)}</p>
-                                                                </div>
-                                                            )}
                                                         </div>
                                                     </div>
                                                 </div>
@@ -1624,7 +1364,7 @@ const AdminProjects = () => {
                                     ) : (
                                         <div className="text-center py-12">
                                             <Users size={48} className="mx-auto text-gray-300 mb-3" />
-                                            <p className="text-gray-500">No applicants yet</p>
+                                            <p className="text-gray-500">No interested mentors yet</p>
                                         </div>
                                     )}
                                 </>
@@ -1634,13 +1374,14 @@ const AdminProjects = () => {
                 </div>
             )}
 
+            {/* Modals for Approve, Reject, Suspend, Delete remain the same */}
             {/* Approve Confirmation Modal */}
             {showApproveModal && selectedProject && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
                     <div className="bg-white rounded-xl max-w-md w-full p-6">
                         <h3 className="text-xl font-bold text-gray-900 mb-2">Approve Project</h3>
                         <p className="text-gray-600 mb-6">
-                            Are you sure you want to approve "{selectedProject.title}"? This project will become active and visible to freelancers.
+                            Are you sure you want to approve "{selectedProject.title}"? This project will become active and visible to mentors.
                         </p>
                         <div className="flex gap-3">
                             <button
@@ -1679,7 +1420,7 @@ const AdminProjects = () => {
                                 id="rejectReason"
                                 rows={3}
                                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-                                placeholder="Provide feedback to the buyer..."
+                                placeholder="Provide feedback to the student..."
                             />
                         </div>
                         <div className="flex gap-3">
@@ -1716,7 +1457,7 @@ const AdminProjects = () => {
                     <div className="bg-white rounded-xl max-w-md w-full p-6">
                         <h3 className="text-xl font-bold text-gray-900 mb-2">Suspend Project</h3>
                         <p className="text-gray-600 mb-6">
-                            Are you sure you want to suspend "{selectedProject.title}"? This will hide it from freelancers.
+                            Are you sure you want to suspend "{selectedProject.title}"? This will hide it from mentors.
                         </p>
                         <div className="flex gap-3">
                             <button
@@ -1774,4 +1515,4 @@ const AdminProjects = () => {
     );
 };
 
-export default AdminProjects;
+export default AllProjects;

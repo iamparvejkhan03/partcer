@@ -10,7 +10,7 @@ const MobileCategory = ({ category, type }) => (
             <Link
                 to={type === 'services'
                     ? `/services?category=${category.slug}`
-                    : `/projects?category=${category.slug}`
+                    : `/projects?category=${encodeURIComponent(category.name)}`
                 }
                 className="hover:text-primary transition-colors"
             >
@@ -23,7 +23,7 @@ const MobileCategory = ({ category, type }) => (
                     <Link
                         to={type === 'services'
                             ? `/services?category=${category.slug}&subcategory=${sub.slug}`
-                            : `/projects?category=${category.slug}&subcategory=${sub.slug}`
+                            : `/projects?category=${encodeURIComponent(category.name)}&subCategory=${encodeURIComponent(sub.name)}`
                         }
                         className="hover:text-primary transition-colors"
                     >
@@ -98,7 +98,7 @@ const MegaMenuMobile = () => {
     return (
         <div className="space-y-8">
             {/* Services Section - First Row */}
-            {firstRow.length > 0 && (
+            {/* {firstRow.length > 0 && (
                 <div>
                     <h4 className="font-medium text-lg mb-4">Explore services by categories</h4>
                     <div className="space-y-6">
@@ -107,7 +107,7 @@ const MegaMenuMobile = () => {
                         ))}
                     </div>
                 </div>
-            )}
+            )} */}
 
             {/* Projects Section - Second Row */}
             {secondRow.length > 0 && (

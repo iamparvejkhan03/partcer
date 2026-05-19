@@ -35,7 +35,7 @@ const About = () => {
     // Company stats
     const stats = [
         { label: 'Job Seekers Trained', value: '10,000+', icon: Users },
-        { label: 'Expert Freelance', value: '500+', icon: Award },
+        { label: 'Expert Mentors', value: '500+', icon: Award },
         { label: 'Hours of Training', value: '5,000+', icon: Clock },
         { label: 'Success Rate', value: '95%', icon: TrendingUp },
     ];
@@ -44,7 +44,7 @@ const About = () => {
     const coreValues = [
         {
             title: 'Quality Training',
-            description: 'We believe in delivering the highest quality mentorship. Every freelancer on our platform is vetted for real industry experience.',
+            description: 'We believe in delivering the highest quality mentorship. Every mentor on our platform is vetted for real industry experience.',
             icon: Award,
             color: 'bg-purple-100 text-purple-600',
         },
@@ -74,17 +74,17 @@ const About = () => {
             name: 'Manoj Prabakar',
             role: 'CEO & Founder',
             image: 'https://find.raretalancer.online/wp-content/uploads/2024/09/=ETNyQTMe5VeltmY05lX3VmYzlGdl1SM3IjN3YDN3QDM.png',
-            bio: 'Passionate freelancer with a vision to make job support accessible to all.',
+            bio: 'Passionate mentor with a vision to make career support accessible to all.',
         },
         {
             name: 'Sarah Johnson',
             role: 'Head of Marketing',
             image: 'https://find.raretalancer.online/wp-content/uploads/2024/09/=ETNyQTMe5VeltmY05lX3VmYzlGdl1SM3IjN3YDN3QDM.png',
-            bio: 'Experienced freelancer dedicated to creating effective learning materials.',
+            bio: 'Experienced mentor dedicated to creating effective learning materials.',
         },
         {
             name: 'Michael Chen',
-            role: 'Lead Freelancer',
+            role: 'Lead Mentor',
             image: 'https://find.raretalancer.online/wp-content/uploads/2024/09/=ETNyQTMe5VeltmY05lX3VmYzlGdl1SM3IjN3YDN3QDM.png',
             bio: 'An instructor with 8+ years of training experience.',
         },
@@ -119,7 +119,7 @@ const About = () => {
                                     Discover the Story Behind <span className="text-primary">Partcer</span>
                                 </h1>
                                 <p className="text-gray-600 max-w-2xl">
-                                    Experience how we connect job seekers with expert freelancers who provide personalized training and career support.
+                                    Experience how we connect job seekers with expert mentors who provide personalized training and career support.
                                 </p>
                             </div>
 
@@ -157,7 +157,7 @@ const About = () => {
                             Empowering Careers Through <span className="text-primary">Expert Guidance</span>
                         </h2>
                         <p className="text-gray-600 mb-6 leading-relaxed">
-                            Partcer was founded with a clear vision: to bridge the gap between job seekers and their dream careers. We created a platform that connects ambitious professionals with experienced freelancers—developers, designers, and industry experts—for personalized 1:1 training, accessible anytime from anywhere.
+                            Partcer was founded with a clear vision: to bridge the gap between job seekers and their dream careers. We created a platform that connects ambitious professionals with experienced mentors and industry experts—for personalized 1:1 training, accessible anytime from anywhere.
                         </p>
 
                         {/* Founder Quote */}

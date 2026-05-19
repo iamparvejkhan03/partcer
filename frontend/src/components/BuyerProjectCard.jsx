@@ -1,15 +1,35 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { MapPin, DollarSign, Users, Clock, Briefcase, ChevronRight, Bookmark } from 'lucide-react';
+import { Clock, Users, ChevronRight, Bookmark } from 'lucide-react';
 import { useState } from 'react';
 import toast from 'react-hot-toast';
 import axiosInstance from '../utils/axiosInstance';
 import { useAuth } from '../contexts/AuthContext';
+import ExpressInterestModal from '../components/freelancer/ExpressInterestModal';
 
-const ProjectCard = ({ project, onSaveToggle }) => {
+const ProjectCard = ({ project, onSaveToggle, onRefresh }) => {
     const { user, isAuthenticated, userType } = useAuth();
     const [isSaving, setIsSaving] = useState(false);
     const [isSaved, setIsSaved] = useState(project?.isSaved || false);
+    const [showExpressModal, setShowExpressModal] = useState(false);
+    const [hasApplied, setHasApplied] = useState(project?.hasApplied || false);
+
+    // Helper functions for new model
+    const getPeriodLabel = (period) => {
+        const map = {
+            one_time: 'One-time',
+            per_day: 'Per day',
+            weekly: 'Weekly',
+            monthly: 'Monthly'
+        };
+        return map[period] || period;
+    };
+
+    const getDurationLabel = (period, duration) => {
+        if (period === 'one_time') return 'Single session';
+        if (duration === 'standard') return 'Standard (2-3 hrs)';
+        return 'Full day (6-8 hrs)';
+    };
 
     const handleSaveToggle = async (e) => {
         e.preventDefault();
@@ -21,13 +41,13 @@ const ProjectCard = ({ project, onSaveToggle }) => {
         }
 
         if (userType !== 'freelancer') {
-            toast.error('Only freelancers can save projects');
+            toast.error('Only mentors can save projects');
             return;
         }
 
         try {
             setIsSaving(true);
-            
+
             if (isSaved) {
                 await axiosInstance.delete(`/api/v1/projects/${project._id}/save`);
                 setIsSaved(false);
@@ -37,7 +57,7 @@ const ProjectCard = ({ project, onSaveToggle }) => {
                 setIsSaved(true);
                 toast.success('Project saved successfully');
             }
-            
+
             if (onSaveToggle) {
                 onSaveToggle(project._id, !isSaved);
             }
@@ -49,22 +69,48 @@ const ProjectCard = ({ project, onSaveToggle }) => {
         }
     };
 
-    // Format budget display
-    const formatBudget = () => {
-        if (project.projectType === 'fixed') {
-            if (project.minBudget && project.maxBudget) {
-                return `$${project.minBudget.toLocaleString()} - $${project.maxBudget.toLocaleString()}`;
+    const handleExpressInterest = async (data) => {
+        try {
+            const response = await axiosInstance.post(`/api/v1/projects/${project._id}/apply`, {
+                proposal: data.proposal,
+                period: data.period,
+                duration: data.duration,
+                service: data.service
+            });
+
+            if (response.data.success) {
+                toast.success('Interest expressed successfully!');
+                setShowExpressModal(false);
+                setHasApplied(true);
+                if (onRefresh) onRefresh();
             }
-            return `$${project.budget?.toLocaleString() || 0}`;
-        } else {
-            return `$${project.hourlyRate || 0}/hr (est. ${project.estimatedHours || 0} hrs)`;
+        } catch (error) {
+            const errorMessage = error?.response?.data?.message || 'Failed to submit interest';
+            toast.error(errorMessage);
         }
+    };
+
+    const handleExpressClick = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        if (!isAuthenticated) {
+            toast.error('Please login to express interest');
+            return;
+        }
+
+        if (userType !== 'freelancer') {
+            toast.error('Only mentors can express interest');
+            return;
+        }
+
+        setShowExpressModal(true);
     };
 
     // Format posted time
     const formatPostedTime = () => {
         if (!project.createdAt) return 'Recently';
-        
+
         const now = new Date();
         const posted = new Date(project.createdAt);
         const diffMs = now - posted;
@@ -73,29 +119,28 @@ const ProjectCard = ({ project, onSaveToggle }) => {
         const diffDays = Math.floor(diffMs / 86400000);
         const diffWeeks = Math.floor(diffDays / 7);
         const diffMonths = Math.floor(diffDays / 30);
-        const diffYears = Math.floor(diffDays / 365);
 
-        if (diffMins < 1) return 'Posted just now';
-        if (diffMins < 60) return `Posted ${diffMins} minute${diffMins > 1 ? 's' : ''} ago`;
-        if (diffHours < 24) return `Posted ${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
-        if (diffDays < 7) return `Posted ${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
-        if (diffWeeks < 4) return `Posted ${diffWeeks} week${diffWeeks > 1 ? 's' : ''} ago`;
-        if (diffMonths < 12) return `Posted ${diffMonths} month${diffMonths > 1 ? 's' : ''} ago`;
-        return `Posted ${diffYears} year${diffYears > 1 ? 's' : ''} ago`;
+        if (diffMins < 1) return 'just now';
+        if (diffMins < 60) return `${diffMins} min ago`;
+        if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+        if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+        if (diffWeeks < 4) return `${diffWeeks} week${diffWeeks > 1 ? 's' : ''} ago`;
+        if (diffMonths < 12) return `${diffMonths} month${diffMonths > 1 ? 's' : ''} ago`;
+        return 'a long time ago';
     };
 
     // Get buyer name
     const getBuyerName = () => {
         if (!project.buyer) return 'Client';
-        return project.buyer.displayName || 
-               `${project.buyer.firstName || ''} ${project.buyer.lastName || ''}`.trim() || 
-               'Client';
+        return project.buyer.displayName ||
+            `${project.buyer.firstName || ''} ${project.buyer.lastName || ''}`.trim() ||
+            'Client';
     };
 
     // Get buyer avatar
     const getBuyerAvatar = () => {
-        return project.buyer?.profileImage || 
-               'https://images.pexels.com/photos/27523254/pexels-photo-27523254.jpeg';
+        return project.buyer?.profileImage ||
+            'https://images.pexels.com/photos/27523254/pexels-photo-27523254.jpeg';
     };
 
     // Check if buyer is verified
@@ -105,136 +150,144 @@ const ProjectCard = ({ project, onSaveToggle }) => {
 
     return (
         <Link to={`/project/${project._id}`} className="block">
-            <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden hover:shadow-xl transition-all duration-300 w-full max-w-full mx-auto hover:border-primary/20 cursor-pointer">
-                <div className="p-6 md:p-8">
-                    {/* Header Section */}
-                    <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-4 md:mb-6">
-                        {/* User Image and Content */}
-                        <div className="flex items-start gap-4 w-full">
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-all duration-300 w-full hover:border-primary/30 cursor-pointer">
+                <div className="p-5 md:p-6">
+                    {/* Header Section - Title and Bookmark */}
+                    <div className="flex items-start justify-between gap-3 mb-3">
+                        <div className="flex-1">
+                            <h2 className="text-lg md:text-xl font-semibold text-gray-900 leading-tight line-clamp-1">
+                                {project.title || 'Untitled Project'}
+                            </h2>
+                        </div>
+
+                        {/* Bookmark Button */}
+                        {userType === 'freelancer' && (
+                            <button
+                                onClick={handleSaveToggle}
+                                disabled={isSaving}
+                                className='p-2 rounded-lg cursor-pointer transition-all bg-gray-50 text-gray-500 border border-gray-200 hover:bg-gray-100 flex-shrink-0 disabled:opacity-50'
+                            >
+                                <Bookmark size={18} className={isSaved ? 'fill-primary text-primary' : ''} />
+                            </button>
+                        )}
+                    </div>
+
+                    {/* Buyer Info and Posted Time */}
+                    <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-2">
                             <img
                                 src={getBuyerAvatar()}
                                 alt={getBuyerName()}
                                 loading='lazy'
-                                className='h-14 w-14 md:h-16 md:w-16 rounded-lg object-cover flex-shrink-0'
+                                className='h-5 w-5 rounded-full object-cover'
                             />
-
-                            <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2 mb-1">
-                                    <h2 className="text-lg md:text-xl font-medium text-gray-900 leading-tight">
-                                        {project.title || 'Untitled Project'}
-                                    </h2>
-                                    {isBuyerVerified() && (
-                                        <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full whitespace-nowrap">
-                                            Verified
-                                        </span>
-                                    )}
-                                </div>
-
-                                {/* Desktop Stats */}
-                                <div className="hidden md:flex items-center gap-4 text-gray-500 mt-2">
-                                    <div className="flex items-center gap-2">
-                                        <MapPin size={18} />
-                                        <span className="font-base">{project.location || 'Remote'}</span>
-                                    </div>
-                                    <div className="text-gray-400">•</div>
-                                    <div className="flex items-center gap-2">
-                                        <DollarSign size={18} />
-                                        <span className="font-base">{formatBudget()}</span>
-                                    </div>
-                                    <div className="text-gray-400">•</div>
-                                    <div className="flex items-center gap-2">
-                                        <Users size={18} />
-                                        <span className="font-base">{project.applicantsCount || 0} Applicant{(project.applicantsCount || 0) !== 1 ? 's' : ''}</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Bookmark Button - Desktop */}
-                        {userType === 'freelancer' && (
-                            <button 
-                                onClick={handleSaveToggle}
-                                disabled={isSaving}
-                                className='p-3 hidden md:block rounded-lg cursor-pointer transition-all bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100 self-start md:self-auto mt-2 md:mt-0 disabled:opacity-50'
-                            >
-                                <Bookmark size={20} className={isSaved ? 'fill-primary text-primary' : ''} />
-                            </button>
-                        )}
-                    </div>
-
-                    {/* Mobile Stats */}
-                    <div className="flex flex-wrap gap-3 md:hidden text-gray-500 mb-4">
-                        <div className="flex items-center gap-2">
-                            <MapPin size={16} className='flex-shrink-0' />
-                            <span className="text-sm">{project.location || 'Remote'}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <DollarSign size={16} className='flex-shrink-0' />
-                            <span className="text-sm">{formatBudget()}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <Users size={16} className='flex-shrink-0' />
-                            <span className="text-sm">{project.applicantsCount || 0} Applicant{(project.applicantsCount || 0) !== 1 ? 's' : ''}</span>
-                        </div>
-                    </div>
-
-                    {/* Description */}
-                    <p className="text-gray-500 leading-relaxed mb-6 line-clamp-2">
-                        {project.description?.replace(/<[^>]*>/g, '') || 'No description provided'}
-                    </p>
-
-                    {/* Skills Tags */}
-                    <div className="flex flex-wrap items-center justify-between gap-4">
-                        <div className="flex flex-wrap gap-2">
-                            {(project.skills || []).slice(0, 4).map((skill, index) => (
-                                <span
-                                    key={index}
-                                    className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-lg text-sm font-medium transition-colors"
-                                >
-                                    {typeof skill === 'string' ? skill : skill.name}
-                                </span>
-                            ))}
-                            {(project.skills || []).length > 4 && (
-                                <span className="px-3 py-1.5 bg-gray-100 text-gray-800 rounded-lg text-sm font-medium">
-                                    +{(project.skills || []).length - 4}
+                            <span className="text-sm text-gray-600">
+                                by {getBuyerName()}
+                            </span>
+                            {isBuyerVerified() && (
+                                <span className="text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full">
+                                    Verified
                                 </span>
                             )}
                         </div>
-
-                        {/* Posted Time */}
-                        <div className="flex items-center gap-2 text-sm text-gray-500 whitespace-nowrap">
-                            <Clock size={16} className="text-gray-400 flex-shrink-0" />
+                        <div className="flex items-center gap-1 text-xs text-gray-400">
+                            <Clock size={12} />
                             <span>{formatPostedTime()}</span>
                         </div>
+                    </div>
 
-                        {/* Bookmark Button - Mobile */}
-                        {userType === 'freelancer' && (
-                            <button 
-                                onClick={handleSaveToggle}
-                                disabled={isSaving}
-                                className='p-3 md:hidden rounded-lg cursor-pointer transition-all bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100 disabled:opacity-50'
-                            >
-                                <Bookmark size={20} className={isSaved ? 'fill-primary text-primary' : ''} />
-                            </button>
+                    {/* Category and Subcategory Pills - Blue and Purple */}
+                    <div className="flex flex-wrap gap-2 mb-3">
+                        {project.category && (
+                            <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
+                                {typeof project.category === 'object' ? project.category.name : project.category}
+                            </span>
+                        )}
+                        {project.subCategory && (
+                            <span className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-medium">
+                                {typeof project.subCategory === 'object' ? project.subCategory.name : project.subCategory}
+                            </span>
                         )}
                     </div>
 
-                    {/* Footer with View Project Button - Hidden as per original comment */}
-                    {/* <div className="flex items-center justify-between pt-6 border-t border-gray-100">
-                        <div className="flex items-center gap-4">
-                            <div className="flex items-center gap-2 text-gray-600">
-                                <Briefcase size={18} className="text-gray-500" />
-                                <span className="text-sm">Project by {isBuyerVerified() ? 'Verified Client' : 'Client'}</span>
-                            </div>
+                    {/* Period, Duration, Service Row */}
+                    <div className="flex flex-wrap items-center gap-3 mb-3 text-sm">
+                        <span className="text-gray-700 font-medium">
+                            {getPeriodLabel(project.period)}
+                        </span>
+                        <span className="text-gray-300">•</span>
+                        <span className="text-gray-600">
+                            {getDurationLabel(project.period, project.duration)}
+                        </span>
+                        <span className="text-gray-300">•</span>
+                        <span className="text-gray-600">
+                            {project.service || 'Skill Training'}
+                        </span>
+                    </div>
+
+                    {/* Skills Pills */}
+                    <div className="flex flex-wrap gap-2 mb-4">
+                        {(project.skills || []).slice(0, 3).map((skill, index) => (
+                            <span
+                                key={index}
+                                className="px-2.5 py-1 bg-gray-100 text-gray-700 rounded-md text-xs font-medium"
+                            >
+                                {typeof skill === 'string' ? skill : skill.name}
+                            </span>
+                        ))}
+                        {(project.skills || []).length > 3 && (
+                            <span className="px-2.5 py-1 bg-gray-100 text-gray-700 rounded-md text-xs font-medium">
+                                +{(project.skills || []).length - 3}
+                            </span>
+                        )}
+                    </div>
+
+                    {/* Interested Count and Actions */}
+                    <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-100">
+                        <div className="flex items-center gap-1.5">
+                            <Users size={16} className="text-gray-400" />
+                            <span className="text-sm text-gray-600">
+                                {project.proposalsCount || 0} mentor{(project.proposalsCount || 0) !== 1 ? 's' : ''} interested
+                            </span>
                         </div>
 
-                        <div className="inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-white font-semibold py-3 px-6 rounded-lg transition-colors text-lg group">
-                            <span>View Project</span>
-                            <ChevronRight size={20} className="group-hover:translate-x-1 transition-transform" />
+                        <div className="flex items-center gap-4">
+                            <p
+                                // to={`/project/${project._id}`}
+                                // onClick={(e) => e.stopPropagation()}
+                                className="text-primary hover:text-primary-dark text-sm font-medium flex items-center gap-1"
+                            >
+                                View full project
+                                <ChevronRight size={14} />
+                            </p>
+
+                            {userType === 'freelancer' && !hasApplied && (
+                                <button
+                                    onClick={handleExpressClick}
+                                    className="px-4 py-1.5 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors"
+                                >
+                                    Express Interest
+                                </button>
+                            )}
+
+                            {userType === 'freelancer' && hasApplied && (
+                                <span className="px-3 py-1.5 bg-green-100 text-green-700 rounded-lg text-xs font-medium">
+                                    Interest Sent
+                                </span>
+                            )}
                         </div>
-                    </div> */}
+                    </div>
                 </div>
             </div>
+
+            {/* Express Interest Modal */}
+            <ExpressInterestModal
+                isOpen={showExpressModal}
+                onClose={() => setShowExpressModal(false)}
+                projectDetails={project}
+                onSubmit={handleExpressInterest}
+                isSubmitting={false}
+            />
         </Link>
     );
 };

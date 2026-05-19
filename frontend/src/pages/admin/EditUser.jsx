@@ -710,7 +710,7 @@ const EditUser = () => {
     ];
 
     const freelancerTypes = [
-        { value: "independent", label: "Independent Freelancer" },
+        { value: "independent", label: "Independent Mentor" },
         { value: "agency", label: "Agency" }
     ];
 
@@ -799,8 +799,8 @@ const EditUser = () => {
                                 onChange={(e) => setUserRole(e.target.value)}
                                 className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-transparent"
                             >
-                                <option value="freelancer">Freelancer</option>
-                                <option value="buyer">Buyer</option>
+                                <option value="freelancer">Mentor</option>
+                                <option value="buyer">Student</option>
                                 <option value="admin">Admin</option>
                             </select>
                         </div>
@@ -1073,7 +1073,7 @@ const EditUser = () => {
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                             <div>
                                                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                    Freelancer Type
+                                                    Mentor Type
                                                 </label>
                                                 <select
                                                     {...register('freelancerType')}

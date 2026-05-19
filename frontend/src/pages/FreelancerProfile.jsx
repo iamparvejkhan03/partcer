@@ -28,7 +28,7 @@ import {
     Heart,
     Download
 } from "lucide-react";
-import { Container, StartChatButton } from "../components";
+import { Container, StartChatButton, PricingSection } from "../components";
 import axiosInstance from "../utils/axiosInstance";
 import toast from "react-hot-toast";
 import { dummyUserImg } from "../assets";
@@ -75,7 +75,8 @@ const FreelancerProfile = () => {
 
         try {
             setReviewsLoading(true);
-            const response = await axiosInstance.get(`/api/v1/reviews/user/${freelancerId}?role=freelancer&limit=20`);
+            // const response = await axiosInstance.get(`/api/v1/reviews/user/${freelancerId}?role=freelancer&limit=20`);
+            const response = await axiosInstance.get(`/api/v1/reviews/user/${freelancerId}?role=mentor&limit=20`);
 
             if (response.data.success) {
                 setReviews(response.data.data.reviews || []);
@@ -189,7 +190,7 @@ const FreelancerProfile = () => {
             <Container>
                 <div className="min-h-screen pt-32 pb-16">
                     <div className="text-center">
-                        <h2 className="text-2xl font-bold text-gray-900">Freelancer not found</h2>
+                        <h2 className="text-2xl font-bold text-gray-900">Mentor not found</h2>
                     </div>
                 </div>
             </Container>
@@ -292,7 +293,7 @@ const FreelancerProfile = () => {
                                         <div className="flex items-start gap-3">
                                             <Briefcase size={18} className="text-gray-400 mt-0.5" />
                                             <div>
-                                                <p className="text-sm text-gray-500">Freelancer type</p>
+                                                <p className="text-sm text-gray-500">Mentor type</p>
                                                 <p className="text-gray-900 capitalize">{freelancer.freelancerType || 'Independent'}</p>
                                             </div>
                                         </div>
@@ -358,6 +359,12 @@ const FreelancerProfile = () => {
 
                         {/* Right Column - Main Content */}
                         <div className="lg:col-span-2">
+                            {/* Pricing Section */}
+                            <PricingSection
+                                freelancerName={fullName}
+                                freelancerId={freelancer?._id}
+                                freelancerEmail={freelancer?.email}
+                            />
                             {/* Tabs */}
                             <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden mb-6">
                                 <div className="flex border-b border-gray-200">
@@ -487,7 +494,7 @@ const FreelancerProfile = () => {
                                             <div className="bg-gray-50 rounded-lg p-8 text-center">
                                                 <Briefcase size={48} className="mx-auto text-gray-300 mb-3" />
                                                 <h3 className="text-lg font-medium text-gray-700 mb-2">No portfolio items yet</h3>
-                                                <p className="text-sm text-gray-500">This freelancer hasn't added any portfolio items.</p>
+                                                <p className="text-sm text-gray-500">This mentor hasn't added any portfolio items.</p>
                                             </div>
                                         )}
                                     </div>
@@ -549,7 +556,7 @@ const FreelancerProfile = () => {
                                             ) : reviews.length > 0 ? (
                                                 reviews.map((review) => (
                                                     <div key={review._id} className="border-b border-gray-100 pb-6 last:border-0">
-                                                        <div className="flex items-start gap-4">
+                                                        <div className="flex items-center gap-4">
                                                             <img
                                                                 src={review.reviewer?.profileImage || dummyUserImg}
                                                                 alt={review.reviewer?.displayName}
@@ -557,17 +564,25 @@ const FreelancerProfile = () => {
                                                             />
                                                             <div className="flex-1">
                                                                 <div className="flex items-center justify-between">
-                                                                    <div>
+                                                                    <div className="flex gap-2 items-center">
                                                                         <h4 className="font-semibold text-gray-900">
                                                                             {review.reviewer?.displayName || `${review.reviewer?.firstName} ${review.reviewer?.lastName}`}
                                                                         </h4>
-                                                                        <p className="text-xs text-gray-500">
-                                                                            {review.reviewerRole === 'buyer' ? 'Client' : 'Freelancer'} • {new Date(review.createdAt).toLocaleDateString('en-US', {
+
+                                                                        <p className="text-xs text-gray-500 mt-1">{new Date(review.createdAt).toLocaleDateString('en-US', {
+                                                                            year: 'numeric',
+                                                                            month: 'short',
+                                                                            day: 'numeric'
+                                                                        })}</p>
+                                                                        {/* <p className="text-xs text-gray-500">
+                                                                            {review.revieweRole === 'buyer' ? 'Student' : 'Mentor'} 
+                                                                            
+                                                                            • {new Date(review.createdAt).toLocaleDateString('en-US', {
                                                                                 year: 'numeric',
                                                                                 month: 'short',
                                                                                 day: 'numeric'
                                                                             })}
-                                                                        </p>
+                                                                        </p> */}
                                                                     </div>
                                                                     <div className="flex items-center gap-1">
                                                                         {[...Array(5)].map((_, i) => (
@@ -585,20 +600,6 @@ const FreelancerProfile = () => {
 
                                                                 <p className="text-gray-600 mt-2">{review.comment}</p>
 
-                                                                {/* Order Context */}
-                                                                {review.orderContext && (
-                                                                    <div className="mt-3 flex items-center gap-4 text-xs text-gray-500 bg-gray-50 p-2 rounded-lg">
-                                                                        <span className="flex items-center gap-1">
-                                                                            <Briefcase size={12} />
-                                                                            {review.orderContext.packageName} Package
-                                                                        </span>
-                                                                        <span className="flex items-center gap-1">
-                                                                            <DollarSign size={12} />
-                                                                            ${review.orderContext.packagePrice}
-                                                                        </span>
-                                                                    </div>
-                                                                )}
-
                                                                 {/* Response from freelancer */}
                                                                 {review.response?.comment && (
                                                                     <div className="mt-3 ml-4 pl-4 border-l-2 border-primary/30">
@@ -611,7 +612,7 @@ const FreelancerProfile = () => {
                                                                 )}
 
                                                                 {/* Actions */}
-                                                                <div className="flex items-center gap-4 mt-3">
+                                                                {/* <div className="flex items-center gap-4 mt-3">
                                                                     <button
                                                                         onClick={() => review.helpful?.users?.includes(user?._id)
                                                                             ? handleUnhelpful(review._id)
@@ -637,12 +638,11 @@ const FreelancerProfile = () => {
                                                                         Report
                                                                     </button>
 
-                                                                    {/* Verified Purchase Badge */}
                                                                     <span className="flex items-center gap-1 text-xs text-green-600 bg-green-50 px-2 py-1 rounded-full">
                                                                         <CheckCircle size={12} />
                                                                         Verified Purchase
                                                                     </span>
-                                                                </div>
+                                                                </div> */}
                                                             </div>
                                                         </div>
                                                     </div>
@@ -651,7 +651,7 @@ const FreelancerProfile = () => {
                                                 <div className="bg-gray-50 rounded-lg p-8 text-center">
                                                     <MessageCircle size={48} className="mx-auto text-gray-300 mb-3" />
                                                     <h3 className="text-lg font-medium text-gray-700 mb-2">No reviews yet</h3>
-                                                    <p className="text-sm text-gray-500">This freelancer hasn't received any reviews.</p>
+                                                    <p className="text-sm text-gray-500">This mentor hasn't received any reviews.</p>
                                                 </div>
                                             )}
                                         </div>

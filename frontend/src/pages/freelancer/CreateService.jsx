@@ -574,7 +574,7 @@ const CreateService = () => {
 
             if (response.data.success) {
                 toast.success('Service saved as draft!');
-                navigate('/seller/services/drafts');
+                navigate('/freelancer/services/drafts');
             }
         } catch (error) {
             const errorMessage = error?.response?.data?.message || 'Failed to save draft';

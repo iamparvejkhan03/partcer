@@ -95,8 +95,8 @@ const Contact = () => {
             answer: 'Yes, our support team is available on Saturdays from 10 AM to 6 PM. For Sunday inquiries, we will respond on Monday.',
         },
         {
-        question: 'Can I get help finding the right trainer?',
-        answer: 'Absolutely! Contact us and we\'ll personally help you browse freelancers, understand their expertise, and find the perfect match for your career goals.',
+        question: 'Can I get help finding the right mentor?',
+        answer: 'Absolutely! Contact us and we\'ll personally help you browse mentors, understand their expertise, and find the perfect match for your career goals.',
     }
     ];
 
@@ -369,7 +369,7 @@ const Contact = () => {
                                             />
                                             <Briefcase size={40} className={`flex-shrink-0 p-2 rounded transition-all ${userType === 'freelancer' ? 'bg-primary text-white' : 'bg-gray-200 text-black'}`} />
                                             <div>
-                                                <p className="text-sm font-semibold">I'm a Freelancer</p>
+                                                <p className="text-sm font-semibold">I'm a Mentor</p>
                                                 <p className="text-sm text-gray-600">I want to teach and share my knowledge</p>
                                             </div>
                                         </label>
@@ -384,8 +384,8 @@ const Contact = () => {
                                             />
                                             <Users size={40} className={`flex-shrink-0 p-2 rounded transition-all ${userType === 'buyer' ? 'bg-primary text-white' : 'bg-gray-200 text-black'}`} />
                                             <div>
-                                                <p className="text-sm font-semibold">I'm a Buyer</p>
-                                                <p className="text-sm text-gray-600">I want to learn and improve my English</p>
+                                                <p className="text-sm font-semibold">I'm a Student</p>
+                                                <p className="text-sm text-gray-600">I want to hire a mentor</p>
                                             </div>
                                         </label>
                                     </div>

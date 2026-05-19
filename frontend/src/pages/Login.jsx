@@ -18,7 +18,13 @@ function Login() {
     // Redirect if already logged in
     useEffect(() => {
         if (user) {
-            navigate(`/${user.userType}/dashboard`);
+            if(user?.userType === 'freelancer') {
+                navigate('/projects');
+            } else if(user?.userType === 'admin') {
+                navigate('/admin/dashboard');
+            } else {
+                navigate('/freelancers');
+            }
         }
     }, [user, navigate]);
 
@@ -74,11 +80,17 @@ function Login() {
                 toast.success(response.data.message || 'Login successful!');
 
                 // Redirect based on user type
+                // const redirectPath = userData.userType === 'freelancer'
+                //     ? '/freelancer/dashboard'
+                //     : userData.userType === 'admin'
+                //         ? '/admin/dashboard'
+                //         : '/buyer/dashboard';
+
                 const redirectPath = userData.userType === 'freelancer'
-                    ? '/freelancer/dashboard'
+                    ? '/freelancer/profile/settings'
                     : userData.userType === 'admin'
                         ? '/admin/dashboard'
-                        : '/buyer/dashboard';
+                        : '/freelancers';
 
                 navigate(redirectPath);
             }
@@ -190,7 +202,7 @@ function Login() {
                             </div>
 
                             {/* Remember Me & Forgot Password */}
-                            <div className="flex items-center justify-between">
+                            <div className="flex items-center justify-between flex-wrap gap-2">
                                 <label className="flex items-center space-x-3 cursor-pointer">
                                     <div className="relative">
                                         <input

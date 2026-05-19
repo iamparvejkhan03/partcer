@@ -2,6 +2,8 @@ import { model, Schema } from "mongoose";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
+import Order from "./newOrder.model.js";
+import Withdrawal from "./withdrawal.model.js";
 
 const userSchema = new Schema(
   {
@@ -46,6 +48,11 @@ const userSchema = new Schema(
       type: String,
       trim: true,
     },
+    currencyPreference: {
+      type: String,
+      enum: ["USD", "INR"],
+      default: "INR",
+    },
 
     gender: {
       type: String,
@@ -82,6 +89,18 @@ const userSchema = new Schema(
       enum: ["basic", "conversational", "fluent", "native", ""],
     },
     skills: [
+      {
+        type: String,
+        trim: true,
+      },
+    ],
+    categories: [
+      {
+        type: String,
+        trim: true,
+      },
+    ],
+    services: [
       {
         type: String,
         trim: true,
@@ -217,6 +236,7 @@ const userSchema = new Schema(
 // ==================== INDEXES ====================
 userSchema.index({ userType: 1 });
 userSchema.index({ skills: 1 });
+userSchema.index({ categories: 1 });
 userSchema.index({ "experience.companyName": 1 });
 userSchema.index({ "education.instituteName": 1 });
 
@@ -341,6 +361,21 @@ userSchema.methods.removeSkill = function (skill) {
   return this.save();
 };
 
+// Add category
+userSchema.methods.addCategory = function (category) {
+  if (!this.categories.includes(category)) {
+    this.categories.push(category);
+    return this.save();
+  }
+  return this;
+};
+
+// Remove category
+userSchema.methods.removeCategory = function (category) {
+  this.categories = this.categories.filter((c) => c !== category);
+  return this.save();
+};
+
 // Add language
 userSchema.methods.addLanguage = function (language) {
   if (!this.languages.includes(language)) {
@@ -360,6 +395,69 @@ userSchema.methods.removeLanguage = function (language) {
 userSchema.methods.updateLastLogin = function () {
   this.lastLogin = new Date();
   return this.save();
+};
+
+userSchema.methods.calculateAvailableBalance = async function () {
+  // Total earned from paid orders
+  const earnedResult = await Order.aggregate([
+    {
+      $match: {
+        mentorId: this._id,
+        paymentStatus: "paid"
+      }
+    },
+    {
+      $group: {
+        _id: null,
+        total: { $sum: "$mentorFee" }
+      }
+    }
+  ]);
+
+  const totalEarned = earnedResult[0]?.total || 0;
+
+  // Total withdrawn (completed withdrawals only)
+  const withdrawnResult = await Withdrawal.aggregate([
+    {
+      $match: {
+        freelancerId: this._id,
+        status: "completed"
+      }
+    },
+    {
+      $group: {
+        _id: null,
+        total: { $sum: "$amount" }
+      }
+    }
+  ]);
+
+  const totalWithdrawn = withdrawnResult[0]?.total || 0;
+
+  // Pending withdrawals (not yet completed)
+  const pendingResult = await Withdrawal.aggregate([
+    {
+      $match: {
+        freelancerId: this._id,
+        status: { $in: ["pending", "clearing"] }
+      }
+    },
+    {
+      $group: {
+        _id: null,
+        total: { $sum: "$amount" }
+      }
+    }
+  ]);
+
+  const pendingWithdrawals = pendingResult[0]?.total || 0;
+
+  return {
+    available: totalEarned - totalWithdrawn - pendingWithdrawals,
+    totalEarned,
+    totalWithdrawn,
+    pendingWithdrawals
+  };
 };
 
 // Get public profile (safe object without sensitive data)
@@ -392,6 +490,7 @@ userSchema.methods.getFreelancerProfile = function () {
     hourlyRate: this.hourlyRate,
     englishLevel: this.englishLevel,
     skills: this.skills,
+    categories: this.categories,
     languages: this.languages,
     experience: this.experience,
     education: this.education,
@@ -407,6 +506,15 @@ userSchema.statics.findBySkill = function (skill) {
   return this.find({
     userType: "freelancer",
     skills: { $in: [skill] },
+    isActive: true,
+  });
+};
+
+// Find freelancers by category
+userSchema.statics.findByCategory = function (category) {
+  return this.find({
+    userType: "freelancer",
+    categories: { $in: [category] },
     isActive: true,
   });
 };

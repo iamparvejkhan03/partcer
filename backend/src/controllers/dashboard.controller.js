@@ -567,7 +567,8 @@ const calculateProfileCompletion = async (userId) => {
     { name: "tagline", weight: 10 },
     { name: "bio", weight: 15 },
     { name: "country", weight: 5 },
-    { name: "skills", weight: 15 },
+    { name: "skills", weight: 5 },
+    { name: "categories", weight: 10 },
     { name: "languages", weight: 10 },
     { name: "experience", weight: 10 },
     { name: "education", weight: 5 },
@@ -577,6 +578,7 @@ const calculateProfileCompletion = async (userId) => {
   fields.forEach((field) => {
     if (
       field.name === "skills" ||
+      field.name === "categories" ||
       field.name === "languages" ||
       field.name === "experience" ||
       field.name === "education"

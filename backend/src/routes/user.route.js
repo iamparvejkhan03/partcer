@@ -28,6 +28,8 @@ import {
   deleteEducation,
   addSkill,
   removeSkill,
+  addCategory,
+  removeCategory,
   addLanguage,
   removeLanguage,
   deleteAccount,
@@ -81,6 +83,10 @@ userRouter.delete("/education/:educationId", authFreelancer, deleteEducation);
 // Skills management (Freelancer only)
 userRouter.post("/skills", authFreelancer, addSkill);
 userRouter.delete("/skills/:skill", authFreelancer, removeSkill);
+
+// Categories management (Freelancer only)
+userRouter.post("/categories", authFreelancer, addCategory);
+userRouter.delete("/categories/:category", authFreelancer, removeCategory);
 
 // Languages management (Freelancer only)
 userRouter.post("/languages", authFreelancer, addLanguage);

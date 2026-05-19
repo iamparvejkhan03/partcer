@@ -7,7 +7,7 @@ import { configureCloudinary } from "./utils/cloudinary.js";
 import userRouter from "./routes/user.route.js";
 import errorHandler from "./middlewares/error.middleware.js";
 import portfolioRouter from "./routes/portfolio.route.js";
-import paymentRouter from "./routes/paymentDetail.route.js";
+import paymentDetailsRouter from "./routes/paymentDetail.route.js";
 import adminRouter from "./routes/admin.route.js";
 import skillRouter from "./routes/skill.route.js";
 import serviceRouter from "./routes/service.route.js";
@@ -21,7 +21,13 @@ import chatRouter from "./routes/chat.route.js";
 import dashboardRouter from "./routes/dashboard.route.js";
 import orderRouter from "./routes/order.route.js";
 import customOfferRouter from "./routes/customOffer.route.js";
+// import reviewRouter from "./routes/reviewOld.route.js";
 import reviewRouter from "./routes/review.route.js";
+import paymentRouter from "./routes/payment.route.js";
+import earningRouter from "./routes/earning.route.js";
+import withdrawalRouter from "./routes/withdrawal.route.js";
+import resolutionRouter from "./routes/resolution.route.js";
+import currencyRouter from "./routes/currency.route.js";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -56,7 +62,7 @@ app.get('/api/v1/health', (req, res) => {
 // Your API routes
 app.use('/api/v1/users', userRouter);
 app.use("/api/v1/portfolio", portfolioRouter);
-app.use("/api/v1/payment-details", paymentRouter);
+app.use("/api/v1/payment-details", paymentDetailsRouter);
 app.use("/api/v1/admin", adminRouter);
 app.use("/api/v1/services", serviceRouter);
 app.use("/api/v1/admin/categories", categoryRouter);
@@ -69,6 +75,11 @@ app.use('/api/v1/chat', chatRouter);
 app.use("/api/v1/orders", orderRouter);
 app.use("/api/v1/custom-offers", customOfferRouter);
 app.use("/api/v1/reviews", reviewRouter);
+app.use("/api/v1/payments", paymentRouter);
+app.use("/api/v1/freelancer/earnings", earningRouter);
+app.use("/api/v1/withdrawals", withdrawalRouter);
+app.use("/api/v1/resolution", resolutionRouter);
+app.use('/api/v1/currency', currencyRouter);
 
 // 404 handler - SIMPLIFIED VERSION
 app.use((req, res, next) => {

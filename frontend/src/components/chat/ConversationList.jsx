@@ -104,7 +104,7 @@ const ConversationList = ({
                     <div className="p-8 text-center">
                         <p className="text-gray-500">No conversations yet</p>
                         <p className="text-sm text-gray-400 mt-1">
-                            Start chatting with freelancers or buyers
+                            Start chatting with mentors or students
                         </p>
                     </div>
                 ) : (

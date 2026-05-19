@@ -589,7 +589,7 @@ const Services = () => {
                                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
                                 <input
                                     type="text"
-                                    placeholder="Search by title, seller, category, tags..."
+                                    placeholder="Search by title, mentor, category, tags..."
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
                                     className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
@@ -640,7 +640,7 @@ const Services = () => {
                                 <thead className="bg-gray-50 border-b border-gray-200">
                                     <tr>
                                         <th className="px-4 py-4 text-left text-xs font-medium text-gray-500 uppercase w-[300px]">Service</th>
-                                        <th className="px-4 py-4 text-left text-xs font-medium text-gray-500 uppercase w-[200px]">Seller</th>
+                                        <th className="px-4 py-4 text-left text-xs font-medium text-gray-500 uppercase w-[200px]">Mentor</th>
                                         <th className="px-4 py-4 text-left text-xs font-medium text-gray-500 uppercase w-[180px]">Category</th>
                                         <th className="px-4 py-4 text-left text-xs font-medium text-gray-500 uppercase w-[100px]">Price</th>
                                         <th className="px-4 py-4 text-left text-xs font-medium text-gray-500 uppercase w-[120px]">Status</th>
@@ -686,7 +686,7 @@ const Services = () => {
                                                     <div className="flex items-center gap-2">
                                                         <img
                                                             src={service.seller?.profileImage || dummyUserImg}
-                                                            alt={service.seller?.displayName || service.seller?.name || 'Seller'}
+                                                            alt={service.seller?.displayName || service.seller?.name || 'Mentor'}
                                                             className="w-8 h-8 rounded-full object-cover flex-shrink-0"
                                                             onError={(e) => e.target.src = dummyUserImg}
                                                         />
@@ -815,7 +815,7 @@ const Services = () => {
                                                                         className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2"
                                                                     >
                                                                         <Users size={14} />
-                                                                        View Seller
+                                                                        View Mentor
                                                                     </button>
 
                                                                     <hr className="my-1 border-gray-200" />
@@ -920,7 +920,7 @@ const Services = () => {
                                     <div className="flex items-center gap-2 mb-3">
                                         <img
                                             src={service.seller?.profileImage || 'https://via.placeholder.com/24'}
-                                            alt={service.seller?.displayName || 'Seller'}
+                                            alt={service.seller?.displayName || 'Mentor'}
                                             className="w-6 h-6 rounded-full object-cover"
                                         />
                                         <span className="text-sm font-medium">{service.seller?.displayName || service.seller?.name || 'Unknown'}</span>
@@ -1044,7 +1044,7 @@ const Services = () => {
                                                             className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
                                                         >
                                                             <Users size={16} />
-                                                            View Seller
+                                                            View Mentor
                                                         </button>
 
                                                         <hr className="my-1 border-gray-200" />
@@ -1268,7 +1268,7 @@ const Services = () => {
                                 <div className="flex items-start gap-3">
                                     <img
                                         src={selectedService.seller?.profileImage || dummyUserImg}
-                                        alt={selectedService.seller?.displayName || 'Seller'}
+                                        alt={selectedService.seller?.displayName || 'Mentor'}
                                         className="w-12 h-12 rounded-full object-cover"
                                         onError={(e) => e.target.src = 'https://via.placeholder.com/48'}
                                     />
@@ -1421,7 +1421,7 @@ const Services = () => {
                     <div className="bg-white rounded-xl max-w-md w-full p-6">
                         <h3 className="text-xl font-bold text-gray-900 mb-2">Approve Service</h3>
                         <p className="text-gray-600 mb-6">
-                            Are you sure you want to approve "{selectedService.title}"? This service will become active and visible to buyers.
+                            Are you sure you want to approve "{selectedService.title}"? This service will become active and visible to students.
                         </p>
                         <div className="flex gap-3">
                             <button
@@ -1461,7 +1461,7 @@ const Services = () => {
                                 onChange={(e) => setRejectReason(e.target.value)}
                                 rows={3}
                                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-                                placeholder="Provide feedback to the seller..."
+                                placeholder="Provide feedback to the mentor..."
                             />
                         </div>
                         <div className="flex gap-3">

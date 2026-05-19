@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
     DollarSign,
     TrendingUp,
@@ -24,7 +24,8 @@ import {
     Award,
     FileText,
     User,
-    Star
+    Star,
+    Info
 } from "lucide-react";
 import { FreelancerSidebar, FreelancerHeader, FreelancerContainer } from '../../components';
 import toast from 'react-hot-toast';
@@ -41,6 +42,7 @@ const Earnings = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
     const [typeFilter, setTypeFilter] = useState('all');
+    const navigate = useNavigate();
 
     // State for earnings summary
     const [summary, setSummary] = useState({
@@ -62,271 +64,31 @@ const Earnings = () => {
         try {
             setLoading(true);
 
-            // In production: const response = await axiosInstance.get('/api/v1/freelancer/earnings/transactions');
+            // Fetch transactions
+            const transactionsResponse = await axiosInstance.get('/api/v1/freelancer/earnings/transactions');
 
-            // Dummy data for testing
-            // const dummyTransactions = [
-            //     {
-            //         id: 'ORD-2246872',
-            //         date: '2025-05-19T16:30:00',
-            //         customer: {
-            //             name: 'Amina Al-Farooqi',
-            //             avatar: 'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg',
-            //             email: 'amina@example.com',
-            //             location: 'Dubai, UAE',
-            //             isVerified: true
-            //         },
-            //         service: {
-            //             title: 'Professional Website UI/UX Design',
-            //             category: 'Design & Creative',
-            //             type: 'service',
-            //             package: 'Premium Package'
-            //         },
-            //         amount: 500,
-            //         fee: 50,
-            //         netEarnings: 450,
-            //         status: 'cleared',
-            //         paymentMethod: 'credit_card',
-            //         processedDate: '2025-05-20T10:15:00',
-            //         clearingDate: '2025-05-22T14:30:00',
-            //         invoice: 'INV-2025-001'
-            //     },
-            //     {
-            //         id: 'ORD-9519785',
-            //         date: '2025-05-18T09:20:00',
-            //         customer: {
-            //             name: 'Kenji Nakamura',
-            //             avatar: 'https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg',
-            //             email: 'kenji@example.com',
-            //             location: 'Tokyo, Japan',
-            //             isVerified: true
-            //         },
-            //         service: {
-            //             title: 'Custom E-commerce Development',
-            //             category: 'Development & IT',
-            //             type: 'service',
-            //             package: 'Standard Package'
-            //         },
-            //         amount: 200,
-            //         fee: 20,
-            //         netEarnings: 180,
-            //         status: 'paid',
-            //         paymentMethod: 'paypal',
-            //         processedDate: '2025-05-18T14:45:00',
-            //         clearingDate: null,
-            //         invoice: 'INV-2025-002'
-            //     },
-            //     {
-            //         id: 'ORD-9854988',
-            //         date: '2025-05-17T11:20:00',
-            //         customer: {
-            //             name: 'Amirul Hassan',
-            //             avatar: 'https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg',
-            //             email: 'amirul@example.com',
-            //             location: 'Kuala Lumpur, Malaysia',
-            //             isVerified: true
-            //         },
-            //         service: {
-            //             title: 'Mobile App UI/UX Design',
-            //             category: 'Design & Creative',
-            //             type: 'service',
-            //             package: 'Premium Package'
-            //         },
-            //         amount: 200,
-            //         fee: 20,
-            //         netEarnings: 180,
-            //         status: 'cleared',
-            //         paymentMethod: 'bank_transfer',
-            //         processedDate: '2025-05-17T14:20:00',
-            //         clearingDate: '2025-05-20T09:45:00',
-            //         invoice: 'INV-2025-003'
-            //     },
-            //     {
-            //         id: 'ORD-7891389',
-            //         date: '2025-05-17T09:15:00',
-            //         customer: {
-            //             name: 'Layla Zahra',
-            //             avatar: 'https://images.pexels.com/photos/762020/pexels-photo-762020.jpeg',
-            //             email: 'layla@example.com',
-            //             location: 'Cairo, Egypt',
-            //             isVerified: true
-            //         },
-            //         service: {
-            //             title: 'SEO Optimization Service',
-            //             category: 'Digital Marketing',
-            //             type: 'service',
-            //             package: 'Basic Package'
-            //         },
-            //         amount: 45,
-            //         fee: 4.50,
-            //         netEarnings: 40.50,
-            //         status: 'cleared',
-            //         paymentMethod: 'credit_card',
-            //         processedDate: '2025-05-17T11:30:00',
-            //         clearingDate: '2025-05-19T10:00:00',
-            //         invoice: 'INV-2025-004'
-            //     },
-            //     {
-            //         id: 'ORD-9856274',
-            //         date: '2025-05-18T14:20:00',
-            //         customer: {
-            //             name: 'Hana Qureshi',
-            //             avatar: 'https://images.pexels.com/photos/1036623/pexels-photo-1036623.jpeg',
-            //             email: 'hana@example.com',
-            //             location: 'Karachi, Pakistan',
-            //             isVerified: true
-            //         },
-            //         service: {
-            //             title: 'Professional Website UI/UX Design',
-            //             category: 'Design & Creative',
-            //             type: 'custom_offer',
-            //             package: 'Standard Package'
-            //         },
-            //         amount: 160,
-            //         fee: 16,
-            //         netEarnings: 144,
-            //         status: 'pending',
-            //         paymentMethod: 'credit_card',
-            //         processedDate: null,
-            //         clearingDate: null,
-            //         invoice: 'INV-2025-005'
-            //     },
-            //     {
-            //         id: 'ORD-3365479',
-            //         date: '2025-05-16T10:30:00',
-            //         customer: {
-            //             name: 'Farah Nabila',
-            //             avatar: 'https://images.pexels.com/photos/1036622/pexels-photo-1036622.jpeg',
-            //             email: 'farah@example.com',
-            //             location: 'Jakarta, Indonesia',
-            //             isVerified: false
-            //         },
-            //         service: {
-            //             title: 'Logo Design Package',
-            //             category: 'Design & Creative',
-            //             type: 'custom_offer',
-            //             package: 'Basic Package'
-            //         },
-            //         amount: 80,
-            //         fee: 8,
-            //         netEarnings: 72,
-            //         status: 'on_hold',
-            //         paymentMethod: null,
-            //         processedDate: null,
-            //         clearingDate: null,
-            //         holdReason: 'Payment verification in progress',
-            //         invoice: 'INV-2025-006'
-            //     },
-            //     {
-            //         id: 'ORD-6552589',
-            //         date: '2025-05-15T14:20:00',
-            //         customer: {
-            //             name: 'David Moretti',
-            //             avatar: 'https://images.pexels.com/photos/697509/pexels-photo-697509.jpeg',
-            //             email: 'david@example.com',
-            //             location: 'Rome, Italy',
-            //             isVerified: true
-            //         },
-            //         service: {
-            //             title: 'Content Writing - Blog Posts',
-            //             category: 'Writing & Translation',
-            //             type: 'project',
-            //             package: 'Standard Package'
-            //         },
-            //         amount: 125,
-            //         fee: 12.50,
-            //         netEarnings: 112.50,
-            //         status: 'cancelled',
-            //         paymentMethod: 'paypal',
-            //         processedDate: '2025-05-15T16:30:00',
-            //         clearingDate: null,
-            //         cancellationReason: 'Order cancelled by client',
-            //         invoice: 'INV-2025-007'
-            //     },
-            //     {
-            //         id: 'ORD-9745845',
-            //         date: '2025-05-14T11:45:00',
-            //         customer: {
-            //             name: 'Riko Tanaka',
-            //             avatar: 'https://images.pexels.com/photos/428364/pexels-photo-428364.jpeg',
-            //             email: 'riko@example.com',
-            //             location: 'Osaka, Japan',
-            //             isVerified: true
-            //         },
-            //         service: {
-            //             title: 'Mobile App UI/UX Design',
-            //             category: 'Design & Creative',
-            //             type: 'project',
-            //             package: 'Standard Package'
-            //         },
-            //         amount: 185,
-            //         fee: 18.50,
-            //         netEarnings: 166.50,
-            //         status: 'pending',
-            //         paymentMethod: null,
-            //         processedDate: null,
-            //         clearingDate: null,
-            //         invoice: 'INV-2025-008'
-            //     },
-            //     {
-            //         id: 'ORD-9452687',
-            //         date: '2025-05-13T09:30:00',
-            //         customer: {
-            //             name: 'Nurul Azizah',
-            //             avatar: 'https://images.pexels.com/photos/1130626/pexels-photo-1130626.jpeg',
-            //             email: 'nurul@example.com',
-            //             location: 'Singapore',
-            //             isVerified: true
-            //         },
-            //         service: {
-            //             title: 'Custom E-commerce Development',
-            //             category: 'Development & IT',
-            //             type: 'service',
-            //             package: 'Standard Package'
-            //         },
-            //         amount: 128,
-            //         fee: 12.80,
-            //         netEarnings: 115.20,
-            //         status: 'cleared',
-            //         paymentMethod: 'bank_transfer',
-            //         processedDate: '2025-05-13T14:20:00',
-            //         clearingDate: '2025-05-16T11:30:00',
-            //         invoice: 'INV-2025-009'
-            //     },
-            //     {
-            //         id: 'ORD-3669852',
-            //         date: '2025-05-12T15:40:00',
-            //         customer: {
-            //             name: 'Luca Fernandez',
-            //             avatar: 'https://images.pexels.com/photos/91227/pexels-photo-91227.jpeg',
-            //             email: 'luca@example.com',
-            //             location: 'Barcelona, Spain',
-            //             isVerified: false
-            //         },
-            //         service: {
-            //             title: 'Logo Design Package',
-            //             category: 'Design & Creative',
-            //             type: 'custom_offer',
-            //             package: 'Basic Package'
-            //         },
-            //         amount: 35,
-            //         fee: 3.50,
-            //         netEarnings: 31.50,
-            //         status: 'paid',
-            //         paymentMethod: 'paypal',
-            //         processedDate: '2025-05-12T17:20:00',
-            //         clearingDate: null,
-            //         invoice: 'INV-2025-010'
-            //     }
-            // ];
+            if (transactionsResponse.data?.data) {
+                const { transactions, summary, monthlyBreakdown } = transactionsResponse.data.data;
 
-            setTransactions([]);
-            calculateSummary([]);
+                setTransactions(transactions);
+
+                // Update summary with real data
+                setSummary({
+                    lifetimeEarnings: summary.lifetimeEarnings || 0,
+                    thisMonth: summary.thisMonth || 0,
+                    pendingClearance: summary.pendingClearance || 0,
+                    avgOrderValue: summary.avgOrderValue || 0,
+                    totalTransactions: summary.totalTransactions || 0,
+                    thisWeek: summary.thisWeek || 0,
+                    highestEarning: summary.highestEarning || 0,
+                    averageProcessingTime: summary.averageProcessingTime || '2-3 days'
+                });
+            }
+
             setLoading(false);
-
         } catch (error) {
             console.error('Error fetching earnings transactions:', error);
-            toast.error('Failed to load earnings data');
+            toast.error(error.response?.data?.message || 'Failed to load earnings data');
             setLoading(false);
         }
     };
@@ -377,13 +139,13 @@ const Earnings = () => {
 
     const getStatusBadge = (status) => {
         const statusConfig = {
-            cleared: {
-                label: 'Cleared',
-                bg: 'bg-green-100',
-                text: 'text-green-700',
-                icon: CheckCircle,
-                description: 'Funds available in your account'
-            },
+            // cleared: {
+            //     label: 'Cleared',
+            //     bg: 'bg-green-100',
+            //     text: 'text-green-700',
+            //     icon: CheckCircle,
+            //     description: 'Funds available in your account'
+            // },
             paid: {
                 label: 'Paid',
                 bg: 'bg-blue-100',
@@ -396,15 +158,15 @@ const Earnings = () => {
                 bg: 'bg-yellow-100',
                 text: 'text-yellow-700',
                 icon: Clock,
-                description: 'Awaiting payment from client'
+                description: 'Awaiting payment from student'
             },
-            on_hold: {
-                label: 'On Hold',
-                bg: 'bg-orange-100',
-                text: 'text-orange-700',
-                icon: AlertCircle,
-                description: 'Payment temporarily on hold'
-            },
+            // on_hold: {
+            //     label: 'On Hold',
+            //     bg: 'bg-orange-100',
+            //     text: 'text-orange-700',
+            //     icon: AlertCircle,
+            //     description: 'Payment temporarily on hold'
+            // },
             cancelled: {
                 label: 'Cancelled',
                 bg: 'bg-red-100',
@@ -469,18 +231,18 @@ const Earnings = () => {
     };
 
     const formatCurrency = (amount) => {
-        return new Intl.NumberFormat('en-US', {
+        return new Intl.NumberFormat('en-IN', {
             style: 'currency',
-            currency: 'USD',
+            currency: 'INR',
             minimumFractionDigits: 2
         }).format(amount);
     };
 
     const formatCompactCurrency = (amount) => {
         if (amount >= 1000) {
-            return '$' + (amount / 1000).toFixed(1) + 'K';
+            return '₹' + (amount / 1000).toFixed(1) + 'K';
         }
-        return '$' + amount.toFixed(0);
+        return '₹' + amount.toFixed(0);
     };
 
     // Filter transactions
@@ -573,9 +335,9 @@ const Earnings = () => {
                             </div>
                         </div>
                         <div className="bg-white p-5 rounded-xl border border-gray-200">
-                            <p className="text-sm text-gray-600 mb-2">Pending Clearance</p>
+                            <p className="text-sm text-gray-600 mb-2">Pending</p>
                             <p className="text-xl font-bold text-gray-900">{formatCompactCurrency(summary.pendingClearance)}</p>
-                            <p className="text-xs text-gray-500 mt-2">Est. clearance: 2-3 days</p>
+                            <p className="text-xs text-gray-500 mt-2">Est.: 2-3 days</p>
                         </div>
                         <div className="bg-white p-5 rounded-xl border border-gray-200">
                             <p className="text-sm text-gray-600 mb-2">Avg. Order Value</p>
@@ -591,7 +353,7 @@ const Earnings = () => {
                                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
                                 <input
                                     type="text"
-                                    placeholder="Search by order ID, client name, service..."
+                                    placeholder="Search by order ID, student name, service..."
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
                                     className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
@@ -604,13 +366,13 @@ const Earnings = () => {
                                     className="px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-white min-w-[140px]"
                                 >
                                     <option value="all">All Status</option>
-                                    <option value="cleared">Cleared</option>
+                                    {/* <option value="cleared">Cleared</option> */}
                                     <option value="paid">Paid</option>
                                     <option value="pending">Pending</option>
-                                    <option value="on_hold">On Hold</option>
+                                    {/* <option value="on_hold">On Hold</option> */}
                                     <option value="cancelled">Cancelled</option>
                                 </select>
-                                <select
+                                {/* <select
                                     value={typeFilter}
                                     onChange={(e) => setTypeFilter(e.target.value)}
                                     className="px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-white min-w-[140px]"
@@ -630,7 +392,7 @@ const Earnings = () => {
                                     <option value="90">Last 90 days</option>
                                     <option value="365">Last year</option>
                                     <option value="all">All time</option>
-                                </select>
+                                </select> */}
                             </div>
                         </div>
                     </div>
@@ -659,7 +421,7 @@ const Earnings = () => {
                                                     <div className="text-sm font-medium text-gray-900">{transaction.id}</div>
                                                 </td>
                                                 <td className="px-4 py-3">
-                                                    <div className="text-sm font-bold text-green-600">{formatCurrency(transaction.netEarnings)}</div>
+                                                    <div className="text-sm font-bold text-green-600">{formatCurrency(transaction.netEarnings)}</div>{console.log(transaction)}
                                                 </td>
                                                 <td className="px-4 py-3">
                                                     {getStatusBadge(transaction.status)}
@@ -673,7 +435,15 @@ const Earnings = () => {
                                                         className="p-1.5 text-gray-600 hover:text-primary hover:bg-gray-100 rounded-lg transition-colors"
                                                         title="View Details"
                                                     >
-                                                        <Eye size={16} />
+                                                        <Info size={16} />
+                                                    </button>
+
+                                                    <button
+                                                        onClick={() => navigate(`/freelancer/orders/${transaction.orderId}`)}
+                                                        className="p-2 text-gray-600 hover:text-primary hover:bg-gray-100 rounded-lg transition-colors"
+                                                        title="View Details"
+                                                    >
+                                                        <Eye size={18} />
                                                     </button>
                                                 </td>
                                             </tr>
@@ -730,8 +500,8 @@ const Earnings = () => {
                                                 key={i}
                                                 onClick={() => setCurrentPage(pageNum)}
                                                 className={`w-8 h-8 rounded-lg ${currentPage === pageNum
-                                                        ? 'bg-primary text-white'
-                                                        : 'hover:bg-gray-100'
+                                                    ? 'bg-primary text-white'
+                                                    : 'hover:bg-gray-100'
                                                     }`}
                                             >
                                                 {pageNum}
@@ -814,7 +584,7 @@ const Earnings = () => {
                             <div className="bg-gray-50 p-4 rounded-lg">
                                 <h4 className="font-medium mb-3 flex items-center gap-2">
                                     <User size={16} />
-                                    Client Information
+                                    Student Information
                                 </h4>
                                 <div className="flex items-start gap-3">
                                     <img

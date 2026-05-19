@@ -20,7 +20,7 @@ const PrivacyPolicy = () => {
                     <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6">
                         <p className="text-blue-800 font-semibold mb-2">FREELANCE MARKETPLACE PLATFORM</p>
                         <p className="text-blue-700 text-sm">
-                            Partcer.com is a platform connecting tech professionals with clients for job support, 
+                            Partcer.com is a platform connecting tech professionals with students for job support, 
                             training, and consulting services. This policy explains how we handle your information.
                         </p>
                     </div>
@@ -52,14 +52,14 @@ const PrivacyPolicy = () => {
                                 <li>Profile photo and biographical information</li>
                                 <li>Professional credentials, skills, and experience</li>
                                 <li>Educational background and certifications</li>
-                                <li>Payment information and payout details for freelancers</li>
+                                <li>Payment information and payout details for mentors</li>
                             </ul>
                             
                             <h3 className="font-semibold text-gray-800 mb-2 mt-4">Service & Transaction Data</h3>
                             <ul className="text-gray-700 space-y-1 list-disc pl-5">
                                 <li>Service listings, descriptions, and pricing</li>
                                 <li>Booking requests, schedules, and session details</li>
-                                <li>Communication records with clients/freelancers</li>
+                                <li>Communication records with students/mentors</li>
                                 <li>Payment and transaction history</li>
                                 <li>Reviews, ratings, and feedback</li>
                                 <li>Video session recordings (with consent)</li>
@@ -80,7 +80,7 @@ const PrivacyPolicy = () => {
                             <p className="text-gray-700 mb-3">We process your information for:</p>
                             <ul className="text-gray-700 space-y-2 list-disc pl-5">
                                 <li>Platform operation, account management, and authentication</li>
-                                <li>Matching freelancers with appropriate clients</li>
+                                <li>Matching mentors with appropriate students</li>
                                 <li>Facilitating video calls, chat, and file sharing</li>
                                 <li>Processing payments and payouts</li>
                                 <li>Sending service updates, booking confirmations, and reminders</li>

@@ -9,20 +9,18 @@ const Hero = ({closePopup}) => {
     const searchForm = useForm({
         defaultValues: {
             search: '',
-            type: 'Service',
+            type: 'Mentor',
         }
     });
     const navigate = useNavigate();
-    const [type, setType] = useState(['Mentor', 'Service', 'Project']);
+    const [type, setType] = useState(['Mentor', 'Project']);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
     const popularSearches = [
-        'Developer',
-        'Web',
-        'iOS',
-        'PHP',
-        'MERN',
+        'Job Support',
+        'Skill Training',
+        'Mock Interview',
     ];
 
 

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { useForm, Controller } from "react-hook-form";
+import { useForm, Controller, set } from "react-hook-form";
 import { Editor } from "@tinymce/tinymce-react";
 import { FreelancerContainer, FreelancerHeader, FreelancerSidebar, RTE } from "../../components";
 import {
@@ -402,6 +402,11 @@ const SkillsSelect = ({ selectedSkills, onChange }) => {
         if (selectedSkills.includes(skill)) {
             onChange(selectedSkills.filter(s => s !== skill));
         } else {
+            // Add check for maximum 10 skills
+            if (selectedSkills.length >= 10) {
+                toast.error("You can select a maximum of 10 skills");
+                return;
+            }
             onChange([...selectedSkills, skill]);
         }
     };
@@ -418,7 +423,12 @@ const SkillsSelect = ({ selectedSkills, onChange }) => {
 
     return (
         <div className="relative" ref={dropdownRef}>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Skills</label>
+            <div className="flex justify-start gap-5 items-center mb-2">
+                <label className="block text-sm font-medium text-gray-700">Skills</label>
+                <span className={`text-xs ${selectedSkills.length >= 10 ? 'text-red-500' : 'text-gray-500'}`}>
+                    {selectedSkills.length}/10 selected
+                </span>
+            </div>
             <div className="flex flex-wrap gap-2 mb-2 min-h-[4px]">
                 {selectedSkills.map((skill, index) => (
                     <div key={index} className="flex items-center gap-1 bg-blue-100 text-blue-800 px-3 py-1 rounded-full">
@@ -472,6 +482,133 @@ const SkillsSelect = ({ selectedSkills, onChange }) => {
                             ) : (
                                 <div className="px-3 py-2 text-gray-500 text-center">
                                     No skills found
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
+
+// Multi-select Categories Component
+const CategoriesSelect = ({ selectedCategories, onChange }) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const [search, setSearch] = useState("");
+    const dropdownRef = useRef(null);
+    const [categories, setCategories] = useState([]);
+    const [loadingCategories, setLoadingCategories] = useState(false);
+
+    // Fetch categories
+    useEffect(() => {
+        const fetchCategories = async () => {
+            try {
+                setLoadingCategories(true);
+                const response = await axiosInstance.get('/api/v1/categories/public/parents');
+                if (response.data?.success) {
+                    setCategories(Array.isArray(response.data.data) ? response.data.data : []);
+                }
+            } catch (error) {
+                console.error('Error fetching categories:', error);
+                toast.error('Failed to load categories');
+            } finally {
+                setLoadingCategories(false);
+            }
+        };
+        fetchCategories();
+    }, []);
+
+    const allCategories = categories.map(category => category.name);
+
+    const filteredCategories = allCategories.filter(category =>
+        category.toLowerCase().includes(search.toLowerCase())
+    );
+
+    const toggleCategory = (category) => {
+        if (selectedCategories.includes(category)) {
+            onChange(selectedCategories.filter(c => c !== category));
+        } else {
+            // Add check for maximum 10 categories
+            if (selectedCategories.length >= 10) {
+                toast.error("You can select a maximum of 10 categories");
+                return;
+            }
+            onChange([...selectedCategories, category]);
+        }
+    };
+
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+                setIsOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    return (
+        <div className="relative" ref={dropdownRef}>
+            <div className="flex justify-start gap-5 items-center mb-2">
+                <label className="block text-sm font-medium text-gray-700">Categories</label>
+                <span className={`text-xs ${selectedCategories.length >= 10 ? 'text-red-500' : 'text-gray-500'}`}>
+                    {selectedCategories.length}/10 selected
+                </span>
+            </div>
+            <div className="flex flex-wrap gap-2 mb-2 min-h-[4px]">
+                {selectedCategories.map((category, index) => (
+                    <div key={index} className="flex items-center gap-1 bg-blue-100 text-blue-800 px-3 py-1 rounded-full">
+                        <span>{category}</span>
+                        <button
+                            type="button"
+                            onClick={() => toggleCategory(category)}
+                            className="text-blue-600 hover:text-blue-800"
+                        >
+                            <X size={14} />
+                        </button>
+                    </div>
+                ))}
+            </div>
+            <div className="relative">
+                <button
+                    type="button"
+                    onClick={() => setIsOpen(!isOpen)}
+                    className="w-full px-3 py-2 text-left border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-primary focus:border-transparent flex justify-between items-center"
+                >
+                    <span className="text-gray-500">Select categories</span>
+                    <ChevronDown size={16} className={`transform transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                </button>
+
+                {isOpen && (
+                    <div className="absolute z-[9999] w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-auto">
+                        <div className="p-2 border-b sticky top-0 bg-white z-10">
+                            <input
+                                type="text"
+                                placeholder="Search categories..."
+                                className="w-full px-3 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-primary focus:border-transparent"
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                                onClick={(e) => e.stopPropagation()}
+                            />
+                        </div>
+                        <div className="py-1">
+                            {filteredCategories.length > 0 ? (
+                                filteredCategories.map((category, index) => (
+                                    <div
+                                        key={index}
+                                        className={`px-3 py-2 hover:bg-gray-50 cursor-pointer flex items-center justify-between ${selectedCategories.includes(category) ? 'bg-blue-50' : ''}`}
+                                        onClick={() => toggleCategory(category)}
+                                    >
+                                        <span>{category}</span>
+                                        {selectedCategories.includes(category) && (
+                                            <Check size={16} className="text-primary" />
+                                        )}
+                                    </div>
+                                ))
+                            ) : (
+                                <div className="px-3 py-2 text-gray-500 text-center">
+                                    No categories found
                                 </div>
                             )}
                         </div>
@@ -586,6 +723,123 @@ const LanguagesSelect = ({ selectedLanguages, onChange }) => {
     );
 };
 
+// Multi-select Services Component
+const ServiceSelect = ({ selectedServices, onChange }) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const [search, setSearch] = useState("");
+    const dropdownRef = useRef(null);
+    const [services, setServices] = useState([{ name: "Job Support (Mentoring)" }, { name: "Skill Training" }, { name: "Mock Interview Support" }]);
+    const [loadingServices, setLoadingServices] = useState(false);
+
+    // Fetch services
+    // useEffect(() => {
+    //     const fetchServices = async () => {
+    //         try {
+    //             setLoadingServices(true);
+    //             const response = await axiosInstance.get('/api/v1/services/public');
+    //             if (response.data?.success) {
+    //                 setServices(Array.isArray(response.data.data) ? response.data.data : []);
+    //             }
+    //         } catch (error) {
+    //             console.error('Error fetching services:', error);
+    //             toast.error('Failed to load services');
+    //         } finally {
+    //             setLoadingServices(false);
+    //         }
+    //     };
+    //     fetchServices();
+    // }, []);
+
+    const allServices = services.map(service => service.name);
+
+    const filteredServices = allServices.filter(service =>
+        service?.toLowerCase().includes(search?.toLowerCase())
+    );
+
+    const toggleService = (service) => {
+        if (selectedServices.includes(service)) {
+            onChange(selectedServices.filter(s => s !== service));
+        } else {
+            onChange([...selectedServices, service]);
+        }
+    };
+
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+                setIsOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    return (
+        <div className="relative" ref={dropdownRef}>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Services</label>
+            <div className="flex flex-wrap gap-2 mb-2 min-h-[4px]">
+                {selectedServices.map((service, index) => (
+                    <div key={index} className="flex items-center gap-1 bg-blue-100 text-blue-800 px-3 py-1 rounded-full">
+                        <span>{service}</span>
+                        <button
+                            type="button"
+                            onClick={() => toggleService(service)}
+                            className="text-blue-600 hover:text-blue-800"
+                        >
+                            <X size={14} />
+                        </button>
+                    </div>
+                ))}
+            </div>
+            <div className="relative">
+                <button
+                    type="button"
+                    onClick={() => setIsOpen(!isOpen)}
+                    className="w-full px-3 py-2 text-left border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-primary focus:border-transparent flex justify-between items-center"
+                >
+                    <span className="text-gray-500">Select services</span>
+                    <ChevronDown size={16} className={`transform transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                </button>
+
+                {isOpen && (
+                    <div className="absolute z-[9999] w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-auto">
+                        <div className="p-2 border-b sticky top-0 bg-white z-10">
+                            <input
+                                type="text"
+                                placeholder="Search services..."
+                                className="w-full px-3 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-primary focus:border-transparent"
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                                onClick={(e) => e.stopPropagation()}
+                            />
+                        </div>
+                        <div className="py-1">
+                            {filteredServices.length > 0 ? (
+                                filteredServices.map((service, index) => (
+                                    <div
+                                        key={index}
+                                        className={`px-3 py-2 hover:bg-gray-50 cursor-pointer flex items-center justify-between ${selectedServices.includes(service) ? 'bg-blue-50' : ''}`}
+                                        onClick={() => toggleService(service)}
+                                    >
+                                        <span>{service}</span>
+                                        {selectedServices.includes(service) && (
+                                            <Check size={16} className="text-primary" />
+                                        )}
+                                    </div>
+                                ))
+                            ) : (
+                                <div className="px-3 py-2 text-gray-500 text-center">
+                                    No services found
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
+
 // Main Component
 function Profile() {
     const { user, updateUserData, fetchCurrentUser } = useAuth();
@@ -603,6 +857,8 @@ function Profile() {
     const [educations, setEducations] = useState([]);
     const [selectedLanguages, setSelectedLanguages] = useState([]);
     const [selectedSkills, setSelectedSkills] = useState([]);
+    const [selectedCategories, setSelectedCategories] = useState([]);
+    const [selectedServices, setSelectedServices] = useState([]);
 
     const countriesAPI = useCountryStates();
     const [countries, setCountries] = useState([]);
@@ -622,6 +878,8 @@ function Profile() {
             englishLevel: "",
             hourlyRate: "",
             skills: [],
+            categories: [],
+            services: [],
             languages: []
         }
     });
@@ -640,7 +898,7 @@ function Profile() {
     ];
 
     const freelancerTypes = [
-        { value: "independent", label: "Independent Freelancer" },
+        { value: "independent", label: "Independent Mentor" },
         { value: "agency", label: "Agency" }
     ];
 
@@ -705,6 +963,12 @@ function Profile() {
         // Arrays
         setSelectedSkills(userData.skills || []);
         setValue("skills", userData.skills || []);
+
+        setSelectedCategories(userData.categories || []);
+        setValue("categories", userData.categories || []);
+
+        setSelectedServices(userData.services || []);
+        setValue("services", userData.services || []);
 
         setSelectedLanguages(userData.languages || []);
         setValue("languages", userData.languages || []);
@@ -850,6 +1114,8 @@ function Profile() {
 
             // Append arrays as JSON strings
             formData.append('skills', JSON.stringify(selectedSkills));
+            formData.append('categories', JSON.stringify(selectedCategories));
+            formData.append('services', JSON.stringify(selectedServices));
             formData.append('languages', JSON.stringify(selectedLanguages));
 
             // Append image if changed
@@ -933,9 +1199,9 @@ function Profile() {
                                             <div className="flex flex-col items-start gap-3">
                                                 <span className="px-2 py-1 bg-primary/10 text-primary text-xs font-medium rounded-full flex items-center gap-1">
                                                     <Award size={12} />
-                                                    Freelancer
+                                                    Mentor
                                                 </span>
-                                                <h1 className="text-2xl font-bold text-gray-900">Freelancer Profile Settings</h1>
+                                                <h1 className="text-2xl font-bold text-gray-900">Mentor Profile Settings</h1>
                                             </div>
                                             <p className="text-gray-600">
                                                 Complete your profile to increase your visibility and get more opportunities
@@ -1112,7 +1378,7 @@ function Profile() {
                                                 {...register("freelancerType")}
                                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
                                             >
-                                                <option value="">Select Freelancer Type</option>
+                                                <option value="">Select Mentor Type</option>
                                                 {freelancerTypes.map(type => (
                                                     <option key={type.value} value={type.value}>{type.label}</option>
                                                 ))}
@@ -1148,6 +1414,23 @@ function Profile() {
                                         </div> */}
                                     </div>
 
+                                    {/* Categories */}
+                                    <div className="mt-6">
+                                        <Controller
+                                            name="categories"
+                                            control={control}
+                                            render={({ field }) => (
+                                                <CategoriesSelect
+                                                    selectedCategories={selectedCategories}
+                                                    onChange={(categories) => {
+                                                        setSelectedCategories(categories);
+                                                        field.onChange(categories);
+                                                    }}
+                                                />
+                                            )}
+                                        />
+                                    </div>
+
                                     {/* Skills */}
                                     <div className="mt-6">
                                         <Controller
@@ -1159,6 +1442,23 @@ function Profile() {
                                                     onChange={(skills) => {
                                                         setSelectedSkills(skills);
                                                         field.onChange(skills);
+                                                    }}
+                                                />
+                                            )}
+                                        />
+                                    </div>
+
+                                    {/* Services */}
+                                    <div className="mt-6">
+                                        <Controller
+                                            name="services"
+                                            control={control}
+                                            render={({ field }) => (
+                                                <ServiceSelect
+                                                    selectedServices={selectedServices}
+                                                    onChange={(services) => {
+                                                        setSelectedServices(services);
+                                                        field.onChange(services);
                                                     }}
                                                 />
                                             )}

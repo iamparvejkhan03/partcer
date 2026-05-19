@@ -419,13 +419,13 @@ const AllOrders = () => {
                                 <RefreshCw size={18} />
                                 Refresh
                             </button>
-                            <Link
+                            {/* <Link
                                 to="/freelancer/services/create"
                                 className="inline-flex items-center gap-2 px-5 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors font-medium"
                             >
                                 <Plus size={18} />
                                 Create Service
-                            </Link>
+                            </Link> */}
                         </div>
                     </div>
 
@@ -706,7 +706,7 @@ const AllOrders = () => {
                                                             ? 'Try adjusting your filters'
                                                             : 'You haven\'t received any orders yet'}
                                                     </p>
-                                                    {!searchTerm && statusFilter === 'all' && typeFilter === 'all' && (
+                                                    {/* {!searchTerm && statusFilter === 'all' && typeFilter === 'all' && (
                                                         <Link
                                                             to="/freelancer/services/create"
                                                             className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark"
@@ -714,7 +714,7 @@ const AllOrders = () => {
                                                             <Plus size={18} />
                                                             Create Your First Service
                                                         </Link>
-                                                    )}
+                                                    )} */}
                                                 </div>
                                             </td>
                                         </tr>

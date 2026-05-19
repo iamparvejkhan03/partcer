@@ -37,27 +37,27 @@ import { useAuth } from "../../contexts/AuthContext";
 
 // Define navigation items for buyer
 const navigationItems = [
-    {
-        type: 'link',
-        name: 'Dashboard',
-        path: '/buyer/dashboard',
-        icon: <LayoutDashboard size={20} />
-    },
+    // {
+    //     type: 'link',
+    //     name: 'Dashboard',
+    //     path: '/buyer/dashboard',
+    //     icon: <LayoutDashboard size={20} />
+    // },
     {
         type: 'link',
         name: 'Message',
         path: '/buyer/chat',
         icon: <MessageSquare size={20} />
     },
+    // {
+    //     type: 'link',
+    //     name: 'Browse Services',
+    //     path: '/services',
+    //     icon: <Search size={20} />
+    // },
     {
         type: 'link',
-        name: 'Browse Services',
-        path: '/services',
-        icon: <Search size={20} />
-    },
-    {
-        type: 'link',
-        name: 'Find Freelancers',
+        name: 'Find Mentors',
         path: '/freelancers',
         icon: <UserSearch size={20} />
     },

@@ -284,7 +284,7 @@ const AllOrders = () => {
             bg: 'bg-green-100',
             text: 'text-green-700',
             icon: Clock,
-            description: 'Seller is working on your order'
+            description: 'Mentor is working on your order'
         },
         delivered: {
             label: 'Delivered',
@@ -441,7 +441,7 @@ const AllOrders = () => {
         if (window.confirm('Are you sure you want to cancel this order?')) {
             try {
                 const response = await axiosInstance.post(`/api/v1/orders/${orderId}/cancel`, {
-                    reason: 'Cancelled by buyer'
+                    reason: 'Cancelled by student'
                 });
 
                 if (response.data?.success) {
@@ -1015,7 +1015,7 @@ const AllOrders = () => {
                             <div className="bg-gray-50 p-4 rounded-lg">
                                 <h4 className="font-medium mb-3 flex items-center gap-2">
                                     <User size={16} />
-                                    Seller Information
+                                    Mentor Information
                                 </h4>
                                 <div className="flex items-start gap-3">
                                     <img
@@ -1199,7 +1199,7 @@ const AllOrders = () => {
                                                             </div>
                                                         </div>
                                                         <p className="text-xs text-gray-500">
-                                                            {review.reviewerRole === 'buyer' ? 'Buyer' : 'Freelancer'} • {formatDateTime(review.createdAt)}
+                                                            {review.reviewerRole === 'buyer' ? 'Student' : 'Mentor'} • {formatDateTime(review.createdAt)}
                                                         </p>
                                                     </div>
                                                 </div>
@@ -1247,7 +1247,7 @@ const AllOrders = () => {
                                     to={`/buyer/chat?user=${selectedOrder?.seller?._id}`}
                                     className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-center"
                                 >
-                                    Message Seller
+                                    Message Mentor
                                 </Link>
                                 <Link
                                     to={`/buyer/orders/${selectedOrder._id}`}
@@ -1340,7 +1340,7 @@ const AllOrders = () => {
                                     value={reviewData.comment}
                                     onChange={(e) => setReviewData({ ...reviewData, comment: e.target.value })}
                                     rows={4}
-                                    placeholder="Share your experience with this seller..."
+                                    placeholder="Share your experience with this mentor..."
                                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
                                 />
                             </div>
@@ -1401,7 +1401,7 @@ const AllOrders = () => {
                                 <option value="">Select a reason</option>
                                 <option value="Changed my mind">Changed my mind</option>
                                 <option value="Found better option">Found better option</option>
-                                <option value="Seller unresponsive">Seller unresponsive</option>
+                                <option value="Mentor unresponsive">Mentor unresponsive</option>
                                 <option value="Order taking too long">Order taking too long</option>
                                 <option value="Incorrect service ordered">Incorrect service ordered</option>
                                 <option value="Other">Other</option>

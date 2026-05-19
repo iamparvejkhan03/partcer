@@ -22,8 +22,8 @@ const Footer = () => {
         { name: "About", path: "/about" },
         { name: "Contact", path: "/contact" },
         { name: "FAQs", path: "/faqs" },
-        { name: "All Freelancers", path: "/freelancers" },
-        { name: "Search Services", path: "/services" },
+        { name: "All Mentors", path: "/freelancers" },
+        // { name: "Search Services", path: "/services" },
         { name: "Find Projects", path: "/projects" },
     ];
 
@@ -54,7 +54,7 @@ const Footer = () => {
                             </Link>
 
                             <p className="text-gray-400 max-w-md">
-                                Partcer helps you in connecting with experienced freelancers who offer personalized coaching, practical feedback, and real-world insights to help you succeed in tech.
+                                Partcer helps you in connecting with experienced mentors who offer personalized coaching, practical feedback, and real-world insights to help you succeed in tech.
                             </p>
 
                             {/* App Download Buttons */}

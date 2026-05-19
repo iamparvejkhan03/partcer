@@ -4,9 +4,9 @@ import { dummyUserImg } from '../assets';
 
 const FreelancerProfileCard = ({ freelancer }) => {
     return (
-        <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden hover:shadow-xl transition-shadow duration-300 flex flex-col h-full">
+        <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden hover:shadow-xl transition-shadow duration-300 flex flex-col h-full p-6">
             {/* Header Section */}
-            <div className="p-6 border-b border-gray-100">
+            <div className="">
                 <div className="flex flex-col items-start gap-5">
                     <div>
                         <div className='flex items-center justify-center gap-5'>
@@ -17,11 +17,13 @@ const FreelancerProfileCard = ({ freelancer }) => {
                                     <MapPin size={16} className="text-gray-400" />
                                     <span className="text-sm">{freelancer?.country}</span>
                                 </div> */}
+                                <p className='mt-1 text-sm text-gray-500'>{freelancer?.tagline}</p>
                                 <div className="flex items-center justify-start gap-1 mt-2">
                                     <Star size={16} className="fill-yellow-400 text-yellow-400" />
                                     <span className="font-semibold">{freelancer.rating?.toFixed(1) || "0.0"}</span>
                                     <span className="text-gray-500">({freelancer.reviewCount || 0} reviews)</span>
                                 </div>
+                                
                             </div>
                         </div>
                     </div>
@@ -31,7 +33,7 @@ const FreelancerProfileCard = ({ freelancer }) => {
             </div>
 
             {/* Bio Section */}
-            <div className="px-6 border-b border-gray-100">
+            {/* <div className="px-6 border-b border-gray-100">
                 <p className="text-gray-600 text-sm leading-relaxed">
                     {freelancer.bio?.length > 100
                         ? `${freelancer.bio.slice(0, 100)}...`
@@ -47,32 +49,41 @@ const FreelancerProfileCard = ({ freelancer }) => {
                         </Link>
                     )}
                 </p>
-            </div>
+            </div> */}
 
             {/* Skills Section */}
-            <div className="p-6 border-b border-gray-100 flex-grow">
-                <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+            <div className="mt-4 flex-grow">
+                {/* <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
                     <span className="w-2 h-2 bg-primary rounded-full"></span>
                     Skills
-                </h3>
+                </h3> */}
                 <div className="flex flex-wrap gap-2">
-                    {freelancer.skills.map((skill, index) => (
+                    {freelancer.skills.slice(0, 3).map((skill, index) => (
                         <span
                             key={index}
-                            className="px-3 py-1 bg-primary/10 text-primary rounded-full text-sm font-medium"
+                            className="px-3 py-1 bg-primary/10 text-primary rounded-full text-xs"
                         >
                             {skill}
                         </span>
                     ))}
-                    <Link to={`/freelancer/${freelancer._id}`} className="text-gray-600 hover:text-primary text-sm font-medium inline-flex items-center gap-1">
-                        View more
-                        <ChevronRight size={14} />
-                    </Link>
+                    {/* {freelancer.skills.length > 3 && (
+                        <Link to={`/freelancer/${freelancer._id}`} className="text-gray-600 hover:text-primary text-sm font-medium inline-flex items-center gap-1">
+                            View more
+                            <ChevronRight size={14} />
+                        </Link>
+                    )} */}
                 </div>
             </div>
 
-            <div className="p-6 mt-auto">
-                {/* Action Buttons */}
+            {/* Pricing Section */}
+            <div className="mt-4 flex-grow flex items-center justify-end">
+                {/* <p className='font-semibold'><Link to={`/freelancer/${freelancer._id}`}>from Rs. 1200/day</Link></p> */}
+                <Link to={`/freelancer/${freelancer._id}`} className='bg-primary hover:bg-primary/90 text-white text-sm py-1 px-2 rounded-md'>
+                    View Profile
+                </Link>
+            </div>
+
+            {/* <div className="p-6 mt-auto">
                 <div className="flex gap-3">
                     <Link
                         to={`/freelancer/${freelancer?._id}`}
@@ -80,9 +91,8 @@ const FreelancerProfileCard = ({ freelancer }) => {
                     >
                         View Profile
                     </Link>
-                    {/* <button className='p-3 rounded-lg cursor-pointer transition-all relative bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100'><Heart /></button> */}
                 </div>
-            </div>
+            </div> */}
         </div>
     );
 };

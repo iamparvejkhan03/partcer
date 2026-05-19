@@ -136,14 +136,14 @@ export const initializeSocket = (server) => {
         const messageAttachments =
           attachments && attachments.length > 0
             ? attachments.map((attachment) => ({
-                url: attachment.url,
-                publicId: attachment.publicId,
-                fileType:
-                  attachment.fileType || determineFileType(attachment.mimeType),
-                fileName: attachment.fileName,
-                fileSize: attachment.fileSize,
-                mimeType: attachment.mimeType,
-              }))
+              url: attachment.url,
+              publicId: attachment.publicId,
+              fileType:
+                attachment.fileType || determineFileType(attachment.mimeType),
+              fileName: attachment.fileName,
+              fileSize: attachment.fileSize,
+              mimeType: attachment.mimeType,
+            }))
             : [];
 
         // Create message
@@ -157,6 +157,29 @@ export const initializeSocket = (server) => {
           deliveredTo: [],
           readBy: [],
         });
+
+        // First, populate the conversation to get participants with their userType
+        await conversation.populate("participants", "userType _id");
+
+        const senderInConversation = conversation.participants.find(
+          (p) => p._id.toString() === socket.user._id.toString()
+        );
+
+        const isMentor = senderInConversation?.userType === "freelancer";
+
+        if (isMentor && messageAttachments && messageAttachments.length > 0) {
+          message.isResource = true;
+          await message.save();
+        }
+
+        // Update conversation
+        conversation.lastMessage = message._id;
+        conversation.lastMessageAt = new Date();
+
+        // Increment unread count for receiver
+        const currentUnread = conversation.unreadCount.get(receiverId.toString()) || 0;
+        conversation.unreadCount.set(receiverId.toString(), currentUnread + 1);
+        await conversation.save();
 
         // Populate sender info
         await message.populate(

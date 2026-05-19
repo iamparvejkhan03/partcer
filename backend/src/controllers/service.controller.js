@@ -237,7 +237,7 @@ const getServices = asyncHandler(async (req, res) => {
   const services = await Service.find(query)
     .populate(
       "seller",
-      "firstName lastName displayName profileImage skills tagline",
+      "firstName lastName displayName profileImage skills categories tagline",
     )
     .populate("category", "name slug")
     .populate("subCategory", "name slug")
@@ -288,7 +288,7 @@ const getServiceBySlug = asyncHandler(async (req, res) => {
   const service = await Service.findOne({ slug })
     .populate(
       "seller",
-      "firstName lastName displayName profileImage email phone country city createdAt lastLogin isVerified languages englishLevel bio freelancerType skills",
+      "firstName lastName displayName profileImage email phone country city createdAt lastLogin isVerified languages englishLevel bio freelancerType skills categories",
     )
     .populate("category", "name slug")
     .populate("subCategory", "name slug");
@@ -323,7 +323,7 @@ const getServiceById = asyncHandler(async (req, res) => {
   const service = await Service.findById(serviceId)
     .populate(
       "seller",
-      "firstName lastName displayName profileImage email phone country city createdAt lastLogin isVerified languages englishLevel bio freelancerType skills reviewCount rating",
+      "firstName lastName displayName profileImage email phone country city createdAt lastLogin isVerified languages englishLevel bio freelancerType skills categories reviewCount rating",
     )
     .populate("category", "name slug")
     .populate("subCategory", "name slug");

@@ -41,7 +41,9 @@ import {
     Globe,
     ChevronRight,
     ChevronLeft,
-    X
+    X,
+    Wrench,
+    Tag
 } from "lucide-react";
 import { BuyerSidebar, BuyerHeader, BuyerContainer, StartChatButton } from '../../components';
 import toast from 'react-hot-toast';
@@ -50,15 +52,15 @@ import { dummyUserImg } from '../../assets';
 
 const AllProjects = () => {
     const [projects, setProjects] = useState([]);
-    const [allProjects, setAllProjects] = useState([]); // For local filtering
+    const [allProjects, setAllProjects] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [activeTab, setActiveTab] = useState('active');
+    const [activeTab, setActiveTab] = useState('all');
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedProject, setSelectedProject] = useState(null);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
-    const [showApplicantsModal, setShowApplicantsModal] = useState(false);
+    const [showProposalsModal, setShowProposalsModal] = useState(false);
     const [showOfferModal, setShowOfferModal] = useState(false);
-    const [selectedApplicant, setSelectedApplicant] = useState(null);
+    const [selectedProposal, setSelectedProposal] = useState(null);
     const [dateRange, setDateRange] = useState('30');
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage] = useState(5);
@@ -70,16 +72,42 @@ const AllProjects = () => {
         cancelled: 0,
         draft: 0,
         pending: 0,
-        totalApplicants: 0,
+        totalProposals: 0,
         totalSpent: 0,
-        totalViews: 0,
-        totalProposals: 0
+        totalViews: 0
     });
 
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
 
-    // Get tab from URL or default to active
+    // Helper functions for display
+    const getPeriodLabel = (period) => {
+        const map = {
+            one_time: 'One-time',
+            per_day: 'Per day',
+            weekly: 'Weekly',
+            monthly: 'Monthly'
+        };
+        return map[period] || period;
+    };
+
+    const getDurationLabel = (period, duration) => {
+        if (period === 'one_time') return 'Single session';
+        if (duration === 'standard') return 'Standard (2-3 hrs)';
+        return 'Full day (6-8 hrs)';
+    };
+
+    const formatCurrency = (amount) => {
+        if (!amount) return '₹0';
+        return new Intl.NumberFormat('en-IN', {
+            style: 'currency',
+            currency: 'INR',
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0
+        }).format(amount);
+    };
+
+    // Get tab from URL
     useEffect(() => {
         const tab = searchParams.get('tab');
         if (tab && ['active', 'pending', 'completed', 'draft', 'cancelled'].includes(tab)) {
@@ -87,49 +115,18 @@ const AllProjects = () => {
         }
     }, [searchParams]);
 
-    // Fetch projects on mount, tab change, page change, or search
+    // Fetch projects on mount
     useEffect(() => {
         fetchProjects();
     }, []);
 
-    // Debounce search
-    // useEffect(() => {
-    //     const timer = setTimeout(() => {
-    //         if (searchTerm) {
-    //             setCurrentPage(1);
-    //             fetchProjects();
-    //         }
-    //     }, 500);
-
-    //     return () => clearTimeout(timer);
-    // }, [searchTerm]);
-
     const fetchProjects = async () => {
         try {
             setLoading(true);
-
-            // Build query params
-            const params = new URLSearchParams();
-            // params.append('status', activeTab);
-            params.append('page', currentPage);
-            params.append('limit', itemsPerPage);
-
-            // if (searchTerm) {
-            //     params.append('search', searchTerm);
-            // }
-
-            if (dateRange !== 'all') {
-                const date = new Date();
-                date.setDate(date.getDate() - parseInt(dateRange));
-                params.append('fromDate', date.toISOString());
-            }
-
-            const response = await axiosInstance.get(`/api/v1/projects/buyer/me?${params.toString()}`);
+            const response = await axiosInstance.get('/api/v1/projects/buyer/me');
 
             if (response.data.success) {
-                const { projects: fetchedProjects, stats: fetchedStats, pagination } = response.data.data;
-
-                // setProjects(fetchedProjects || []);
+                const { projects: fetchedProjects, stats: fetchedStats } = response.data.data;
                 setAllProjects(fetchedProjects || []);
                 setStats(fetchedStats || {
                     active: 0,
@@ -137,40 +134,29 @@ const AllProjects = () => {
                     cancelled: 0,
                     draft: 0,
                     pending: 0,
-                    totalApplicants: 0,
+                    totalProposals: 0,
                     totalSpent: 0
                 });
-
-                if (pagination) {
-                    setTotalPages(pagination.pages);
-                    setTotalProjects(pagination.total);
-                }
             }
         } catch (error) {
             console.error('Error fetching projects:', error);
             toast.error('Failed to load projects');
-            setProjects([]);
+            setAllProjects([]);
         } finally {
             setLoading(false);
         }
     };
 
-    useEffect(() => {
-        setTotalPages(Math.ceil(projects.length / itemsPerPage));
-    }, [projects]);
-
-    const fetchProjectApplicants = async (projectId) => {
+    const fetchProjectProposals = async (projectId) => {
         try {
-            const response = await axiosInstance.get(`/api/v1/projects/${projectId}/applicants`);
-
+            const response = await axiosInstance.get(`/api/v1/projects/${projectId}/proposals`);
             if (response.data.success) {
                 return response.data.data;
             }
-            return { applicants: [], stats: {} };
+            return { proposals: [], stats: {} };
         } catch (error) {
-            console.error('Error fetching applicants:', error);
-            toast.error('Failed to load applicants');
-            return { applicants: [], stats: {} };
+            console.error('Error fetching proposals:', error);
+            return { proposals: [], stats: {} };
         }
     };
 
@@ -179,12 +165,9 @@ const AllProjects = () => {
 
         try {
             await axiosInstance.delete(`/api/v1/projects/${selectedProject._id}`);
-
             toast.success('Project deleted successfully');
             setShowDeleteModal(false);
             setSelectedProject(null);
-
-            // Refresh projects
             fetchProjects();
         } catch (error) {
             const errorMessage = error?.response?.data?.message || 'Failed to delete project';
@@ -194,11 +177,8 @@ const AllProjects = () => {
 
     const handleStatusChange = async (projectId, newStatus) => {
         try {
-            await axiosInstance.patch(`/api/v1/projects/${projectId}/status`, { status: newStatus });
-
+            await axiosInstance.post(`/api/v1/projects/${projectId}/complete`);
             toast.success(`Project status updated to ${newStatus}`);
-
-            // Refresh projects
             fetchProjects();
         } catch (error) {
             const errorMessage = error?.response?.data?.message || 'Failed to update project status';
@@ -206,80 +186,56 @@ const AllProjects = () => {
         }
     };
 
-    const handleApplicantAction = async (projectId, applicantId, action, message = '') => {
+    const handleProposalAction = async (projectId, proposalId, status, message = '') => {
         try {
-            await axiosInstance.patch(`/api/v1/projects/${projectId}/applicants/${applicantId}`, {
-                action,
+            await axiosInstance.patch(`/api/v1/projects/${projectId}/proposals/${proposalId}`, {
+                status,
                 message
             });
 
             const actionMessages = {
-                shortlisted: 'Applicant shortlisted successfully',
-                hired: 'Applicant hired successfully',
-                rejected: 'Application rejected successfully'
+                accepted: 'Proposal accepted successfully',
+                rejected: 'Proposal rejected successfully'
             };
 
-            toast.success(actionMessages[action] || 'Action completed');
+            toast.success(actionMessages[status] || 'Action completed');
             setShowOfferModal(false);
-            setSelectedApplicant(null);
+            setSelectedProposal(null);
 
-            // Refresh applicants if modal is open
-            if (showApplicantsModal && selectedProject) {
-                const { applicants, stats } = await fetchProjectApplicants(selectedProject._id);
+            if (showProposalsModal && selectedProject) {
+                const { proposals, stats } = await fetchProjectProposals(selectedProject._id);
                 setSelectedProject({
                     ...selectedProject,
-                    applicantsList: applicants,
-                    applicantsCount: stats?.total || applicants.length,
-                    unreadApplications: stats?.pending || 0
+                    proposalsList: proposals,
+                    proposalsCount: stats?.total || proposals.length
                 });
             }
 
-            // Refresh projects list
             fetchProjects();
         } catch (error) {
-            const errorMessage = error?.response?.data?.message || 'Failed to process applicant';
+            const errorMessage = error?.response?.data?.message || 'Failed to process proposal';
             toast.error(errorMessage);
         }
     };
 
-    const handleMessageApplicant = (applicant) => {
-        navigate(`/buyer/messages?user=${applicant.freelancer?._id || applicant._id}`);
-    };
-
-    const handleViewProfile = (applicant) => {
-        navigate(`/freelancer/${applicant.freelancer || applicant._id}`);
-    };
-
-    const handleDuplicate = async (project) => {
-        try {
-            await axiosInstance.post(`/api/v1/projects/${project._id}/duplicate`);
-
-            toast.success('Project duplicated successfully');
-            fetchProjects(); // Refresh list
-        } catch (error) {
-            const errorMessage = error?.response?.data?.message || 'Failed to duplicate project';
-            toast.error(errorMessage);
-        }
-    };
-
-    const handleViewApplicants = async (project) => {
+    const handleViewProposals = async (project) => {
         setSelectedProject(project);
-        setShowApplicantsModal(true);
+        setShowProposalsModal(true);
 
-        // Fetch applicants for this project
-        const { applicants, stats } = await fetchProjectApplicants(project._id);
+        const { proposals, stats } = await fetchProjectProposals(project._id);
         setSelectedProject({
             ...project,
-            applicantsList: applicants,
-            applicantsCount: stats?.total || applicants.length,
-            unreadApplications: stats?.pending || 0
+            proposalsList: proposals,
+            proposalsCount: stats?.total || proposals.length,
+            pendingCount: stats?.pending || 0,
+            acceptedCount: stats?.accepted || 0,
+            rejectedCount: stats?.rejected || 0
         });
     };
 
     const handleTabChange = (tabId) => {
         setActiveTab(tabId);
         setCurrentPage(1);
-        // setSearchParams({ tab: tabId });
     };
 
     const handlePageChange = (newPage) => {
@@ -292,6 +248,38 @@ const AllProjects = () => {
         toast.success('Projects refreshed');
     };
 
+    // Local Filtering
+    useEffect(() => {
+        let filtered = [...allProjects];
+
+        if (activeTab !== 'all') {
+            filtered = filtered.filter(project =>
+                project.status?.toLowerCase() === activeTab.toLowerCase()
+            );
+        }
+
+        if (searchTerm.trim()) {
+            filtered = filtered.filter(project =>
+                project.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                project.category?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                project.subCategory?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                project.service?.toLowerCase().includes(searchTerm.toLowerCase())
+            );
+        }
+
+        if (dateRange !== 'all') {
+            const date = new Date();
+            date.setDate(date.getDate() - parseInt(dateRange));
+            filtered = filtered.filter(project =>
+                new Date(project.createdAt) >= date
+            );
+        }
+
+        setProjects(filtered);
+        setTotalProjects(filtered.length);
+        setCurrentPage(1);
+    }, [activeTab, searchTerm, dateRange, allProjects]);
+
     const tabs = [
         { id: 'active', label: 'ACTIVE', count: stats.active, icon: Clock },
         { id: 'pending', label: 'PENDING', count: stats.pending, icon: AlertCircle },
@@ -300,49 +288,14 @@ const AllProjects = () => {
         { id: 'cancelled', label: 'CANCELLED', count: stats.cancelled, icon: XCircle }
     ];
 
-    // Local Filtering
-    useEffect(() => {
-        let filtered = [...allProjects];
-
-        // 🔹 Filter by tab (status)
-        if (activeTab !== 'all') {
-            filtered = filtered.filter(project =>
-                project.status?.toLowerCase() === activeTab.toLowerCase()
-            );
-        }
-
-
-        // Filter by search
-        if (searchTerm.trim()) {
-            filtered = filtered.filter(project =>
-                project.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                project.category?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                project.subCategory?.name?.toLowerCase().includes(searchTerm.toLowerCase())
-            );
-        }
-
-        // Filter by date
-        if (dateRange !== 'all') {
-            const date = new Date();
-            date.setDate(date.getDate() - parseInt(dateRange));
-
-            filtered = filtered.filter(project =>
-                new Date(project.createdAt) >= date
-            );
-        }
-
-        setProjects(filtered);
-    setTotalProjects(filtered.length);
-    setCurrentPage(1);
-    }, [activeTab, searchTerm, dateRange, allProjects]);
-
     const getStatusBadge = (status) => {
         const statusConfig = {
             active: { bg: 'bg-green-100', text: 'text-green-700', label: 'Active', icon: Clock },
             pending: { bg: 'bg-yellow-100', text: 'text-yellow-700', label: 'Pending Approval', icon: AlertCircle },
             completed: { bg: 'bg-blue-100', text: 'text-blue-700', label: 'Completed', icon: CheckCircle },
             draft: { bg: 'bg-gray-100', text: 'text-gray-700', label: 'Draft', icon: FileText },
-            cancelled: { bg: 'bg-red-100', text: 'text-red-700', label: 'Cancelled', icon: XCircle }
+            cancelled: { bg: 'bg-red-100', text: 'text-red-700', label: 'Cancelled', icon: XCircle },
+            filled: { bg: 'bg-purple-100', text: 'text-purple-700', label: 'Filled', icon: UserCheck }
         };
 
         const config = statusConfig[status] || statusConfig.draft;
@@ -355,12 +308,11 @@ const AllProjects = () => {
         );
     };
 
-    const getApplicantStatusBadge = (status) => {
+    const getProposalStatusBadge = (status) => {
         const statusConfig = {
             pending: { bg: 'bg-yellow-100', text: 'text-yellow-700', label: 'Pending', icon: Clock },
-            shortlisted: { bg: 'bg-blue-100', text: 'text-blue-700', label: 'Shortlisted', icon: UserCheck },
-            hired: { bg: 'bg-green-100', text: 'text-green-700', label: 'Hired', icon: CheckCircle },
-            rejected: { bg: 'bg-red-100', text: 'text-red-700', label: 'Rejected', icon: UserX }
+            accepted: { bg: 'bg-green-100', text: 'text-green-700', label: 'Accepted', icon: CheckCircle },
+            rejected: { bg: 'bg-red-100', text: 'text-red-700', label: 'Rejected', icon: XCircle }
         };
 
         const config = statusConfig[status] || statusConfig.pending;
@@ -377,23 +329,6 @@ const AllProjects = () => {
         if (!dateString) return 'N/A';
         const date = new Date(dateString);
         return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-    };
-
-    const formatCurrency = (amount) => {
-        if (!amount) return '$0';
-        return new Intl.NumberFormat('en-US', {
-            style: 'currency',
-            currency: 'USD',
-            minimumFractionDigits: 0
-        }).format(amount);
-    };
-
-    const formatNumber = (num) => {
-        if (!num) return '0';
-        if (num >= 1000) {
-            return (num / 1000).toFixed(1) + 'K';
-        }
-        return num.toString();
     };
 
     const paginatedProjects = projects.slice(
@@ -427,7 +362,7 @@ const AllProjects = () => {
                     <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6 mt-20 md:mt-0">
                         <div>
                             <h1 className="text-2xl md:text-3xl font-bold text-gray-900">My Projects</h1>
-                            <p className="text-gray-600 mt-1">Manage your projects and review freelancer applications</p>
+                            <p className="text-gray-600 mt-1">Manage your projects and review mentor expressions of interest</p>
                         </div>
                         <div className='flex items-center gap-2 mt-4 md:mt-0'>
                             <button
@@ -447,7 +382,7 @@ const AllProjects = () => {
                         </div>
                     </div>
 
-                    {/* Stats Summary */}
+                    {/* Stats Summary - Updated for new model */}
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                         <div className="bg-white p-4 rounded-lg border border-gray-200">
                             <div className="flex items-center gap-3">
@@ -455,7 +390,7 @@ const AllProjects = () => {
                                     <Briefcase size={20} className="text-blue-600" />
                                 </div>
                                 <div>
-                                    <p className="text-sm text-gray-600">Active Projects</p>
+                                    <p className="text-sm text-gray-600">All Projects</p>
                                     <p className="text-xl font-bold">{stats.active}</p>
                                 </div>
                             </div>
@@ -477,26 +412,26 @@ const AllProjects = () => {
                                     <Users size={20} className="text-purple-600" />
                                 </div>
                                 <div>
-                                    <p className="text-sm text-gray-600">Total Applicants</p>
-                                    <p className="text-xl font-bold">{stats.totalApplicants}</p>
+                                    <p className="text-sm text-gray-600">Total Interested</p>
+                                    <p className="text-xl font-bold">{stats.totalProposals}</p>
                                 </div>
                             </div>
                         </div>
                         <div className="bg-white p-4 rounded-lg border border-gray-200">
                             <div className="flex items-center gap-3">
                                 <div className="p-2 bg-yellow-100 rounded-lg">
-                                    <DollarSign size={20} className="text-yellow-600" />
+                                    <Eye size={20} className="text-yellow-600" />
                                 </div>
                                 <div>
-                                    <p className="text-sm text-gray-600">Total Spent</p>
-                                    <p className="text-xl font-bold">{formatCurrency(stats.totalSpent)}</p>
+                                    <p className="text-sm text-gray-600">Total Views</p>
+                                    <p className="text-xl font-bold">{stats.totalViews}</p>
                                 </div>
                             </div>
                         </div>
                     </div>
 
                     {/* Tabs */}
-                    <div className="mb-6 overflow-x-auto pb-2">
+                    {/* <div className="mb-6 overflow-x-auto pb-2">
                         <div className="flex gap-2 min-w-max">
                             {tabs.map((tab) => {
                                 const Icon = tab.icon;
@@ -515,7 +450,7 @@ const AllProjects = () => {
                                 );
                             })}
                         </div>
-                    </div>
+                    </div> */}
 
                     {/* Search & Filter Bar */}
                     <div className="flex flex-col sm:flex-row gap-3 mb-6">
@@ -523,7 +458,7 @@ const AllProjects = () => {
                             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
                             <input
                                 type="text"
-                                placeholder="Search projects..."
+                                placeholder="Search projects by title, category, or service..."
                                 value={searchTerm}
                                 onChange={(e) => {
                                     setSearchTerm(e.target.value);
@@ -532,7 +467,7 @@ const AllProjects = () => {
                                 className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
                             />
                         </div>
-                        <div className="flex gap-2">
+                        {/* <div className="flex gap-2">
                             <select
                                 value={dateRange}
                                 onChange={(e) => {
@@ -547,7 +482,7 @@ const AllProjects = () => {
                                 <option value="365">Last year</option>
                                 <option value="all">All time</option>
                             </select>
-                        </div>
+                        </div> */}
                     </div>
 
                     {/* Projects List - Desktop */}
@@ -560,13 +495,13 @@ const AllProjects = () => {
                                             PROJECT
                                         </th>
                                         <th className="px-6 py-4 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            BUDGET
+                                            SERVICE / PERIOD
                                         </th>
                                         <th className="px-6 py-4 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            APPLICANTS
+                                            INTERESTED
                                         </th>
                                         <th className="px-6 py-4 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            DEADLINE
+                                            POSTED
                                         </th>
                                         <th className="px-6 py-4 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                                             STATUS
@@ -577,128 +512,150 @@ const AllProjects = () => {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-200">
-                                    {
-
-                                        projects.length > 0 ? (
-                                            paginatedProjects.map((project) => (
-                                                <tr key={project._id} className="hover:bg-gray-50 transition-colors">
-                                                    <td className="px-6 py-4">
-                                                        <div className="flex items-start gap-3">
-                                                            <div className="flex-1 min-w-0">
-                                                                <div className="flex items-center gap-2 mb-1">
-                                                                    <span className="text-xs text-gray-500">
-                                                                        {project.category?.name || project.category} • {project.subCategory?.name || project.subCategory}
+                                    {projects.length > 0 ? (
+                                        paginatedProjects.map((project) => (
+                                            <tr key={project._id} className="hover:bg-gray-50 transition-colors">
+                                                <td className="px-6 py-4">
+                                                    <div className="flex items-start gap-3">
+                                                        <div className="flex-1 min-w-0">
+                                                            <div className="flex items-center gap-2 mb-1">
+                                                                <span className="text-xs text-gray-500">
+                                                                    {project.category?.name || project.category} • {project.subCategory?.name || project.subCategory}
+                                                                </span>
+                                                            </div>
+                                                            <h3 className="font-medium text-gray-900 mb-1">
+                                                                {project.title}
+                                                            </h3>
+                                                            <div className="flex flex-wrap gap-1 mt-2">
+                                                                {project.skills?.slice(0, 3).map((skill, idx) => (
+                                                                    <span key={idx} className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded">
+                                                                        {typeof skill === 'string' ? skill : skill.name}
                                                                     </span>
-                                                                </div>
-                                                                <h3 className="font-medium text-gray-900 mb-1">
-                                                                    {project.title}
-                                                                </h3>
-                                                                <div className="flex flex-wrap gap-1 mt-2">
-                                                                    {project.skills?.slice(0, 3).map((skill, idx) => (
-                                                                        <span key={idx} className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded">
-                                                                            {typeof skill === 'string' ? skill : skill.name}
-                                                                        </span>
-                                                                    ))}
-                                                                    {project.skills?.length > 3 && (
-                                                                        <span className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded">
-                                                                            +{project.skills.length - 3}
-                                                                        </span>
-                                                                    )}
-                                                                </div>
+                                                                ))}
+                                                                {project.skills?.length > 3 && (
+                                                                    <span className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded">
+                                                                        +{project.skills.length - 3}
+                                                                    </span>
+                                                                )}
                                                             </div>
                                                         </div>
-                                                    </td>
-                                                    <td className="px-6 py-4 text-center">
-                                                        <span className="font-bold text-gray-900">
-                                                            {formatCurrency(project.budget)}
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4 text-center">
+                                                    <div>
+                                                        <span className="font-medium text-gray-900 block">
+                                                            {project.service || 'N/A'}
                                                         </span>
-                                                        <span className="text-xs text-gray-500 block">
-                                                            {project.projectType}
+                                                        <span className="text-xs text-gray-500">
+                                                            {getPeriodLabel(project.period)} · {getDurationLabel(project.period, project.duration)}
                                                         </span>
-                                                    </td>
-                                                    <td className="px-6 py-4 text-center">
-                                                        <div className="flex flex-col items-center">
-                                                            <span className="font-medium text-gray-900">
-                                                                {project.applicantsCount || 0}
-                                                            </span>
-                                                            {project.unreadApplications > 0 && (
-                                                                <span className="text-xs text-green-600 flex items-center gap-1">
-                                                                    <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-                                                                    {project.unreadApplications} new
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                    </td>
-                                                    <td className="px-6 py-4 text-center">
-                                                        <span className="text-sm text-gray-600">
-                                                            {formatDate(project.deadline)}
-                                                        </span>
-                                                    </td>
-                                                    <td className="px-6 py-4 text-center">
-                                                        {getStatusBadge(project.status)}
-                                                    </td>
-                                                    <td className="px-6 py-4">
-                                                        <div className="flex items-center justify-center gap-2">
-                                                            <button
-                                                                onClick={() => handleViewApplicants(project)}
-                                                                className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                                                                title="View Applicants"
-                                                                disabled={project.applicantsCount === 0}
-                                                            >
-                                                                <Users size={18} className={project.applicantsCount === 0 ? 'opacity-50' : ''} />
-                                                            </button>
-                                                            <Link
-                                                                to={`/buyer/projects/edit/${project._id}`}
-                                                                className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-                                                                title="Edit Project"
-                                                            >
-                                                                <Edit size={18} />
-                                                            </Link>
-                                                            <button
-                                                                onClick={() => {
-                                                                    setSelectedProject(project);
-                                                                    setShowDeleteModal(true);
-                                                                }}
-                                                                className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                                                title="Delete Project"
-                                                            >
-                                                                <Trash2 size={18} />
-                                                            </button>
-                                                            <Link
-                                                                to={`/project/${project._id}`}
-                                                                className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-                                                                title="View Details"
-                                                            >
-                                                                <Eye size={18} />
-                                                            </Link>
-                                                        </div>
-                                                    </td>
-                                                </tr>
-                                            ))
-                                        ) : (
-                                            <tr>
-                                                <td colSpan={6} className="px-6 py-12 text-center">
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4 text-center">
                                                     <div className="flex flex-col items-center">
-                                                        <div className="p-3 bg-gray-100 rounded-full mb-3">
-                                                            <Briefcase size={24} className="text-gray-400" />
-                                                        </div>
-                                                        <p className="text-gray-500 font-medium">No {activeTab} projects found</p>
-                                                        <p className="text-sm text-gray-400 mt-1">
-                                                            {searchTerm ? 'Try adjusting your search' : `Post your first project to get started`}
-                                                        </p>
-                                                        {!searchTerm && (
-                                                            <Link
-                                                                to="/buyer/projects/create"
-                                                                className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark"
-                                                            >
-                                                                <Plus size={16} />
-                                                                Post a Project
-                                                            </Link>
+                                                        <span className="font-medium text-gray-900">
+                                                            {project.proposalsCount || 0}
+                                                        </span>
+                                                        {project.pendingCount > 0 && (
+                                                            <span className="text-xs text-green-600 flex items-center gap-1">
+                                                                <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                                                                {project.pendingCount} pending
+                                                            </span>
                                                         )}
                                                     </div>
                                                 </td>
+                                                <td className="px-6 py-4 text-center">
+                                                    <span className="text-sm text-gray-600">
+                                                        {formatDate(project.createdAt)}
+                                                    </span>
+                                                </td>
+                                                <td className="px-6 py-4 text-center">
+                                                    {getStatusBadge(project.status)}
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <div className="flex items-center justify-center gap-2">
+                                                        {/* Mark as Completed Button - Only show for active or filled projects */}
+                                                        {(project.status === 'active' || project.status === 'filled') && (
+                                                            <button
+                                                                onClick={() => {
+                                                                    if (window.confirm('Mark this project as completed? This action cannot be undone.')) {
+                                                                        handleStatusChange(project._id, 'completed');
+                                                                    }
+                                                                }}
+                                                                className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                                                                title="Mark as Completed"
+                                                            >
+                                                                <CheckCircle size={18} />
+                                                            </button>
+                                                        )}
+
+                                                        {/* View Interested Mentors Button */}
+                                                        <button
+                                                            onClick={() => handleViewProposals(project)}
+                                                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                                            title="View Interested Mentors"
+                                                            disabled={project.proposalsCount === 0}
+                                                        >
+                                                            <Users size={18} className={project.proposalsCount === 0 ? 'opacity-50' : ''} />
+                                                        </button>
+
+                                                        {/* Edit Button */}
+                                                        <Link
+                                                            to={`/buyer/projects/edit/${project._id}`}
+                                                            className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                                                            title="Edit Project"
+                                                        >
+                                                            <Edit size={18} />
+                                                        </Link>
+
+                                                        {/* Delete Button */}
+                                                        <button
+                                                            onClick={() => {
+                                                                setSelectedProject(project);
+                                                                setShowDeleteModal(true);
+                                                            }}
+                                                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                                            title="Delete Project"
+                                                        >
+                                                            <Trash2 size={18} />
+                                                        </button>
+
+                                                        {/* View Details Button */}
+                                                        <Link
+                                                            to={`/project/${project._id}`}
+                                                            className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                                                            title="View Details"
+                                                        >
+                                                            <Eye size={18} />
+                                                        </Link>
+                                                    </div>
+                                                </td>
                                             </tr>
-                                        )}
+                                        ))
+                                    ) : (
+                                        <tr>
+                                            <td colSpan={6} className="px-6 py-12 text-center">
+                                                <div className="flex flex-col items-center">
+                                                    <div className="p-3 bg-gray-100 rounded-full mb-3">
+                                                        <Briefcase size={24} className="text-gray-400" />
+                                                    </div>
+                                                    <p className="text-gray-500 font-medium">No {activeTab} projects found</p>
+                                                    <p className="text-sm text-gray-400 mt-1">
+                                                        {searchTerm ? 'Try adjusting your search' : 'Post your first project to get started'}
+                                                    </p>
+                                                    {!searchTerm && (
+                                                        <Link
+                                                            to="/buyer/projects/create"
+                                                            className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark"
+                                                        >
+                                                            <Plus size={16} />
+                                                            Post a Project
+                                                        </Link>
+                                                    )}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    )}
                                 </tbody>
                             </table>
                         </div>
@@ -750,21 +707,23 @@ const AllProjects = () => {
 
                                     <div className="grid grid-cols-2 gap-3 mb-3">
                                         <div>
-                                            <p className="text-xs text-gray-500">Budget</p>
-                                            <p className="font-bold text-gray-900">{formatCurrency(project.budget)}</p>
+                                            <p className="text-xs text-gray-500">Service</p>
+                                            <p className="font-medium text-gray-900 text-sm">{project.service || 'N/A'}</p>
                                         </div>
                                         <div>
-                                            <p className="text-xs text-gray-500">Applicants</p>
+                                            <p className="text-xs text-gray-500">Period / Duration</p>
+                                            <p className="text-sm text-gray-600">
+                                                {getPeriodLabel(project.period)} · {getDurationLabel(project.period, project.duration)}
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <p className="text-xs text-gray-500">Interested</p>
                                             <div className="flex items-center gap-1">
-                                                <p className="font-medium text-gray-900">{project.applicantsCount || 0}</p>
-                                                {project.unreadApplications > 0 && (
-                                                    <span className="text-xs text-green-600">({project.unreadApplications} new)</span>
+                                                <p className="font-medium text-gray-900">{project.proposalsCount || 0}</p>
+                                                {project.pendingCount > 0 && (
+                                                    <span className="text-xs text-green-600">({project.pendingCount} new)</span>
                                                 )}
                                             </div>
-                                        </div>
-                                        <div>
-                                            <p className="text-xs text-gray-500">Deadline</p>
-                                            <p className="text-sm text-gray-600">{formatDate(project.deadline)}</p>
                                         </div>
                                         <div>
                                             <p className="text-xs text-gray-500">Posted</p>
@@ -782,22 +741,42 @@ const AllProjects = () => {
 
                                     <div className="flex items-center justify-between border-t pt-3">
                                         <div className="flex gap-2">
+                                            {/* Mark as Completed Button - Only show for active or filled projects */}
+                                            {(project.status === 'active' || project.status === 'filled') && (
+                                                <button
+                                                    onClick={() => {
+                                                        if (window.confirm('Mark this project as completed? This action cannot be undone.')) {
+                                                            handleStatusChange(project._id, 'completed');
+                                                        }
+                                                    }}
+                                                    className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                                                    title="Mark as Completed"
+                                                >
+                                                    <CheckCircle size={18} />
+                                                </button>
+                                            )}
+
+                                            {/* View Interested Mentors Button */}
                                             <button
-                                                onClick={() => handleViewApplicants(project)}
-                                                className={`p-2 rounded-lg transition-colors ${project.applicantsCount > 0
+                                                onClick={() => handleViewProposals(project)}
+                                                className={`p-2 rounded-lg transition-colors ${project.proposalsCount > 0
                                                     ? 'text-blue-600 hover:bg-blue-50'
                                                     : 'text-gray-400 cursor-not-allowed'
                                                     }`}
-                                                disabled={project.applicantsCount === 0}
+                                                disabled={project.proposalsCount === 0}
                                             >
                                                 <Users size={18} />
                                             </button>
+
+                                            {/* Edit Button */}
                                             <Link
                                                 to={`/buyer/projects/edit/${project._id}`}
                                                 className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg"
                                             >
                                                 <Edit size={18} />
                                             </Link>
+
+                                            {/* Delete Button */}
                                             <button
                                                 onClick={() => {
                                                     setSelectedProject(project);
@@ -807,6 +786,8 @@ const AllProjects = () => {
                                             >
                                                 <Trash2 size={18} />
                                             </button>
+
+                                            {/* View Details Button */}
                                             <Link
                                                 to={`/project/${project._id}`}
                                                 className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg"
@@ -862,18 +843,18 @@ const AllProjects = () => {
                 </BuyerContainer>
             </div>
 
-            {/* Applicants Modal */}
-            {showApplicantsModal && selectedProject && (
+            {/* Proposals/Interested Mentors Modal */}
+            {showProposalsModal && selectedProject && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
                     <div className="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
                         <div className="p-6 border-b border-gray-200 flex justify-between items-center sticky top-0 bg-white">
                             <div>
-                                <h3 className="text-xl font-bold text-gray-900">Applicants for Project</h3>
+                                <h3 className="text-xl font-bold text-gray-900">Interested Mentors</h3>
                                 <p className="text-sm text-gray-500 mt-1">{selectedProject.title}</p>
                             </div>
                             <button
                                 onClick={() => {
-                                    setShowApplicantsModal(false);
+                                    setShowProposalsModal(false);
                                     setSelectedProject(null);
                                 }}
                                 className="p-2 hover:bg-gray-100 rounded-lg"
@@ -884,68 +865,62 @@ const AllProjects = () => {
 
                         <div className="p-6">
                             {/* Summary Stats */}
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                            {/* <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                                 <div className="bg-gray-50 p-3 rounded-lg">
-                                    <p className="text-xs text-gray-500">Total Applicants</p>
-                                    <p className="text-xl font-bold">{selectedProject.applicantsList?.length || 0}</p>
+                                    <p className="text-xs text-gray-500">Total Interested</p>
+                                    <p className="text-xl font-bold">{selectedProject.proposalsList?.length || 0}</p>
                                 </div>
                                 <div className="bg-gray-50 p-3 rounded-lg">
-                                    <p className="text-xs text-gray-500">Shortlisted</p>
-                                    <p className="text-xl font-bold text-blue-600">
-                                        {selectedProject.applicantsList?.filter(a => a.status === 'shortlisted').length || 0}
-                                    </p>
-                                </div>
-                                <div className="bg-gray-50 p-3 rounded-lg">
-                                    <p className="text-xs text-gray-500">Hired</p>
-                                    <p className="text-xl font-bold text-green-600">
-                                        {selectedProject.applicantsList?.filter(a => a.status === 'hired').length || 0}
-                                    </p>
-                                </div>
-                                <div className="bg-gray-50 p-3 rounded-lg">
-                                    <p className="text-xs text-gray-500">New</p>
+                                    <p className="text-xs text-gray-500">Pending</p>
                                     <p className="text-xl font-bold text-yellow-600">
-                                        {selectedProject.applicantsList?.filter(a => a.status === 'pending').length || 0}
+                                        {selectedProject.proposalsList?.filter(p => p.status === 'pending').length || 0}
                                     </p>
                                 </div>
-                            </div>
+                                <div className="bg-gray-50 p-3 rounded-lg">
+                                    <p className="text-xs text-gray-500">Accepted</p>
+                                    <p className="text-xl font-bold text-green-600">
+                                        {selectedProject.proposalsList?.filter(p => p.status === 'accepted').length || 0}
+                                    </p>
+                                </div>
+                                <div className="bg-gray-50 p-3 rounded-lg">
+                                    <p className="text-xs text-gray-500">Rejected</p>
+                                    <p className="text-xl font-bold text-red-600">
+                                        {selectedProject.proposalsList?.filter(p => p.status === 'rejected').length || 0}
+                                    </p>
+                                </div>
+                            </div> */}
 
-                            {/* Applicants List */}
+                            {/* Proposals List */}
                             <div className="space-y-4">
-                                {selectedProject.applicantsList && selectedProject.applicantsList.length > 0 ? (
-                                    selectedProject.applicantsList.map((applicant) => (
-                                        <div key={applicant._id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                                {selectedProject.proposalsList && selectedProject.proposalsList.length > 0 ? (
+                                    selectedProject.proposalsList.map((proposal) => (
+                                        <div key={proposal._id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
                                             <div className="flex flex-col md:flex-row md:items-start gap-4">
                                                 {/* Avatar & Basic Info */}
                                                 <div className="flex items-start gap-3 md:w-1/3">
                                                     <img
-                                                        src={applicant?.profileImage || dummyUserImg}
-                                                        alt={applicant.name}
+                                                        src={proposal.freelancerAvatar || dummyUserImg}
+                                                        alt={proposal.freelancerName}
                                                         className="w-12 h-12 rounded-full object-cover"
                                                     />
                                                     <div>
-                                                        <div className="flex items-center gap-2">
-                                                            <h4 className="font-medium text-gray-900">{applicant.name}</h4>
-                                                            {applicant.verified && (
-                                                                <CheckCircle size={14} className="text-green-500" />
-                                                            )}
-                                                        </div>
-                                                        <p className="text-sm text-gray-600">{applicant.title}</p>
+                                                        <h4 className="font-medium text-gray-900">{proposal.freelancerName}</h4>
+                                                        <p className="text-sm text-gray-600">{proposal.freelancer?.title || 'Mentor'}</p>
                                                         <div className="flex items-center gap-1 mt-1">
                                                             <div className="flex">
                                                                 {[1, 2, 3, 4, 5].map((star) => (
                                                                     <Star
                                                                         key={star}
                                                                         size={12}
-                                                                        className={star <= Math.round(applicant.rating) ? "fill-yellow-400 text-yellow-400" : "text-gray-300"}
+                                                                        className={star <= Math.round(proposal.freelancer?.rating || 0) ? "fill-yellow-400 text-yellow-400" : "text-gray-300"}
                                                                     />
                                                                 ))}
                                                             </div>
-                                                            <span className="text-xs text-gray-500">({applicant.reviews})</span>
+                                                            <span className="text-xs text-gray-500">({proposal.freelancer?.reviewCount || 0})</span>
                                                         </div>
-                                                        <div className="flex items-center gap-2 mt-2">
-                                                            {getApplicantStatusBadge(applicant.status)}
-                                                        </div>
-                                                        <StartChatButton userId={applicant?.freelancer} userName={applicant?.name} />
+                                                        {/* <div className="flex items-center gap-2 mt-2">
+                                                            {getProposalStatusBadge(proposal.status)}
+                                                        </div> */}
                                                     </div>
                                                 </div>
 
@@ -954,73 +929,56 @@ const AllProjects = () => {
                                                     <div className="grid grid-cols-2 gap-2 text-sm">
                                                         <div>
                                                             <span className="text-gray-500">Applied:</span>
-                                                            <span className="ml-1 font-medium">{formatDate(applicant.appliedDate)}</span>
+                                                            <span className="ml-1 font-medium">{formatDate(proposal.createdAt)}</span>
                                                         </div>
                                                         <div>
-                                                            <span className="text-gray-500">Proposed:</span>
-                                                            <span className="ml-1 font-medium">{formatCurrency(applicant.proposedBudget)}</span>
+                                                            <span className="text-gray-500">Period:</span>
+                                                            <span className="ml-1 font-medium capitalize">{getPeriodLabel(proposal.selectedPeriod)}</span>
                                                         </div>
                                                         <div>
-                                                            <span className="text-gray-500">Timeline:</span>
-                                                            <span className="ml-1">{applicant.proposedTimeline}</span>
+                                                            <span className="text-gray-500">Duration:</span>
+                                                            <span className="ml-1">{proposal.selectedDuration === 'standard' ? 'Standard' : 'Full day'}</span>
                                                         </div>
-                                                        {/* <div>
-                                                            <span className="text-gray-500">Rate:</span>
-                                                            <span className="ml-1">{formatCurrency(applicant.hourlyRate)}/hr</span>
-                                                        </div> */}
+                                                        <div>
+                                                            <span className="text-gray-500">Service:</span>
+                                                            <span className="ml-1">{proposal.selectedService}</span>
+                                                        </div>
                                                     </div>
 
                                                     <div>
-                                                        <p className="text-sm text-gray-700 line-clamp-2">{applicant.coverLetter}</p>
-                                                    </div>
-
-                                                    <div className="flex flex-wrap gap-2">
-                                                        {applicant.skills?.slice(0, 5).map((skill, idx) => (
-                                                            <span key={idx} className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded">
-                                                                {typeof skill === 'string' ? skill : skill.name}
-                                                            </span>
-                                                        ))}
+                                                        <p className="text-sm text-gray-700 line-clamp-3">{proposal.proposal}</p>
                                                     </div>
 
                                                     {/* Action Buttons */}
                                                     <div className="flex flex-wrap items-center gap-2 mt-3 pt-3 border-t">
                                                         <button
-                                                            onClick={() => handleViewProfile(applicant)}
+                                                            onClick={() => window.open(`/freelancer/${proposal.freelancer?._id}`, '_blank')}
                                                             className="inline-flex items-center gap-1 px-3 py-1.5 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
                                                         >
                                                             <Eye size={14} />
                                                             View Profile
                                                         </button>
-                                                        {/* <button
-                                                            onClick={() => handleMessageApplicant(applicant)}
-                                                            className="inline-flex items-center gap-1 px-3 py-1.5 text-sm bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
-                                                        >
-                                                            <MessageCircle size={14} />
-                                                            Message
-                                                        </button> */}
-                                                        {applicant.status === 'pending' && (
+
+                                                        {/* {proposal.status === 'pending' && (
                                                             <>
-                                                                {/* Shortlist button */}
                                                                 <button
                                                                     onClick={() => {
-                                                                        setSelectedApplicant(applicant);
+                                                                        setSelectedProposal(proposal);
                                                                         setShowOfferModal(true);
                                                                     }}
                                                                     className="inline-flex items-center gap-1 px-3 py-1.5 text-sm bg-green-100 text-green-700 rounded hover:bg-green-200"
                                                                 >
                                                                     <ThumbsUp size={14} />
-                                                                    Shortlist
+                                                                    Accept
                                                                 </button>
-
-                                                                {/* Reject button */}
                                                                 <button
                                                                     onClick={() => {
-                                                                        if (window.confirm(`Are you sure you want to reject ${applicant.name}'s application?`)) {
-                                                                            handleApplicantAction(
+                                                                        if (window.confirm(`Are you sure you want to reject ${proposal.freelancerName}'s proposal?`)) {
+                                                                            handleProposalAction(
                                                                                 selectedProject._id,
-                                                                                applicant._id,
+                                                                                proposal._id,
                                                                                 'rejected',
-                                                                                'Thank you for your application, but we have decided to move forward with other candidates.'
+                                                                                'Thank you for your interest, but we have decided to move forward with other candidates.'
                                                                             );
                                                                         }
                                                                     }}
@@ -1030,53 +988,20 @@ const AllProjects = () => {
                                                                     Reject
                                                                 </button>
                                                             </>
-                                                        )}
-                                                        {applicant.status === 'shortlisted' && (
-                                                            <>
-                                                                <button
-                                                                    onClick={() => {
-                                                                        setSelectedApplicant(applicant);
-                                                                        setShowOfferModal(true);
-                                                                    }}
-                                                                    className="inline-flex items-center gap-1 px-3 py-1.5 text-sm bg-green-100 text-green-700 rounded hover:bg-green-200"
-                                                                >
-                                                                    <CheckCircle size={14} />
-                                                                    Hire
-                                                                </button>
-                                                                <button
-                                                                    onClick={() => handleApplicantAction(selectedProject._id, applicant._id, 'rejected', 'After review, we decided to go with another candidate')}
-                                                                    className="inline-flex items-center gap-1 px-3 py-1.5 text-sm bg-red-100 text-red-700 rounded hover:bg-red-200"
-                                                                >
-                                                                    <XCircle size={14} />
-                                                                    Reject
-                                                                </button>
-                                                            </>
-                                                        )}
-                                                        {applicant.status === 'hired' && (
+                                                        )} */}
+                                                        {/* {proposal.status === 'accepted' && (
                                                             <span className="inline-flex items-center gap-1 px-3 py-1.5 text-sm bg-green-100 text-green-700 rounded">
                                                                 <CheckCircle size={14} />
-                                                                Hired
+                                                                Accepted
                                                             </span>
                                                         )}
-                                                        {applicant.status === 'rejected' && (
+                                                        {proposal.status === 'rejected' && (
                                                             <span className="inline-flex items-center gap-1 px-3 py-1.5 text-sm bg-gray-100 text-gray-500 rounded">
-                                                                <UserX size={14} />
+                                                                <XCircle size={14} />
                                                                 Rejected
                                                             </span>
-                                                        )}
+                                                        )} */}
                                                     </div>
-
-                                                    {/* Response Message */}
-                                                    {applicant.response && (
-                                                        <div className={`mt-2 p-2 rounded text-sm ${applicant.response.type === 'hired' ? 'bg-green-50 text-green-700' :
-                                                            applicant.response.type === 'rejected' ? 'bg-red-50 text-red-700' :
-                                                                'bg-blue-50 text-blue-700'
-                                                            }`}>
-                                                            <p className="font-medium">Response sent:</p>
-                                                            <p>{applicant.response.message}</p>
-                                                            <p className="text-xs mt-1">{formatDate(applicant.response.date)}</p>
-                                                        </div>
-                                                    )}
                                                 </div>
                                             </div>
                                         </div>
@@ -1084,8 +1009,8 @@ const AllProjects = () => {
                                 ) : (
                                     <div className="text-center py-8">
                                         <Users size={48} className="mx-auto text-gray-300 mb-3" />
-                                        <p className="text-gray-500">No applicants yet</p>
-                                        <p className="text-sm text-gray-400 mt-1">Check back later for proposals</p>
+                                        <p className="text-gray-500">No interested mentors yet</p>
+                                        <p className="text-sm text-gray-400 mt-1">Check back later for expressions of interest</p>
                                     </div>
                                 )}
                             </div>
@@ -1094,18 +1019,16 @@ const AllProjects = () => {
                 </div>
             )}
 
-            {/* Offer/Hire Modal */}
-            {showOfferModal && selectedApplicant && selectedProject && (
+            {/* Accept/Hire Modal */}
+            {showOfferModal && selectedProposal && selectedProject && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
                     <div className="bg-white rounded-xl max-w-lg w-full">
                         <div className="p-6 border-b border-gray-200 flex justify-between items-center">
-                            <h3 className="text-xl font-bold text-gray-900">
-                                {selectedApplicant.status === 'shortlisted' ? 'Hire Freelancer' : 'Shortlist Freelancer'}
-                            </h3>
+                            <h3 className="text-xl font-bold text-gray-900">Accept Proposal</h3>
                             <button
                                 onClick={() => {
                                     setShowOfferModal(false);
-                                    setSelectedApplicant(null);
+                                    setSelectedProposal(null);
                                 }}
                                 className="p-2 hover:bg-gray-100 rounded-lg"
                             >
@@ -1115,24 +1038,24 @@ const AllProjects = () => {
                         <div className="p-6">
                             <div className="flex items-center gap-3 mb-6">
                                 <img
-                                    src={selectedApplicant.avatar || selectedApplicant.freelancer?.profileImage || dummyUserImg}
-                                    alt={selectedApplicant.name}
+                                    src={selectedProposal.freelancerAvatar || dummyUserImg}
+                                    alt={selectedProposal.freelancerName}
                                     className="w-16 h-16 rounded-full object-cover"
                                 />
                                 <div>
-                                    <h4 className="font-semibold text-gray-900">{selectedApplicant.name}</h4>
-                                    <p className="text-sm text-gray-600">{selectedApplicant.title}</p>
+                                    <h4 className="font-semibold text-gray-900">{selectedProposal.freelancerName}</h4>
+                                    <p className="text-sm text-gray-600">{selectedProposal.freelancer?.title || 'Mentor'}</p>
                                     <div className="flex items-center gap-2 mt-1">
                                         <div className="flex">
                                             {[1, 2, 3, 4, 5].map((star) => (
                                                 <Star
                                                     key={star}
                                                     size={14}
-                                                    className={star <= Math.round(selectedApplicant.rating) ? "fill-yellow-400 text-yellow-400" : "text-gray-300"}
+                                                    className={star <= Math.round(selectedProposal.freelancer?.rating || 0) ? "fill-yellow-400 text-yellow-400" : "text-gray-300"}
                                                 />
                                             ))}
                                         </div>
-                                        <span className="text-xs text-gray-500">{selectedApplicant.rating} ({selectedApplicant.reviews} reviews)</span>
+                                        <span className="text-xs text-gray-500">{selectedProposal.freelancer?.rating || 0} ({selectedProposal.freelancer?.reviewCount || 0} reviews)</span>
                                     </div>
                                 </div>
                             </div>
@@ -1141,37 +1064,33 @@ const AllProjects = () => {
                                 <h5 className="font-medium text-gray-700 mb-3">Proposal Details</h5>
                                 <div className="grid grid-cols-2 gap-3 text-sm">
                                     <div>
-                                        <span className="text-gray-500">Proposed Budget:</span>
-                                        <p className="font-semibold text-gray-900">{formatCurrency(selectedApplicant.proposedBudget)}</p>
+                                        <span className="text-gray-500">Period:</span>
+                                        <p className="font-semibold text-gray-900 capitalize">{getPeriodLabel(selectedProposal.selectedPeriod)}</p>
                                     </div>
                                     <div>
-                                        <span className="text-gray-500">Timeline:</span>
-                                        <p className="font-semibold text-gray-900">{selectedApplicant.proposedTimeline}</p>
+                                        <span className="text-gray-500">Duration:</span>
+                                        <p className="font-semibold text-gray-900 capitalize">{selectedProposal.selectedDuration === 'standard' ? 'Standard (2-3 hrs)' : 'Full day (6-8 hrs)'}</p>
                                     </div>
-                                    {/* <div>
-                                        <span className="text-gray-500">Hourly Rate:</span>
-                                        <p className="font-semibold text-gray-900">{formatCurrency(selectedApplicant.hourlyRate)}/hr</p>
-                                    </div> */}
                                     <div>
-                                        <span className="text-gray-500">Experience:</span>
-                                        <p className="font-semibold text-gray-900 capitalize">{selectedApplicant.level}</p>
+                                        <span className="text-gray-500">Service:</span>
+                                        <p className="font-semibold text-gray-900">{selectedProposal.selectedService}</p>
+                                    </div>
+                                    <div>
+                                        <span className="text-gray-500">Applied:</span>
+                                        <p className="font-semibold text-gray-900">{formatDate(selectedProposal.createdAt)}</p>
                                     </div>
                                 </div>
                             </div>
 
                             <div className="mb-6">
                                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Message to Freelancer
+                                    Message to Mentor
                                 </label>
                                 <textarea
                                     rows={4}
                                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-                                    placeholder={selectedApplicant.status === 'shortlisted'
-                                        ? "Send a hiring message to the freelancer..."
-                                        : "Let them know why you're shortlisting them..."}
-                                    defaultValue={selectedApplicant.status === 'shortlisted'
-                                        ? "Congratulations! We would like to hire you for this project. Let's discuss the next steps."
-                                        : "We were impressed by your proposal and would like to shortlist you for this project. We'll be in touch soon."}
+                                    placeholder="Let them know why you're accepting their proposal..."
+                                    defaultValue="Congratulations! We are impressed with your proposal and would like to move forward with you for this project. Let's discuss the next steps."
                                 ></textarea>
                             </div>
 
@@ -1179,7 +1098,7 @@ const AllProjects = () => {
                                 <button
                                     onClick={() => {
                                         setShowOfferModal(false);
-                                        setSelectedApplicant(null);
+                                        setSelectedProposal(null);
                                     }}
                                     className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
                                 >
@@ -1187,13 +1106,12 @@ const AllProjects = () => {
                                 </button>
                                 <button
                                     onClick={() => {
-                                        const message = document.querySelector('textarea').value;
-                                        const action = selectedApplicant.status === 'shortlisted' ? 'hired' : 'shortlisted';
-                                        handleApplicantAction(selectedProject._id, selectedApplicant._id, action, message);
+                                        const message = document.querySelector('textarea')?.value || '';
+                                        handleProposalAction(selectedProject._id, selectedProposal._id, 'accepted', message);
                                     }}
                                     className="flex-1 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark"
                                 >
-                                    {selectedApplicant.status === 'shortlisted' ? 'Confirm Hire' : 'Confirm Shortlist'}
+                                    Confirm Accept
                                 </button>
                             </div>
                         </div>

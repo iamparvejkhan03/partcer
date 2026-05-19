@@ -9,22 +9,22 @@ function FAQSection() {
     const faqs = [
     {
         question: "How do I find the right trainer for my career goals?",
-        answer: "Browse freelancer profiles, check their expertise areas, and use filters to find trainers who specialize in your specific tech stack or career stage."
+        answer: "Browse mentor profiles, check their expertise areas, and use filters to find trainers who specialize in your specific tech stack or career stage."
     },
     {
         question: "How do training sessions work?",
         answer: "Sessions are conducted 1:1 via video call. You can choose from mock interviews, resume reviews, coding mentorship, or career coaching—all tailored to your needs."
     },
     {
-        question: "How do I become a freelancer on this platform?",
-        answer: "Sign up, complete your profile with your tech expertise and experience, and get verified. You can start offering job training services to buyers."
+        question: "How do I become a mentor on this platform?",
+        answer: "Sign up, complete your profile with your tech expertise and experience, and get verified. You can start offering job training services to students."
     },
     {
         question: "Is my personal information secure?",
         answer: "Absolutely. We use industry-standard encryption and never share your personal details with third parties without your consent."
     },
     {
-        question: "How can I attract more buyers?",
+        question: "How can I attract more students?",
         answer: "Keep your profile updated, respond quickly to inquiries, deliver high-quality services."
     }
 ];

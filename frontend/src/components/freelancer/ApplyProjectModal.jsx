@@ -196,7 +196,7 @@ const ApplyProjectModal = ({ isOpen, onClose, projectId, projectDetails, onSubmi
         }
 
         if (user.userType !== 'freelancer') {
-            toast.error('Only freelancers can apply to projects');
+            toast.error('Only mentors can apply to projects');
             onClose();
             return;
         }

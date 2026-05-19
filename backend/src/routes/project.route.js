@@ -1,44 +1,36 @@
 import { Router } from "express";
 import {
-  auth,
-  authFreelancer,
-  authBuyer,
-  authAdmin,
-  optionalAuth,
+    auth,
+    authFreelancer,
+    authBuyer,
+    optionalAuth,
+    authAdmin,
 } from "../middlewares/auth.middleware.js";
-import upload from "../middlewares/multer.middleware.js";
 import {
-  createProject,
-  getProjects,
-  getProjectBySlug,
-  getBuyerProjects,
-  updateProject,
-  deleteProject,
-  toggleProjectStatus,
-  getProjectApplicants,
-  updateApplicantStatus,
-  markApplicantViewed,
-  applyToProject,
-  completeProject,
-  duplicateProject,
-  incrementViews,
-  incrementSaves,
-  decrementSaves,
-  incrementShares,
-  searchProjects,
-  getProjectStats,
-  adminGetAllProjects,
-  adminUpdateProjectStatus,
-  adminDeleteProject,
-  adminGetProjectForEdit,
-  adminUpdateProject,
-  getProjectById,
-  getFreelancerApplications,
-  getApplicationById,
-  withdrawApplication,
-  markMessagesAsRead,
-  updateInterviewResponse,
+    createProject,
+    getProjects,
+    getProjectById,
+    getProjectBySlug,
+    getBuyerProjects,
+    updateProject,
+    deleteProject,
+    applyToProject,
+    getProjectProposals,
+    updateProposalStatus,
+    getFreelancerApplications,
+    getApplicationById,
+    withdrawApplication,
+    completeProject,
+    searchProjects,
+    adminGetAllProjects,
+    adminGetProjectForEdit,
+    adminGetProjectProposals,
+    adminUpdateProject,
+    adminUpdateProjectStatus,
+    adminDeleteProject,
 } from "../controllers/project.controller.js";
+
+import upload from "../middlewares/multer.middleware.js"
 
 const projectRouter = Router();
 
@@ -47,119 +39,51 @@ const projectRouter = Router();
 // Search and listing
 projectRouter.get("/search", searchProjects);
 projectRouter.get("/", getProjects);
-// projectRouter.get("/:slug", optionalAuth, getProjectBySlug);
 projectRouter.get("/:projectId", optionalAuth, getProjectById);
+projectRouter.get("/slug/:slug", optionalAuth, getProjectBySlug);
 
-// Interactions (public but rate-limited ideally)
-projectRouter.post("/:projectId/views", incrementViews);
-projectRouter.post("/:projectId/shares", incrementShares);
+// ==================== PROTECTED ROUTES ====================
 
-// ==================== PROTECTED ROUTES (require login) ====================
-
-// Project management (Buyers only)
-projectRouter.post(
-  "/",
-  authBuyer,
-  upload.array("projectAttachments", 5),
-  createProject,
-);
+// Buyer routes
+projectRouter.post("/", authBuyer, createProject);
 projectRouter.get("/buyer/me", authBuyer, getBuyerProjects);
-projectRouter.get("/buyer/:projectId/stats", authBuyer, getProjectStats);
-projectRouter.put(
-  "/:projectId",
-  authBuyer,
-  upload.array("projectAttachments", 5),
-  updateProject,
-);
-projectRouter.patch("/:projectId/status", authBuyer, toggleProjectStatus);
+projectRouter.put("/:projectId", authBuyer, updateProject);
 projectRouter.delete("/:projectId", authBuyer, deleteProject);
-projectRouter.post("/:projectId/duplicate", authBuyer, duplicateProject);
-
-// Project completion
 projectRouter.post("/:projectId/complete", authBuyer, completeProject);
 
-// Applicant management (Buyers only)
-projectRouter.get("/:projectId/applicants", authBuyer, getProjectApplicants);
-projectRouter.patch(
-  "/:projectId/applicants/:applicantId",
-  authBuyer,
-  updateApplicantStatus,
-);
-projectRouter.patch(
-  "/:projectId/applicants/:applicantId/view",
-  authBuyer,
-  markApplicantViewed,
-);
+// Buyer - Proposal management (UPDATED from applicants to proposals)
+projectRouter.get("/:projectId/proposals", authBuyer, getProjectProposals);
+projectRouter.patch("/:projectId/proposals/:proposalId", authBuyer, updateProposalStatus);
 
-// Apply to projects (Freelancers only)
-projectRouter.post(
-  "/:projectId/apply",
-  authFreelancer,
-  upload.array("projectAttachments", 5),
-  applyToProject,
-);
-
-// Wishlist/Saves (Freelancers can save projects)
-projectRouter.post("/:projectId/save", authFreelancer, incrementSaves);
-projectRouter.delete("/:projectId/save", authFreelancer, decrementSaves);
-
-// ==================== FREELANCER APPLICATION ROUTES ====================
-
-// Get all applications for the logged-in freelancer
-projectRouter.get(
-  "/applications/me",
-  authFreelancer,
-  getFreelancerApplications,
-);
-
-// Get single application details
-projectRouter.get(
-  "/:projectId/applications/:applicantId",
-  authFreelancer,
-  getApplicationById,
-);
-
-// Withdraw application
-projectRouter.patch(
-  "/:projectId/applications/:applicantId/withdraw",
-  authFreelancer,
-  withdrawApplication,
-);
-
-// Mark messages as read
-projectRouter.patch(
-  "/:projectId/applications/:applicantId/read",
-  authFreelancer,
-  markMessagesAsRead,
-);
-
-// Accept/decline interview
-projectRouter.patch(
-  "/:projectId/applications/:applicantId/interview",
-  authFreelancer,
-  updateInterviewResponse,
-);
+// Freelancer routes (UPDATED)
+projectRouter.get("/applications/me", authFreelancer, getFreelancerApplications);
+projectRouter.get("/:projectId/application", authFreelancer, getApplicationById);
+projectRouter.post("/:projectId/apply", authFreelancer, applyToProject); // This now accepts period/duration/service
+projectRouter.delete("/:projectId/application", authFreelancer, withdrawApplication);
 
 // ==================== ADMIN ROUTES ====================
 
+// Get all projects (with pagination and filters)
 projectRouter.get("/admin/all", authAdmin, adminGetAllProjects);
+
+// Get project for editing
+projectRouter.get("/admin/:projectId/edit", authAdmin, adminGetProjectForEdit);
+
+// Get project proposals
+projectRouter.get("/admin/:projectId/proposals", authAdmin, adminGetProjectProposals);
+
+// Update project (admin)
 projectRouter.put(
   "/admin/:projectId",
   authAdmin,
   upload.array("projectAttachments", 5),
-  adminUpdateProject,
+  adminUpdateProject
 );
-projectRouter.get("/admin/:projectId/edit", authAdmin, adminGetProjectForEdit);
-projectRouter.patch(
-  "/admin/:projectId/status",
-  authAdmin,
-  adminUpdateProjectStatus,
-);
+
+// Update project status (admin)
+projectRouter.patch("/admin/:projectId/status", authAdmin, adminUpdateProjectStatus);
+
+// Delete project (admin - hard delete)
 projectRouter.delete("/admin/:projectId", authAdmin, adminDeleteProject);
-projectRouter.get(
-  "/admin/:projectId/applicants",
-  authAdmin,
-  getProjectApplicants,
-);
 
 export default projectRouter;

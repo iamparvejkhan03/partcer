@@ -240,7 +240,7 @@ const Dashboard = () => {
                     {/* Header */}
                     <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6 mt-20 md:mt-0">
                         <div>
-                            <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Buyer Dashboard</h1>
+                            <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Student Dashboard</h1>
                             <p className="text-gray-600 mt-1">Track your orders and discover new services.</p>
                         </div>
                         <div className="mt-4 md:mt-0 flex gap-2">

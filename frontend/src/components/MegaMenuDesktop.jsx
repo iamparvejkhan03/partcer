@@ -11,7 +11,7 @@ const Category = ({ category, type }) => {
                 <Link
                     to={type === 'services'
                         ? `/services?category=${category.slug}`
-                        : `/projects?category=${category.slug}`
+                        : `/projects?category=${encodeURIComponent(category.name)}`
                     }
                 >
                     {category.name}
@@ -23,7 +23,7 @@ const Category = ({ category, type }) => {
                         <Link
                             to={type === 'services'
                                 ? `/services?category=${category.slug}&subcategory=${sub.slug}`
-                                : `/projects?category=${category.slug}&subcategory=${sub.slug}`
+                                : `/projects?category=${encodeURIComponent(category.name)}&subCategory=${encodeURIComponent(sub.name)}`
                             }
                         >
                             {sub.name}
@@ -118,7 +118,7 @@ const MegaMenuDesktop = () => {
     return (
         <div className="w-[920px] max-h-[90vh] overflow-y-scroll rounded-2xl bg-white p-8 shadow-2xl">
             {/* Services Section - First Row */}
-            {firstRow.length > 0 && (
+            {/* {firstRow.length > 0 && (
                 <Section
                     title="Explore services by categories"
                     categories={firstRow}
@@ -127,7 +127,7 @@ const MegaMenuDesktop = () => {
                 />
             )}
 
-            {firstRow.length > 0 && secondRow.length > 0 && <hr className="my-8" />}
+            {firstRow.length > 0 && secondRow.length > 0 && <hr className="my-8" />} */}
 
             {/* Projects Section - Second Row */}
             {secondRow.length > 0 && (

@@ -35,31 +35,31 @@ import { useAuth } from "../../contexts/AuthContext";
 
 // Define all navigation items with support for dropdowns
 const navigationItems = [
-    {
-        type: 'link',
-        name: 'Dashboard',
-        path: '/freelancer/dashboard',
-        icon: <LayoutDashboard size={20} />
-    },
+    // {
+    //     type: 'link',
+    //     name: 'Dashboard',
+    //     path: '/freelancer/dashboard',
+    //     icon: <LayoutDashboard size={20} />
+    // },
     {
         type: 'link',
         name: 'Message',
         path: '/freelancer/chat',
         icon: <MessageSquare size={20} />
     },
-    {
-        type: 'dropdown',
-        name: 'Services',
-        icon: <Briefcase size={20} />,
-        isOpen: false,
-        subItems: [
-            { name: 'All Services', path: '/freelancer/services/all', icon: <BriefcaseBusiness size={18} /> },
-            { name: 'Create Service', path: '/freelancer/services/create', icon: <Plus size={18} /> },
-            // { name: 'Active Services', path: '/freelancer/services/active', icon: <Folder size={18} /> },
-            // { name: 'Sold Services', path: '/freelancer/services/sold', icon: <Award size={18} /> },
-            // { name: 'Draft Services', path: '/freelancer/services/draft', icon: <FileCheck size={18} /> },
-        ]
-    },
+    // {
+    //     type: 'dropdown',
+    //     name: 'Services',
+    //     icon: <Briefcase size={20} />,
+    //     isOpen: false,
+    //     subItems: [
+    //         { name: 'All Services', path: '/freelancer/services/all', icon: <BriefcaseBusiness size={18} /> },
+    //         { name: 'Create Service', path: '/freelancer/services/create', icon: <Plus size={18} /> },
+    //         // { name: 'Active Services', path: '/freelancer/services/active', icon: <Folder size={18} /> },
+    //         // { name: 'Sold Services', path: '/freelancer/services/sold', icon: <Award size={18} /> },
+    //         // { name: 'Draft Services', path: '/freelancer/services/draft', icon: <FileCheck size={18} /> },
+    //     ]
+    // },
     {
         type: 'dropdown',
         name: 'Projects',
@@ -67,7 +67,7 @@ const navigationItems = [
         isOpen: false,
         subItems: [
             { name: 'Browse Projects', path: '/projects', icon: <Search size={18} /> },
-            { name: 'Applied Project', path: '/freelancer/projects', icon: <FolderCheck size={18} /> },
+            { name: 'Applied Project', path: '/freelancer/projects/applied', icon: <FolderCheck size={18} /> },
         ]
     },
     {

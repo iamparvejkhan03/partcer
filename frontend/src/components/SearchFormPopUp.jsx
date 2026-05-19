@@ -9,11 +9,11 @@ function SearchFormPopUp({ closePopup }) {
     const searchForm = useForm({
         defaultValues: {
             search: '',
-            type: 'Service',
+            type: 'Mentor',
         }
     });
     const navigate = useNavigate();
-    const [type, setType] = useState(['Freelancer', 'Service', 'Project']);
+    const [type, setType] = useState(['Mentor', 'Project']);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
@@ -26,7 +26,7 @@ function SearchFormPopUp({ closePopup }) {
             }
 
             if (searchData.type) {
-                if(searchData.type === 'Freelancer') {
+                if(searchData.type === 'Mentor') {
                     // params.append('type', 'freelancer');
                     navigate(`/freelancers?${params.toString()}`);
                 } else if(searchData.type === 'Service') {

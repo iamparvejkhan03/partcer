@@ -3,6 +3,7 @@ import { model, Schema } from "mongoose";
 const paymentDetailSchema = new Schema({
   userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
   paypalEmail: { type: String },
+  upiId: { type: String },
   payoneerEmail: { type: String },
   bankDetails: {
     accountTitle: String,

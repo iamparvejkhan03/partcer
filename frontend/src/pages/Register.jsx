@@ -46,7 +46,8 @@ function Register() {
     // Redirect if already logged in
     useEffect(() => {
         if (user) {
-            navigate(`/${user.userType}/dashboard`);
+            // navigate(`/${user.userType}/dashboard`);
+            navigate(`/${user.userType}/profile/settings`);
         }
     }, [user, navigate]);
 

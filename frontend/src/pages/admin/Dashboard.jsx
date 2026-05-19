@@ -428,7 +428,7 @@ const Dashboard = () => {
         const config = {
             admin: { bg: 'bg-purple-100', text: 'text-purple-700', label: 'Admin' },
             freelancer: { bg: 'bg-green-100', text: 'text-green-700', label: 'Freelancer' },
-            buyer: { bg: 'bg-blue-100', text: 'text-blue-700', label: 'Buyer' }
+            buyer: { bg: 'bg-blue-100', text: 'text-blue-700', label: 'Student' }
         };
         const badge = config[role] || config.buyer;
         return (
@@ -481,7 +481,7 @@ const Dashboard = () => {
                             <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Admin Dashboard</h1>
                             <p className="text-gray-600 mt-1">Monitor platform performance and manage operations</p>
                         </div>
-                        <div className="flex items-center gap-2 mt-4 md:mt-0">
+                        {/* <div className="flex items-center gap-2 mt-4 md:mt-0">
                             <select
                                 value={dateRange}
                                 onChange={(e) => setDateRange(e.target.value)}
@@ -500,11 +500,11 @@ const Dashboard = () => {
                             >
                                 <RefreshCw size={18} className="text-gray-600" />
                             </button>
-                        </div>
+                        </div> */}
                     </div>
 
                     {/* Key Metrics Cards */}
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                    <div className="grid grid-cols-2 md:grid-cols-2 gap-4 mb-6">
                         <div className="bg-white p-5 rounded-xl border border-gray-200">
                             <div className="flex justify-between items-start">
                                 <div>
@@ -521,8 +521,8 @@ const Dashboard = () => {
                                 </div>
                             </div>
                             <div className="flex gap-3 mt-3 text-xs text-gray-600">
-                                <span>👤 {formatNumber(stats.totalFreelancers)} Freelancers</span>
-                                <span>🛒 {formatNumber(stats.totalBuyers)} Buyers</span>
+                                <span>👤 {formatNumber(stats.totalFreelancers)} Mentors</span>
+                                <span>🛒 {formatNumber(stats.totalBuyers)} Students</span>
                             </div>
                         </div>
 
@@ -580,7 +580,7 @@ const Dashboard = () => {
                         <div className="bg-white p-5 rounded-xl border border-gray-200">
                             <div className="flex justify-between items-start">
                                 <div>
-                                    <p className="text-sm text-gray-600 mb-1">Orders & Disputes</p>
+                                    <p className="text-sm text-gray-600 mb-1">Orders</p>
                                     <p className="text-2xl font-bold text-gray-900">{formatNumber(stats.totalOrders)}</p>
                                 </div>
                                 <div className="p-3 bg-orange-100 rounded-lg">
@@ -596,14 +596,14 @@ const Dashboard = () => {
                                     <span className="text-gray-500">Pending:</span>
                                     <span className="ml-1 text-yellow-600">{stats.pendingOrders}</span>
                                 </div>
-                                <div>
+                                {/* <div>
                                     <span className="text-gray-500">Disputes:</span>
                                     <span className="ml-1 text-red-600">{stats.disputes}</span>
-                                </div>
-                                <div>
+                                </div> */}
+                                {/* <div>
                                     <span className="text-gray-500">Resolution:</span>
                                     <span className="ml-1 font-medium">{stats.resolutionRate}%</span>
-                                </div>
+                                </div> */}
                             </div>
                         </div>
                     </div>
@@ -881,7 +881,7 @@ const Dashboard = () => {
                     </div> */}
 
                     {/* Quick Actions & Stats Row */}
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    {/* <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                         <div className="bg-gradient-to-br from-primary to-primary-dark text-white p-5 rounded-xl">
                             <div className="flex items-center gap-3 mb-3">
                                 <div className="p-2 bg-white/20 rounded-lg">
@@ -941,7 +941,7 @@ const Dashboard = () => {
                                 Support team response time
                             </div>
                         </div>
-                    </div>
+                    </div> */}
                 </AdminContainer>
             </div>
         </section>

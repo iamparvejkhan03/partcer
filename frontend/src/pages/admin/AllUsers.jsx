@@ -40,7 +40,7 @@ import {
 import { AdminSidebar, AdminHeader, AdminContainer } from '../../components';
 import toast from 'react-hot-toast';
 import axiosInstance from '../../utils/axiosInstance';
-import { dummyUserImg } from '../../assets';
+import { dummyUserImg, userTypes } from '../../assets';
 import { useCallback } from 'react';
 
 const AllUsers = () => {
@@ -205,8 +205,8 @@ const AllUsers = () => {
     const getRoleBadge = (role) => {
         const config = {
             admin: { bg: 'bg-purple-100', text: 'text-purple-700', label: 'Admin', icon: Shield },
-            freelancer: { bg: 'bg-green-100', text: 'text-green-700', label: 'Freelancer', icon: Briefcase },
-            buyer: { bg: 'bg-blue-100', text: 'text-blue-700', label: 'Buyer', icon: ShoppingBag }
+            freelancer: { bg: 'bg-green-100', text: 'text-green-700', label: 'Mentor', icon: Briefcase },
+            buyer: { bg: 'bg-blue-100', text: 'text-blue-700', label: 'Student', icon: ShoppingBag }
         };
         const badge = config[role] || config.buyer;
         const Icon = badge.icon;
@@ -551,7 +551,7 @@ const AllUsers = () => {
                                     <Briefcase size={20} className="text-purple-600" />
                                 </div>
                                 <div>
-                                    <p className="text-xs text-gray-600">Freelancers</p>
+                                    <p className="text-xs text-gray-600">Mentors</p>
                                     <p className="text-xl font-bold">{stats.freelancers}</p>
                                 </div>
                             </div>
@@ -562,7 +562,7 @@ const AllUsers = () => {
                                     <ShoppingBag size={20} className="text-orange-600" />
                                 </div>
                                 <div>
-                                    <p className="text-xs text-gray-600">Buyers</p>
+                                    <p className="text-xs text-gray-600">Students</p>
                                     <p className="text-xl font-bold">{stats.buyers}</p>
                                 </div>
                             </div>
@@ -614,8 +614,8 @@ const AllUsers = () => {
                                     className="px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-white min-w-[130px]"
                                 >
                                     <option value="all">All Roles</option>
-                                    <option value="freelancer">Freelancer</option>
-                                    <option value="buyer">Buyer</option>
+                                    <option value="freelancer">Mentor</option>
+                                    <option value="buyer">Student</option>
                                     <option value="admin">Admin</option>
                                 </select>
                                 <select
@@ -1094,7 +1094,7 @@ const AllUsers = () => {
                     </div>
 
                     {/* User Statistics Summary */}
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    {/* <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                         <div className="bg-white p-4 rounded-xl border border-gray-200">
                             <h4 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
                                 <Activity size={16} className="text-primary" />
@@ -1180,7 +1180,7 @@ const AllUsers = () => {
                                 </div>
                             </div>
                         </div>
-                    </div>
+                    </div> */}
                 </AdminContainer>
             </div>
 
@@ -1281,7 +1281,7 @@ const AllUsers = () => {
                                 <div className="bg-gray-50 p-4 rounded-lg">
                                     <h4 className="font-medium mb-3 flex items-center gap-2">
                                         <Briefcase size={16} />
-                                        Freelancer Statistics
+                                        Mentor Statistics
                                     </h4>
                                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                                         <div>
@@ -1323,7 +1323,7 @@ const AllUsers = () => {
                                 <div className="bg-gray-50 p-4 rounded-lg">
                                     <h4 className="font-medium mb-3 flex items-center gap-2">
                                         <ShoppingBag size={16} />
-                                        Buyer Statistics
+                                        {userTypes?.buyer} Statistics
                                     </h4>
                                     <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                                         <div>

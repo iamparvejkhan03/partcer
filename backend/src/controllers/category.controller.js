@@ -1,4 +1,3 @@
-// controllers/category.controller.js
 import Category from "../models/category.model.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
@@ -289,10 +288,10 @@ export const deleteCategory = asyncHandler(async (req, res) => {
   }
 
   // Check if category has services
-  if (category.serviceCount > 0) {
+  if (category.freelancerCount > 0 || category.serviceCount > 0) {
     throw new ApiError(
       400,
-      `Cannot delete category. There are ${category.serviceCount} services in this category.`,
+      `Cannot delete category. There are ${category.freelancerCount} freelancers and ${category.serviceCount} services in this category.`,
     );
   }
 
@@ -371,7 +370,7 @@ export const getSubcategoriesByParent = asyncHandler(async (req, res) => {
   }
 
   const subcategories = await Category.find({ parentCategory: parentId })
-    .select("name image order isActive serviceCount")
+    .select("name image order isActive serviceCount freelancerCount")
     .sort({ order: 1, name: 1 });
 
   return res.status(200).json(
@@ -440,7 +439,7 @@ export const getPublicParentCategories = asyncHandler(async (req, res) => {
     level: 0,
     isActive: true,
   })
-    .select("name slug image.url serviceCount order")
+    .select("name slug image.url serviceCount freelancerCount order")
     .sort({ order: 1, name: 1 });
 
   return res

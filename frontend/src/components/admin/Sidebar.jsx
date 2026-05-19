@@ -62,12 +62,12 @@ const navigationItems = [
         path: '/admin/users/all',
         icon: <Users size={20} />
     },
-    {
-        type: 'link',
-        name: 'Services',
-        path: '/admin/services/all',
-        icon: <Briefcase size={20} />
-    },
+    // {
+    //     type: 'link',
+    //     name: 'Services',
+    //     path: '/admin/services/all',
+    //     icon: <Briefcase size={20} />
+    // },
     {
         type: 'link',
         name: 'Projects',
@@ -93,6 +93,18 @@ const navigationItems = [
         name: 'Orders',
         path: '/admin/orders',
         icon: <ShoppingBag size={20} />
+    },
+    {
+        type: 'link',
+        name: 'Transactions',
+        path: '/admin/transactions',
+        icon: <CreditCard size={20} />
+    },
+    {
+        type: 'link',
+        name: 'Resolution Center',
+        path: '/admin/resolutions',
+        icon: <AlertCircle size={20} />
     },
     {
         type: 'link',

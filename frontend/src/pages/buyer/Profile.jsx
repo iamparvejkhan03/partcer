@@ -54,6 +54,7 @@ function Profile() {
             tagline: "",
             bio: "",
             country: "",
+            currencyPreference: "",
             englishLevel: "",
             languages: [],
             notificationPreferences: {
@@ -121,7 +122,8 @@ function Profile() {
         setValue("tagline", userData.tagline || "");
         setValue("bio", userData.bio || "");
         setValue("country", userData.country || "");
-        
+        setValue("currencyPreference", userData.currencyPreference || "");
+
         if(userData.englishLevel){
             setValue("englishLevel", userData.englishLevel);
         }
@@ -172,6 +174,7 @@ function Profile() {
             formData.append('tagline', data.tagline || '');
             formData.append('bio', data.bio || '');
             formData.append('country', data.country || '');
+            formData.append('currencyPreference', data.currencyPreference || '');
             formData.append('englishLevel', data.englishLevel || '');
 
             // Append languages as JSON string
@@ -276,7 +279,7 @@ function Profile() {
                                         <div className="space-y-2">
                                             <div className="flex flex-col items-start gap-3">
                                                 <span className="px-2 py-1 bg-primary/10 text-primary text-xs font-medium rounded-full">
-                                                    Buyer
+                                                    Student
                                                 </span>
                                                 <h1 className="text-2xl font-bold text-gray-900">Profile Settings</h1>
                                             </div>
@@ -461,11 +464,25 @@ function Profile() {
                                             </select>
                                         </div>
 
-                                        <div className="md:col-span-2">
+                                        <div className="md:col-span-1">
                                             <LanguagesSelect
                                                 selectedLanguages={selectedLanguages}
                                                 onChange={setSelectedLanguages}
                                             />
+                                        </div>
+
+                                        {/* Currency Preference */}
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                Currency Preference
+                                            </label>
+                                            <select
+                                                {...register("currencyPreference")}
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                                            >
+                                                <option value="INR">INR</option>
+                                                <option value="USD">USD</option>
+                                            </select>
                                         </div>
                                     </div>
                                 </div>

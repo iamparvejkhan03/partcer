@@ -37,6 +37,11 @@ import StartChatButton from "./StartChatButton";
 import FeaturedServices from "./FeaturedServices";
 import FeaturedFreelancers from "./FeaturedFreelancers";
 import YouTubeEmbed from "./YouTubeEmbed";
+import PricingSection from "./PricingSection";
+import ChatTabs from "./chat/ChatTabs";
+import MeetingTab from "./chat/MeetingTab";
+import ExpressInterestModal from "./freelancer/ExpressInterestModal";
+import ResolutionPanel from "./ResolutionPanel";
 
 export {
     Header,
@@ -78,4 +83,7 @@ export {
     FeaturedServices,
     FeaturedFreelancers,
     YouTubeEmbed,
+    PricingSection,
+    ExpressInterestModal,
+    ResolutionPanel,
 }

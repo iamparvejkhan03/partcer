@@ -516,7 +516,7 @@ const EditService = () => {
         { id: 'pricing', label: 'Pricing', icon: DollarSign },
         { id: 'gallery', label: 'Gallery & FAQ', icon: Eye },
         { id: 'moderation', label: 'Moderation', icon: Shield },
-        { id: 'seller', label: 'Seller Info', icon: Users },
+        { id: 'seller', label: 'Mentor Info', icon: Users },
     ];
 
     if (loading) {
@@ -1393,7 +1393,7 @@ const EditService = () => {
                             {/* Tab: Seller Info */}
                             {activeTab === 'seller' && sellerInfo && (
                                 <div className="space-y-6">
-                                    <h2 className="text-lg font-semibold text-gray-900 mb-4">Seller Information</h2>
+                                    <h2 className="text-lg font-semibold text-gray-900 mb-4">Mentor Information</h2>
 
                                     <div className="bg-gray-50 rounded-lg p-4">
                                         <div className="flex items-start gap-4">
@@ -1465,7 +1465,7 @@ const EditService = () => {
                                                 className="flex-1 px-3 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 text-sm flex items-center justify-center gap-2"
                                             >
                                                 <MessageSquare size={14} />
-                                                Message Seller
+                                                Message Mentor
                                             </button>
                                         </div>
                                     </div>

@@ -214,7 +214,7 @@ const AddCardModal = ({ isOpen, onClose, onAddCard }) => {
 function Billing() {
     const { user } = useAuth();
     const [activeTab, setActiveTab] = useState("billing");
-    const [selectedWithdrawalMethod, setSelectedWithdrawalMethod] = useState("paypal");
+    const [selectedWithdrawalMethod, setSelectedWithdrawalMethod] = useState("upi");
     const [isAddingCard, setIsAddingCard] = useState(false);
     const [cards, setCards] = useState([]);
     const [paymentMethods, setPaymentMethods] = useState([]);
@@ -236,6 +236,9 @@ function Billing() {
             postalCode: "",
             email: "",
             phone: "",
+
+            // UPI
+            upiId: "",
 
             // PayPal
             paypalEmail: "",
@@ -299,6 +302,10 @@ function Billing() {
                         setValue("payoneerEmail", method.payoneerEmail);
                         if (method.isDefault) setSelectedWithdrawalMethod("payoneer");
                     }
+                    if (method.upiId) {
+                        setValue("upiId", method.upiId);
+                        if (method.isDefault) setSelectedWithdrawalMethod("upi");
+                    }
                     if (method.bankDetails?.accountNumber) {
                         setValue("bankAccountTitle", method.bankDetails.accountTitle || "");
                         setValue("bankAccountNumber", method.bankDetails.accountNumber || "");
@@ -355,6 +362,11 @@ function Billing() {
             if (selectedWithdrawalMethod === "paypal") {
                 response = await axiosInstance.post('/api/v1/payment-details/paypal', {
                     paypalEmail: data.paypalEmail,
+                    isDefault: true
+                });
+            } else if (selectedWithdrawalMethod === "upi") {
+                response = await axiosInstance.post('/api/v1/payment-details/upi', {
+                    upiId: data.upiId,
                     isDefault: true
                 });
             } else if (selectedWithdrawalMethod === "payoneer") {
@@ -427,9 +439,10 @@ function Billing() {
     ];
 
     const withdrawalMethods = [
-        { id: "paypal", label: "Setup PayPal Account", icon: "PayPal", description: "Receive payments via PayPal" },
-        { id: "payoneer", label: "Setup Payoneer Account", icon: "Payoneer", description: "Receive payments via Payoneer" },
-        { id: "bank", label: "Setup Bank Account", icon: <Banknote size={20} />, description: "Direct bank transfer" },
+        { id: "upi", label: "Setup UPI Account", icon: "UPI", description: "Receive payments via UPI" },
+        // { id: "paypal", label: "Setup PayPal Account", icon: "PayPal", description: "Receive payments via PayPal" },
+        // { id: "payoneer", label: "Setup Payoneer Account", icon: "Payoneer", description: "Receive payments via Payoneer" },
+        // { id: "bank", label: "Setup Bank Account", icon: <Banknote size={20} />, description: "Direct bank transfer" },
     ];
 
     const currentPlan = {
@@ -748,7 +761,7 @@ function Billing() {
                                                 ))}
                                             </div>
 
-                                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                                            {/* <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
                                                 <div className="flex items-start gap-3">
                                                     <AlertCircle size={20} className="text-blue-600 mt-0.5" />
                                                     <div className="text-sm text-blue-800">
@@ -756,7 +769,7 @@ function Billing() {
                                                         <p className="mt-1">For further information, read our <a href="#" className="underline hover:text-blue-900">Terms and Conditions</a> and Privacy Policy.</p>
                                                     </div>
                                                 </div>
-                                            </div>
+                                            </div> */}
                                         </div>
                                     </div>
 
@@ -764,6 +777,7 @@ function Billing() {
                                     <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
                                         <div className="p-6 md:p-8">
                                             <h3 className="text-lg font-semibold text-gray-900 mb-6">
+                                                {selectedWithdrawalMethod === "upi" && "UPI Setup"}
                                                 {selectedWithdrawalMethod === "paypal" && "PayPal Account Setup"}
                                                 {selectedWithdrawalMethod === "payoneer" && "Payoneer Account Setup"}
                                                 {selectedWithdrawalMethod === "bank" && "Bank Account Details"}
@@ -793,6 +807,30 @@ function Billing() {
                                                     </div>
                                                     <div className="text-sm text-gray-500">
                                                         Ensure this email is associated with an active PayPal account.
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {selectedWithdrawalMethod === "upi" && (
+                                                <div className="max-w-md">
+                                                    <div className="mb-4">
+                                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                            UPI ID *
+                                                        </label>
+                                                        <input
+                                                            type="text"
+                                                            {...register("upiId", {
+                                                                required: "UPI ID is required"
+                                                            })}
+                                                            placeholder="Enter your UPI ID"
+                                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                                                        />
+                                                        {errors.upiId && (
+                                                            <p className="mt-1 text-sm text-red-600">{errors.upiId.message}</p>
+                                                        )}
+                                                    </div>
+                                                    <div className="text-sm text-gray-500">
+                                                        Ensure this ID is associated with an active UPI account.
                                                     </div>
                                                 </div>
                                             )}

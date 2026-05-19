@@ -61,7 +61,7 @@ const CategoryCarousel = () => {
                     const formattedCategories = response.data.data.map((cat, index) => ({
                         id: cat._id || index,
                         name: cat.name,
-                        count: cat.serviceCount || cat.auctionCount || 0,
+                        count: cat.freelancerCount || 0,
                         image: cat.image?.url || 'https://images.unsplash.com/photo-1634942537034-2531766767d1?w=800&auto=format&fit=crop', // fallback image
                         slug: cat.slug
                     }));
@@ -158,11 +158,11 @@ const CategoryCarousel = () => {
                             {/* Category content */}
                             <div className="absolute inset-0 flex flex-col justify-end p-6 rounded-xl">
                                 <span className="text-white/90 text-sm font-medium bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full w-fit mb-2">
-                                    {category.count} listing{category.count !== 1 ? 's' : ''}
+                                    {category.count} mentor{category.count !== 1 ? 's' : ''}
                                 </span>
                                 <h3 className="text-white text-xl font-semibold mb-2">
                                     <Link
-                                        to={`/services/?category=${category.slug}`}
+                                        to={`/freelancers?category=${encodeURIComponent(category.name)}`}
                                         className="hover:text-primary-light transition-colors"
                                     >
                                         {category.name}
@@ -171,10 +171,10 @@ const CategoryCarousel = () => {
 
                                 {/* Explore button */}
                                 <Link
-                                    to={`/services/?category=${category.slug}`}
+                                    to={`/freelancers?category=${encodeURIComponent(category.name)}`}
                                     className="text-white/90 hover:text-white text-sm font-medium flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all duration-300"
                                 >
-                                    Explore services
+                                    Explore mentors
                                     <ChevronRight size={16} className="group-hover:translate-x-1 transition-transform" />
                                 </Link>
                             </div>

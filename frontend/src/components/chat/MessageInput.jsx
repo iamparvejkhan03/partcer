@@ -172,9 +172,9 @@ const MessageInput = ({ onSendMessage, onTyping }) => {
                     </button>
 
                     {/* Voice Message Button (Future feature) */}
-                    <button className="p-3 sm:p-2 hover:bg-gray-100 rounded-full transition-colors">
+                    {/* <button className="p-3 sm:p-2 hover:bg-gray-100 rounded-full transition-colors">
                         <Video size={24} className="text-gray-500" />
-                    </button>
+                    </button> */}
 
                     {/* Send Button */}
                     <button

@@ -1059,7 +1059,7 @@ const ServiceDetails = () => {
                                     )}
 
                                     <div className="flex justify-between items-center">
-                                        <span className="text-gray-600">Freelancer Type</span>
+                                        <span className="text-gray-600">Mentor Type</span>
                                         <span className="font-medium text-gray-900 capitalize">{service?.seller?.freelancerType || 'Indpendent'}</span>
                                     </div>
 
@@ -1130,7 +1130,7 @@ const ServiceDetails = () => {
                             <div>
                                 <Subheading content={`More from ${service.seller?.displayName || service.seller?.name}`} />
                                 <Heading content="Other Services" />
-                                <HeadingDescription content="Check out more services from this freelancer" />
+                                <HeadingDescription content="Check out more services from this mentor" />
                             </div>
                             <Link
                                 to={`/services?search=${service.seller?.displayName || service.seller?.name}`}

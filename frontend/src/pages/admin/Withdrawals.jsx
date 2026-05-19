@@ -39,6 +39,7 @@ import {
 import { AdminSidebar, AdminHeader, AdminContainer } from '../../components';
 import toast from 'react-hot-toast';
 import axiosInstance from '../../utils/axiosInstance';
+import { dummyUserImg } from '../../assets';
 
 const Withdrawals = () => {
     const [withdrawals, setWithdrawals] = useState([]);
@@ -54,6 +55,7 @@ const Withdrawals = () => {
     const [showProcessModal, setShowProcessModal] = useState(false);
     const [showRejectModal, setShowRejectModal] = useState(false);
     const [openActionMenu, setOpenActionMenu] = useState(null);
+    const [showCompleteModal, setShowCompleteModal] = useState(false);
     const actionMenuRef = useRef(null);
     const [stats, setStats] = useState({
         total: 0,
@@ -86,263 +88,59 @@ const Withdrawals = () => {
     const fetchWithdrawals = async () => {
         try {
             setLoading(true);
+            const response = await axiosInstance.get('/api/v1/withdrawals/admin/all');
 
-            // Mock data for withdrawal requests
-            // const mockWithdrawals = [
-            //     {
-            //         id: "WD-2025-001",
-            //         freelancer: {
-            //             id: 2001,
-            //             name: "Sarah Johnson",
-            //             avatar: "https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg",
-            //             email: "sarah.j@example.com",
-            //             location: "United States",
-            //             verified: true,
-            //             level: "top_rated",
-            //             balance: 3450.75
-            //         },
-            //         amount: 500.00,
-            //         fee: 5.00,
-            //         netAmount: 495.00,
-            //         method: "paypal",
-            //         methodDetails: "sarah.j@example.com",
-            //         status: "completed",
-            //         requestedAt: "2025-05-15T10:30:00",
-            //         processedAt: "2025-05-16T14:20:00",
-            //         transactionId: "PP-123456789",
-            //         notes: "Monthly withdrawal"
-            //     },
-            //     {
-            //         id: "WD-2025-002",
-            //         freelancer: {
-            //             id: 2002,
-            //             name: "Michael Chen",
-            //             avatar: "https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg",
-            //             email: "michael.c@example.com",
-            //             location: "Singapore",
-            //             verified: true,
-            //             level: "level_2",
-            //             balance: 5678.50
-            //         },
-            //         amount: 750.00,
-            //         fee: 7.50,
-            //         netAmount: 742.50,
-            //         method: "bank_transfer",
-            //         methodDetails: "****1234 (Chase Bank)",
-            //         status: "completed",
-            //         requestedAt: "2025-05-10T14:45:00",
-            //         processedAt: "2025-05-12T09:15:00",
-            //         transactionId: "BT-987654321",
-            //         notes: "Project payment"
-            //     },
-            //     {
-            //         id: "WD-2025-003",
-            //         freelancer: {
-            //             id: 2003,
-            //             name: "Priya Patel",
-            //             avatar: "https://images.pexels.com/photos/1036622/pexels-photo-1036622.jpeg",
-            //             email: "priya.p@example.com",
-            //             location: "India",
-            //             verified: true,
-            //             level: "level_1",
-            //             balance: 2345.00
-            //         },
-            //         amount: 300.00,
-            //         fee: 3.00,
-            //         netAmount: 297.00,
-            //         method: "paypal",
-            //         methodDetails: "priya.p@example.com",
-            //         status: "pending",
-            //         requestedAt: "2025-05-05T09:20:00",
-            //         processedAt: null,
-            //         notes: "Rush withdrawal"
-            //     },
-            //     {
-            //         id: "WD-2025-004",
-            //         freelancer: {
-            //             id: 2004,
-            //             name: "James Wilson",
-            //             avatar: "https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg",
-            //             email: "james.w@example.com",
-            //             location: "United Kingdom",
-            //             verified: true,
-            //             level: "level_2",
-            //             balance: 8900.25
-            //         },
-            //         amount: 1200.00,
-            //         fee: 12.00,
-            //         netAmount: 1188.00,
-            //         method: "bank_transfer",
-            //         methodDetails: "****5678 (Wells Fargo)",
-            //         status: "processing",
-            //         requestedAt: "2025-04-28T16:30:00",
-            //         processedAt: null,
-            //         notes: "Monthly savings"
-            //     },
-            //     {
-            //         id: "WD-2025-005",
-            //         freelancer: {
-            //             id: 2005,
-            //             name: "Emma Wilson",
-            //             avatar: "https://images.pexels.com/photos/3785077/pexels-photo-3785077.jpeg",
-            //             email: "emma.w@example.com",
-            //             location: "Australia",
-            //             verified: true,
-            //             level: "level_1",
-            //             balance: 1560.00
-            //         },
-            //         amount: 250.00,
-            //         fee: 2.50,
-            //         netAmount: 247.50,
-            //         method: "paypal",
-            //         methodDetails: "emma.w@example.com",
-            //         status: "processing",
-            //         requestedAt: "2025-04-20T11:15:00",
-            //         processedAt: null,
-            //         notes: "Express withdrawal"
-            //     },
-            //     {
-            //         id: "WD-2025-006",
-            //         freelancer: {
-            //             id: 2006,
-            //             name: "David Kim",
-            //             avatar: "https://images.pexels.com/photos/428364/pexels-photo-428364.jpeg",
-            //             email: "david.k@example.com",
-            //             location: "South Korea",
-            //             verified: true,
-            //             level: "top_rated",
-            //             balance: 12450.00
-            //         },
-            //         amount: 800.00,
-            //         fee: 8.00,
-            //         netAmount: 792.00,
-            //         method: "bank_transfer",
-            //         methodDetails: "****1234 (Chase Bank)",
-            //         status: "completed",
-            //         requestedAt: "2025-04-15T13:40:00",
-            //         processedAt: "2025-04-17T10:30:00",
-            //         transactionId: "BT-789123456",
-            //         notes: "Project milestone"
-            //     },
-            //     {
-            //         id: "WD-2025-007",
-            //         freelancer: {
-            //             id: 2007,
-            //             name: "Elena Petrova",
-            //             avatar: "https://images.pexels.com/photos/3785077/pexels-photo-3785077.jpeg",
-            //             email: "elena.p@example.com",
-            //             location: "Germany",
-            //             verified: true,
-            //             level: "expert",
-            //             balance: 7890.50
-            //         },
-            //         amount: 450.00,
-            //         fee: 4.50,
-            //         netAmount: 445.50,
-            //         method: "paypal",
-            //         methodDetails: "elena.p@example.com",
-            //         status: "rejected",
-            //         requestedAt: "2025-04-10T15:20:00",
-            //         processedAt: "2025-04-11T09:30:00",
-            //         rejectionReason: "Insufficient account verification",
-            //         notes: "Cancelled by user"
-            //     },
-            //     {
-            //         id: "WD-2025-008",
-            //         freelancer: {
-            //             id: 2008,
-            //             name: "Michael Rodriguez",
-            //             avatar: "https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg",
-            //             email: "michael.r@example.com",
-            //             location: "Spain",
-            //             verified: false,
-            //             level: "new",
-            //             balance: 890.00
-            //         },
-            //         amount: 150.00,
-            //         fee: 1.50,
-            //         netAmount: 148.50,
-            //         method: "paypal",
-            //         methodDetails: "michael.r@example.com",
-            //         status: "pending",
-            //         requestedAt: "2025-04-05T10:10:00",
-            //         processedAt: null,
-            //         notes: "First withdrawal"
-            //     },
-            //     {
-            //         id: "WD-2025-009",
-            //         freelancer: {
-            //             id: 2009,
-            //             name: "Lisa Wang",
-            //             avatar: "https://images.pexels.com/photos/1036623/pexels-photo-1036623.jpeg",
-            //             email: "lisa.w@example.com",
-            //             location: "China",
-            //             verified: true,
-            //             level: "level_2",
-            //             balance: 5600.00
-            //         },
-            //         amount: 1000.00,
-            //         fee: 10.00,
-            //         netAmount: 990.00,
-            //         method: "bank_transfer",
-            //         methodDetails: "****4321 (ICBC)",
-            //         status: "pending",
-            //         requestedAt: "2025-04-01T09:30:00",
-            //         processedAt: null,
-            //         notes: "Monthly earnings"
-            //     },
-            //     {
-            //         id: "WD-2025-010",
-            //         freelancer: {
-            //             id: 2010,
-            //             name: "Robert Brown",
-            //             avatar: "https://images.pexels.com/photos/428361/pexels-photo-428361.jpeg",
-            //             email: "robert.b@example.com",
-            //             location: "Germany",
-            //             verified: true,
-            //             level: "level_1",
-            //             balance: 3450.00
-            //         },
-            //         amount: 600.00,
-            //         fee: 6.00,
-            //         netAmount: 594.00,
-            //         method: "paypal",
-            //         methodDetails: "robert.b@example.com",
-            //         status: "completed",
-            //         requestedAt: "2025-03-28T14:20:00",
-            //         processedAt: "2025-03-30T11:45:00",
-            //         transactionId: "PP-456789123",
-            //         notes: "Project completion"
-            //     }
-            // ];
+            if (response.data?.data?.withdrawals) {
+                const formattedWithdrawals = response.data.data.withdrawals.map(w => ({
+                    id: w.withdrawalId,
+                    freelancer: {
+                        id: w.freelancerId?._id || w.freelancerId,
+                        name: w.freelancerId?.displayName || `${w.freelancerId?.firstName || ''} ${w.freelancerId?.lastName || ''}`.trim() || 'Unknown',
+                        avatar: w.freelancerId?.profileImage || dummyUserImg,
+                        email: w.freelancerId?.email || '',
+                        location: w.freelancerId?.country || 'Not specified',
+                        verified: w.freelancerId?.isVerified || false,
+                        level: w.freelancerId?.freelancerType || 'freelancer',
+                        balance: 0 // Fetch separately or calculate
+                    },
+                    amount: w.amount,
+                    fee: 0, // Platform fee - calculate from order if needed
+                    netAmount: w.amount,
+                    method: w.method,
+                    methodDetails: w.methodDetails,
+                    status: w.status,
+                    requestedAt: w.createdAt,
+                    processedAt: w.processedDate,
+                    transactionId: w.transactionId,
+                    notes: w.notes,
+                    rejectionReason: w.cancellationReason
+                }));
 
-            setTimeout(() => {
-                setWithdrawals([]);
-                calculateStats([]);
-                setLoading(false);
-            }, 1000);
-
+                setWithdrawals(formattedWithdrawals);
+                calculateStats(formattedWithdrawals);
+            }
+            setLoading(false);
         } catch (error) {
             console.error('Error fetching withdrawals:', error);
-            toast.error('Failed to load withdrawal requests');
+            toast.error(error.response?.data?.message || 'Failed to load withdrawal requests');
             setLoading(false);
         }
     };
 
     const calculateStats = (withdrawalsData) => {
         const pending = withdrawalsData.filter(w => w.status === 'pending');
-        const processing = withdrawalsData.filter(w => w.status === 'processing');
+        const clearing = withdrawalsData.filter(w => w.status === 'clearing');
         const completed = withdrawalsData.filter(w => w.status === 'completed');
 
         const stats = {
             total: withdrawalsData.length,
             pending: pending.length,
-            processing: processing.length,
+            clearing: clearing.length,
             completed: completed.length,
-            rejected: withdrawalsData.filter(w => w.status === 'rejected').length,
+            rejected: withdrawalsData.filter(w => w.status === 'cancelled').length,
             totalAmount: withdrawalsData.reduce((sum, w) => sum + w.amount, 0),
             completedAmount: completed.reduce((sum, w) => sum + w.amount, 0),
-            pendingAmount: [...pending, ...processing].reduce((sum, w) => sum + w.amount, 0),
+            pendingAmount: [...pending, ...clearing].reduce((sum, w) => sum + w.amount, 0),
         };
         setStats(stats);
     };
@@ -350,9 +148,9 @@ const Withdrawals = () => {
     const getStatusBadge = (status) => {
         const config = {
             pending: { bg: 'bg-yellow-100', text: 'text-yellow-700', label: 'Pending', icon: Clock },
-            processing: { bg: 'bg-blue-100', text: 'text-blue-700', label: 'Processing', icon: RotateCcw },
+            clearing: { bg: 'bg-blue-100', text: 'text-blue-700', label: 'Clearing', icon: RotateCcw },
             completed: { bg: 'bg-green-100', text: 'text-green-700', label: 'Completed', icon: CheckCircle },
-            rejected: { bg: 'bg-red-100', text: 'text-red-700', label: 'Rejected', icon: XCircle }
+            cancelled: { bg: 'bg-red-100', text: 'text-red-700', label: 'Rejected', icon: XCircle }
         };
         const badge = config[status] || config.pending;
         const Icon = badge.icon;
@@ -374,6 +172,8 @@ const Withdrawals = () => {
                 return <CreditCard size={14} className="text-purple-600" />;
             case 'mobile_money':
                 return <Smartphone size={14} className="text-orange-600" />;
+            case 'upi':
+                return <Banknote size={14} className="text-orange-600" />;
             default:
                 return <DollarSign size={14} className="text-gray-600" />;
         }
@@ -384,7 +184,8 @@ const Withdrawals = () => {
             paypal: { bg: 'bg-blue-100', text: 'text-blue-700', label: 'PayPal' },
             bank_transfer: { bg: 'bg-green-100', text: 'text-green-700', label: 'Bank Transfer' },
             payoneer: { bg: 'bg-purple-100', text: 'text-purple-700', label: 'Payoneer' },
-            mobile_money: { bg: 'bg-orange-100', text: 'text-orange-700', label: 'Mobile Money' }
+            mobile_money: { bg: 'bg-orange-100', text: 'text-orange-700', label: 'Mobile Money' },
+            upi: { bg: 'bg-orange-100', text: 'text-orange-700', label: 'UPI' }
         };
         const badge = config[method] || { bg: 'bg-gray-100', text: 'text-gray-700', label: method };
         return (
@@ -398,7 +199,7 @@ const Withdrawals = () => {
     const formatDate = (dateString) => {
         if (!dateString) return '—';
         const date = new Date(dateString);
-        return date.toLocaleDateString('en-US', {
+        return date.toLocaleDateString('en-IN', {
             month: 'short',
             day: 'numeric',
             year: 'numeric',
@@ -408,9 +209,9 @@ const Withdrawals = () => {
     };
 
     const formatCurrency = (amount) => {
-        return new Intl.NumberFormat('en-US', {
+        return new Intl.NumberFormat('en-IN', {
             style: 'currency',
-            currency: 'USD',
+            currency: 'INR',
             minimumFractionDigits: 2,
             maximumFractionDigits: 2
         }).format(amount);
@@ -433,68 +234,53 @@ const Withdrawals = () => {
 
     const handleProcessWithdrawal = async (withdrawalId) => {
         try {
-            setWithdrawals(withdrawals.map(w =>
-                w.id === withdrawalId
-                    ? {
-                        ...w,
-                        status: 'processing',
-                        processedAt: new Date().toISOString()
-                    }
-                    : w
-            ));
-            calculateStats(withdrawals);
+            await axiosInstance.patch(`/api/v1/withdrawals/admin/${withdrawalId}/process`, {
+                status: "clearing"
+            });
+
             toast.success('Withdrawal marked as processing');
+            fetchWithdrawals(); // Refresh
             setShowProcessModal(false);
             setSelectedWithdrawal(null);
         } catch (error) {
-            toast.error('Failed to update withdrawal status');
+            toast.error(error.response?.data?.message || 'Failed to update withdrawal status');
         }
     };
 
     const handleCompleteWithdrawal = async (withdrawalId, transactionId) => {
         try {
-            setWithdrawals(withdrawals.map(w =>
-                w.id === withdrawalId
-                    ? {
-                        ...w,
-                        status: 'completed',
-                        processedAt: new Date().toISOString(),
-                        transactionId: transactionId || `TXN-${Date.now()}`
-                    }
-                    : w
-            ));
-            calculateStats(withdrawals);
+            await axiosInstance.patch(`/api/v1/withdrawals/admin/${withdrawalId}/process`, {
+                status: "completed",
+                transactionId: transactionId
+            });
+
             toast.success('Withdrawal completed successfully');
+            fetchWithdrawals(); // Refresh
             setShowProcessModal(false);
             setSelectedWithdrawal(null);
         } catch (error) {
-            toast.error('Failed to complete withdrawal');
+            toast.error(error.response?.data?.message || 'Failed to complete withdrawal');
         }
     };
 
     const handleRejectWithdrawal = async (withdrawalId, reason) => {
         try {
-            setWithdrawals(withdrawals.map(w =>
-                w.id === withdrawalId
-                    ? {
-                        ...w,
-                        status: 'rejected',
-                        processedAt: new Date().toISOString(),
-                        rejectionReason: reason
-                    }
-                    : w
-            ));
-            calculateStats(withdrawals);
+            await axiosInstance.patch(`/api/v1/withdrawals/admin/${withdrawalId}/process`, {
+                status: "cancelled",
+                notes: reason
+            });
+
             toast.success('Withdrawal rejected');
+            fetchWithdrawals(); // Refresh
             setShowRejectModal(false);
             setSelectedWithdrawal(null);
         } catch (error) {
-            toast.error('Failed to reject withdrawal');
+            toast.error(error.response?.data?.message || 'Failed to reject withdrawal');
         }
     };
 
     const handleViewFreelancer = (freelancerId) => {
-        navigate(`/admin/users/${freelancerId}`);
+        navigate(`/freelancer/${freelancerId}`);
     };
 
     const filteredWithdrawals = withdrawals.filter(withdrawal => {
@@ -502,6 +288,8 @@ const Withdrawals = () => {
             const term = searchTerm.toLowerCase();
             const matches =
                 withdrawal.id.toLowerCase().includes(term) ||
+                withdrawal.method.toLowerCase().includes(term) ||
+                withdrawal.amount == term ||
                 withdrawal.freelancer.name.toLowerCase().includes(term) ||
                 withdrawal.freelancer.email.toLowerCase().includes(term) ||
                 withdrawal.transactionId?.toLowerCase().includes(term);
@@ -555,7 +343,7 @@ const Withdrawals = () => {
                         <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6 mt-20 md:mt-0">
                             <div>
                                 <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Withdrawal Requests</h1>
-                                <p className="text-gray-600 mt-1">Manage and process freelancer withdrawal requests</p>
+                                <p className="text-gray-600 mt-1">Manage and process mentor withdrawal requests</p>
                             </div>
                             <div className="flex items-center gap-2 mt-4 md:mt-0">
                                 <button
@@ -570,7 +358,7 @@ const Withdrawals = () => {
                         </div>
 
                         {/* Stats Cards */}
-                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-6">
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
                             <div className="bg-white p-4 rounded-xl border border-gray-200">
                                 <div className="flex items-center gap-3">
                                     <div className="p-2 bg-blue-100 rounded-lg">
@@ -600,7 +388,7 @@ const Withdrawals = () => {
                                     </div>
                                     <div>
                                         <p className="text-xs text-gray-600">Processing</p>
-                                        <p className="text-xl font-bold">{stats.processing}</p>
+                                        <p className="text-xl font-bold">{stats.clearing}</p>
                                     </div>
                                 </div>
                             </div>
@@ -612,6 +400,17 @@ const Withdrawals = () => {
                                     <div>
                                         <p className="text-xs text-gray-600">Completed</p>
                                         <p className="text-xl font-bold">{stats.completed}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="bg-white p-4 rounded-xl border border-gray-200">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 bg-purple-100 rounded-lg">
+                                        <DollarSign size={20} className="text-purple-600" />
+                                    </div>
+                                    <div>
+                                        <p className="text-xs text-gray-600">Total Paid</p>
+                                        <p className="text-xl font-bold">{formatCurrency(stats.completedAmount)}</p>
                                     </div>
                                 </div>
                             </div>
@@ -635,7 +434,7 @@ const Withdrawals = () => {
                                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
                                     <input
                                         type="text"
-                                        placeholder="Search by ID, freelancer, email, transaction ID..."
+                                        placeholder="Search by ID, mentor, email, transaction ID..."
                                         value={searchTerm}
                                         onChange={(e) => {
                                             setSearchTerm(e.target.value);
@@ -645,21 +444,14 @@ const Withdrawals = () => {
                                     />
                                 </div>
                                 <div className="flex flex-wrap gap-2">
-                                    <select
-                                        value={statusFilter}
-                                        onChange={(e) => {
-                                            setStatusFilter(e.target.value);
-                                            setCurrentPage(1);
-                                        }}
-                                        className="px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-white min-w-[130px]"
-                                    >
+                                    <select value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setCurrentPage(1); }} className="px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-white min-w-[130px]">
                                         <option value="all">All Status</option>
                                         <option value="pending">Pending</option>
-                                        <option value="processing">Processing</option>
+                                        <option value="clearing">Clearing</option>
                                         <option value="completed">Completed</option>
-                                        <option value="rejected">Rejected</option>
+                                        <option value="cancelled">Rejected</option>
                                     </select>
-                                    <select
+                                    {/* <select
                                         value={methodFilter}
                                         onChange={(e) => {
                                             setMethodFilter(e.target.value);
@@ -672,8 +464,8 @@ const Withdrawals = () => {
                                         <option value="bank_transfer">Bank Transfer</option>
                                         <option value="payoneer">Payoneer</option>
                                         <option value="mobile_money">Mobile Money</option>
-                                    </select>
-                                    <select
+                                    </select> */}
+                                    {/* <select
                                         value={dateRange}
                                         onChange={(e) => {
                                             setDateRange(e.target.value);
@@ -686,7 +478,7 @@ const Withdrawals = () => {
                                         <option value="90">Last 90 days</option>
                                         <option value="365">Last year</option>
                                         <option value="all">All time</option>
-                                    </select>
+                                    </select> */}
                                 </div>
                             </div>
                         </div>
@@ -697,7 +489,7 @@ const Withdrawals = () => {
                                 <table className="w-full">
                                     <thead className="bg-gray-50 border-b border-gray-200">
                                         <tr>
-                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase w-[160px]">Freelancer</th>
+                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase w-[160px]">Mentor</th>
                                             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase w-[90px]">Amount</th>
                                             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase w-[100px]">Method</th>
                                             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase w-[90px]">Status</th>
@@ -773,10 +565,10 @@ const Withdrawals = () => {
                                                                             className="w-full px-4 py-1.5 text-left text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-1"
                                                                         >
                                                                             <Users size={12} />
-                                                                            View Freelancer
+                                                                            View Mentor
                                                                         </button>
 
-                                                                        {(withdrawal.status === 'pending' || withdrawal.status === 'processing') && (
+                                                                        {(withdrawal.status === 'pending') && (
                                                                             <>
                                                                                 <hr className="my-1 border-gray-200" />
                                                                                 <button
@@ -788,7 +580,7 @@ const Withdrawals = () => {
                                                                                     className="w-full px-4 py-1.5 text-left text-xs text-blue-600 hover:bg-blue-50 flex items-center gap-1"
                                                                                 >
                                                                                     <RotateCcw size={12} />
-                                                                                    Process
+                                                                                    Mark as Clearing
                                                                                 </button>
                                                                                 <button
                                                                                     onClick={() => {
@@ -800,6 +592,22 @@ const Withdrawals = () => {
                                                                                 >
                                                                                     <XCircle size={12} />
                                                                                     Reject
+                                                                                </button>
+                                                                            </>
+                                                                        )}
+                                                                        {(withdrawal.status === 'clearing') && (
+                                                                            <>
+                                                                                <hr className="my-1 border-gray-200" />
+                                                                                <button
+                                                                                    onClick={() => {
+                                                                                        setSelectedWithdrawal(withdrawal);
+                                                                                        setShowCompleteModal(true);
+                                                                                        setOpenActionMenu(null);
+                                                                                    }}
+                                                                                    className="w-full px-4 py-1.5 text-left text-xs text-green-600 hover:bg-green-50 flex items-center gap-1"
+                                                                                >
+                                                                                    <CheckCircle size={12} />
+                                                                                    Mark as Completed
                                                                                 </button>
                                                                             </>
                                                                         )}
@@ -884,7 +692,7 @@ const Withdrawals = () => {
                                                     </button>
 
                                                     {openActionMenu === withdrawal.id && (
-                                                        <div className="absolute right-0 mt-2 w-40 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
+                                                        <div className="absolute left-0 mt-2 w-40 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
                                                             <button
                                                                 onClick={() => {
                                                                     handleViewFreelancer(withdrawal.freelancer.id);
@@ -893,10 +701,10 @@ const Withdrawals = () => {
                                                                 className="w-full px-2 py-1.5 text-left text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-1"
                                                             >
                                                                 <Users size={12} />
-                                                                View Freelancer
+                                                                View Mentor
                                                             </button>
 
-                                                            {(withdrawal.status === 'pending' || withdrawal.status === 'processing') && (
+                                                            {(withdrawal.status === 'pending') && (
                                                                 <>
                                                                     <hr className="my-1 border-gray-200" />
                                                                     <button
@@ -905,10 +713,10 @@ const Withdrawals = () => {
                                                                             setShowProcessModal(true);
                                                                             setOpenActionMenu(null);
                                                                         }}
-                                                                        className="w-full px-2 py-1.5 text-left text-xs text-blue-600 hover:bg-blue-50 flex items-center gap-1"
+                                                                        className="w-full px-4 py-1.5 text-left text-xs text-blue-600 hover:bg-blue-50 flex items-center gap-1"
                                                                     >
                                                                         <RotateCcw size={12} />
-                                                                        Process
+                                                                        Mark as Clearing
                                                                     </button>
                                                                     <button
                                                                         onClick={() => {
@@ -916,10 +724,26 @@ const Withdrawals = () => {
                                                                             setShowRejectModal(true);
                                                                             setOpenActionMenu(null);
                                                                         }}
-                                                                        className="w-full px-2 py-1.5 text-left text-xs text-red-600 hover:bg-red-50 flex items-center gap-1"
+                                                                        className="w-full px-4 py-1.5 text-left text-xs text-red-600 hover:bg-red-50 flex items-center gap-1"
                                                                     >
                                                                         <XCircle size={12} />
                                                                         Reject
+                                                                    </button>
+                                                                </>
+                                                            )}
+                                                            {(withdrawal.status === 'clearing') && (
+                                                                <>
+                                                                    <hr className="my-1 border-gray-200" />
+                                                                    <button
+                                                                        onClick={() => {
+                                                                            setSelectedWithdrawal(withdrawal);
+                                                                            setShowCompleteModal(true);
+                                                                            setOpenActionMenu(null);
+                                                                        }}
+                                                                        className="w-full px-4 py-1.5 text-left text-xs text-green-600 hover:bg-green-50 flex items-center gap-1"
+                                                                    >
+                                                                        <CheckCircle size={12} />
+                                                                        Mark as Completed
                                                                     </button>
                                                                 </>
                                                             )}
@@ -968,7 +792,7 @@ const Withdrawals = () => {
                         </div>
 
                         {/* Withdrawal Statistics Summary */}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        {/* <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div className="bg-white p-4 rounded-xl border border-gray-200">
                                 <h4 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
                                     <Clock size={16} className="text-yellow-600" />
@@ -981,7 +805,7 @@ const Withdrawals = () => {
                                     </div>
                                     <div className="flex justify-between">
                                         <span className="text-sm text-gray-600">Processing</span>
-                                        <span className="font-medium text-blue-600">{stats.processing}</span>
+                                        <span className="font-medium text-blue-600">{stats.clearing}</span>
                                     </div>
                                     <div className="flex justify-between">
                                         <span className="text-sm text-gray-600">Pending Amount</span>
@@ -1022,12 +846,6 @@ const Withdrawals = () => {
                                         <span className="font-medium text-gray-900">{formatCurrency(stats.totalAmount)}</span>
                                     </div>
                                     <div className="flex justify-between">
-                                        <span className="text-sm text-gray-600">Platform Fees</span>
-                                        <span className="font-medium text-red-600">
-                                            {formatCurrency(withdrawals.reduce((sum, w) => sum + w.fee, 0))}
-                                        </span>
-                                    </div>
-                                    <div className="flex justify-between">
                                         <span className="text-sm text-gray-600">Avg. Request</span>
                                         <span className="font-medium text-gray-900">
                                             {formatCurrency(stats.totalAmount / stats.total || 0)}
@@ -1035,37 +853,52 @@ const Withdrawals = () => {
                                     </div>
                                 </div>
                             </div>
-
-                            {/* <div className="bg-white p-4 rounded-xl border border-gray-200">
-                                <h4 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
-                                    <Users size={16} className="text-orange-600" />
-                                    Method Distribution
-                                </h4>
-                                <div className="space-y-2">
-                                    <div className="flex justify-between">
-                                        <span className="text-sm text-gray-600">PayPal</span>
-                                        <span className="font-medium text-blue-600">
-                                            {withdrawals.filter(w => w.method === 'paypal').length}
-                                        </span>
-                                    </div>
-                                    <div className="flex justify-between">
-                                        <span className="text-sm text-gray-600">Bank Transfer</span>
-                                        <span className="font-medium text-green-600">
-                                            {withdrawals.filter(w => w.method === 'bank_transfer').length}
-                                        </span>
-                                    </div>
-                                    <div className="flex justify-between">
-                                        <span className="text-sm text-gray-600">Others</span>
-                                        <span className="font-medium text-gray-600">
-                                            {withdrawals.filter(w => w.method !== 'paypal' && w.method !== 'bank_transfer').length}
-                                        </span>
-                                    </div>
-                                </div>
-                            </div> */}
-                        </div>
+                        </div> */}
                     </div>
                 </AdminContainer>
             </div>
+
+            {showCompleteModal && selectedWithdrawal && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-xl max-w-md w-full p-6">
+                        <h3 className="text-xl font-bold text-gray-900 mb-2">Complete Withdrawal</h3>
+                        <p className="text-gray-600 mb-4">Request ID: {selectedWithdrawal.id}</p>
+
+                        <div className="mb-4">
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Transaction ID
+                            </label>
+                            <input
+                                type="text"
+                                id="completeTransactionId"
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                                placeholder="Enter transaction ID"
+                            />
+                        </div>
+
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => {
+                                    setShowCompleteModal(false);
+                                    setSelectedWithdrawal(null);
+                                }}
+                                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={() => {
+                                    const transactionId = document.getElementById('completeTransactionId')?.value;
+                                    handleCompleteWithdrawal(selectedWithdrawal.id, transactionId);
+                                }}
+                                className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                            >
+                                Complete
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Withdrawal Details Modal */}
             {showWithdrawalModal && selectedWithdrawal && (
@@ -1099,7 +932,7 @@ const Withdrawals = () => {
                             <div className="bg-gray-50 p-4 rounded-lg">
                                 <h4 className="font-medium mb-3 flex items-center gap-2">
                                     <Users size={16} />
-                                    Freelancer Information
+                                    Mentor Information
                                 </h4>
                                 <div className="flex items-start gap-3">
                                     <img
@@ -1115,13 +948,14 @@ const Withdrawals = () => {
                                             )}
                                         </div>
                                         <p className="text-sm text-gray-600">{selectedWithdrawal.freelancer.email}</p>
-                                        <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
+                                        {/* <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
                                             <MapPin size={10} />
                                             {selectedWithdrawal.freelancer.location} • Level: {selectedWithdrawal.freelancer.level}
-                                        </p>
-                                        <p className="text-xs text-gray-600 mt-1">
+                                        </p> */}
+                                        {/* <p className="text-xs text-gray-600 mt-1">
                                             Available Balance: {formatCurrency(selectedWithdrawal.freelancer.balance)}
-                                        </p>
+                                            {console.log(selectedWithdrawal.freelancer)}
+                                        </p> */}
                                         <button
                                             onClick={() => {
                                                 setShowWithdrawalModal(false);
@@ -1129,7 +963,7 @@ const Withdrawals = () => {
                                             }}
                                             className="mt-2 text-xs text-primary hover:text-primary-dark"
                                         >
-                                            View Full Profile →
+                                            View Profile →
                                         </button>
                                     </div>
                                 </div>
@@ -1146,21 +980,21 @@ const Withdrawals = () => {
                                         <p className="text-xs text-gray-500">Amount Requested</p>
                                         <p className="text-lg font-bold text-gray-900">{formatCurrency(selectedWithdrawal.amount)}</p>
                                     </div>
-                                    <div>
+                                    {/* <div>
                                         <p className="text-xs text-gray-500">Platform Fee</p>
                                         <p className="text-sm text-red-600">-{formatCurrency(selectedWithdrawal.fee)}</p>
-                                    </div>
-                                    <div>
+                                    </div> */}
+                                    {/* <div>
                                         <p className="text-xs text-gray-500">Net Amount</p>
                                         <p className="text-sm font-medium text-green-600">{formatCurrency(selectedWithdrawal.netAmount)}</p>
-                                    </div>
+                                    </div> */}
                                     <div>
                                         <p className="text-xs text-gray-500">Payment Method</p>
                                         <div className="mt-1">{getMethodBadge(selectedWithdrawal.method)}</div>
                                     </div>
                                 </div>
                                 <div className="mt-3 pt-3 border-t">
-                                    <p className="text-xs text-gray-500">Account Details</p>
+                                    <p className="text-xs text-gray-500">Payment Method Details</p>
                                     <p className="text-sm font-medium mt-1">{selectedWithdrawal.methodDetails}</p>
                                 </div>
                             </div>
@@ -1208,7 +1042,7 @@ const Withdrawals = () => {
 
                             {/* Actions */}
                             <div className="flex flex-wrap gap-3 pt-4">
-                                {(selectedWithdrawal.status === 'pending' || selectedWithdrawal.status === 'processing') && (
+                                {(selectedWithdrawal.status === 'pending') && (
                                     <>
                                         <button
                                             onClick={() => {
@@ -1218,7 +1052,7 @@ const Withdrawals = () => {
                                             className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center justify-center gap-2"
                                         >
                                             <RotateCcw size={18} />
-                                            Process
+                                            Mark as Clearing
                                         </button>
                                         <button
                                             onClick={() => {
@@ -1232,12 +1066,32 @@ const Withdrawals = () => {
                                         </button>
                                     </>
                                 )}
-                                {/* {selectedWithdrawal.status === 'completed' && (
-                                    <button className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 flex items-center justify-center gap-2">
-                                        <Download size={18} />
-                                        Download Receipt
-                                    </button>
-                                )} */}
+
+                                {(selectedWithdrawal.status === 'clearing') && (
+                                    <>
+                                        <button
+                                            onClick={() => {
+                                                setShowWithdrawalModal(false);
+                                                setShowCompleteModal(true);
+                                            }}
+                                            className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center justify-center gap-2"
+                                        >
+                                            <CheckCircle size={18} />
+                                            Mark as Completed
+                                        </button>
+                                        <button
+                                            onClick={() => {
+                                                setShowWithdrawalModal(false);
+                                                setShowRejectModal(true);
+                                            }}
+                                            className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 flex items-center justify-center gap-2"
+                                        >
+                                            <X size={18} />
+                                            Reject
+                                        </button>
+                                    </>
+                                )}
+
                                 <button
                                     onClick={() => {
                                         setShowWithdrawalModal(false);
@@ -1246,7 +1100,7 @@ const Withdrawals = () => {
                                     className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 flex items-center justify-center gap-2"
                                 >
                                     <Users size={18} />
-                                    View Freelancer
+                                    View Mentor
                                 </button>
                             </div>
                         </div>

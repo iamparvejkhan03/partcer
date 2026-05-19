@@ -43,6 +43,10 @@ const categorySchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    freelancerCount: {
+      type: Number,
+      default: 0,
+    },
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
@@ -110,6 +114,17 @@ categorySchema.methods.updateServiceCount = async function () {
     status: "active",
   });
   this.serviceCount = count;
+  return this.save();
+};
+
+// Update freelancer count
+categorySchema.methods.updateFreelancerCount = async function () {
+  const Freelancer = mongoose.model("User");
+  const count = await Freelancer.countDocuments({
+    category: this._id,
+    status: "active",
+  });
+  this.freelancerCount = count;
   return this.save();
 };
 

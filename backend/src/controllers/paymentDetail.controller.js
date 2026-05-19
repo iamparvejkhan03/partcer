@@ -54,6 +54,45 @@ const updatePaypal = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, paymentDetail, "PayPal details updated successfully"));
 });
 
+// ==================== CREATE/UPDATE UPI ====================
+const updateUpi = asyncHandler(async (req, res) => {
+  const { upiId, isDefault } = req.body;
+  const userId = req.user._id;
+
+  if (!upiId) {
+    throw new ApiError(400, "UPI ID is required");
+  }
+
+  // If setting as default, remove default from others
+  if (isDefault) {
+    await PaymentDetail.updateMany(
+      { userId, isDefault: true },
+      { isDefault: false }
+    );
+  }
+
+  // Check if UPI ID already exists
+  let paymentDetail = await PaymentDetail.findOne({ userId, upiId: { $exists: true, $ne: null } });
+
+  if (paymentDetail) {
+    // Update existing
+    paymentDetail.upiId = upiId;
+    paymentDetail.isDefault = isDefault || false;
+    await paymentDetail.save();
+  } else {
+    // Create new
+    paymentDetail = await PaymentDetail.create({
+      userId,
+      upiId,
+      isDefault: isDefault || false
+    });
+  }
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, paymentDetail, "UPI details updated successfully"));
+});
+
 // ==================== CREATE/UPDATE PAYONEER ====================
 const updatePayoneer = asyncHandler(async (req, res) => {
   const { payoneerEmail, isDefault } = req.body;
@@ -214,6 +253,7 @@ const setDefaultMethod = asyncHandler(async (req, res) => {
 export {
   getPaymentDetails,
   updatePaypal,
+  updateUpi,
   updatePayoneer,
   updateBankDetails,
   deletePaymentMethod,

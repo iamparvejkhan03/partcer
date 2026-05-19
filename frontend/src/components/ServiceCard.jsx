@@ -57,7 +57,7 @@ const ServiceCard = ({ service }) => {
         if (service.seller?.firstName && service.seller?.lastName) {
             return `${service.seller.firstName} ${service.seller.lastName}`;
         }
-        return 'Freelancer';
+        return 'Mentor';
     };
 
     // Get seller profile image

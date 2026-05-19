@@ -34,7 +34,7 @@ const TermsOfUse = () => {
                         <div className="mb-8">
                             <p className="text-gray-700 mb-4">
                                 <strong>Partcer.com</strong> ("we", "our", "us") operates an online marketplace 
-                                connecting tech professionals ("Freelancers") with clients ("Customers") for 
+                                connecting tech professionals ("Mentors") with clients ("Customers") for 
                                 job support, training, and consulting services delivered via video calls. 
                                 These Terms of Use ("Terms") govern your access to and use of our website, 
                                 platform, and services.
@@ -59,8 +59,8 @@ const TermsOfUse = () => {
                         <div className="border-t pt-6">
                             <h2 className="text-xl font-bold text-gray-900 mb-3">2. Account Registration</h2>
                             <ul className="text-gray-700 space-y-2 list-disc pl-5">
-                                <li>Registration is free for both Freelancers and Customers</li>
-                                <li>Freelancers must verify their skills and experience</li>
+                                <li>Registration is free for both Mentors and Customers</li>
+                                <li>Mentors must verify their skills and experience</li>
                                 <li>Users must be at least 18 years old</li>
                                 <li>One account per person - no shared accounts allowed</li>
                                 <li>We may suspend or terminate accounts for violations</li>
@@ -72,13 +72,13 @@ const TermsOfUse = () => {
                             <h2 className="text-xl font-bold text-gray-900 mb-3">3. Our Role as Intermediary</h2>
                             <p className="text-gray-700 mb-3">Partcer.com acts as:</p>
                             <ul className="text-gray-700 space-y-2 list-disc pl-5 mb-3">
-                                <li>A platform connecting Freelancers and Customers</li>
+                                <li>A platform connecting Mentors and Customers</li>
                                 <li>A payment processor for completed services</li>
                                 <li>A dispute resolution mediator when needed</li>
                             </ul>
                             <div className="bg-gray-50 p-4 rounded">
                                 <p className="text-gray-700 font-semibold">
-                                    Partcer is not a party to the service agreements between Freelancers and Customers.
+                                    Partcer is not a party to the service agreements between Mentors and Customers.
                                 </p>
                             </div>
                         </div>
@@ -102,9 +102,9 @@ const TermsOfUse = () => {
                             <h2 className="text-xl font-bold text-gray-900 mb-3">5. Payment Terms</h2>
                             <ul className="text-gray-700 space-y-2 list-disc pl-5">
                                 <li>Multiple payment methods accepted (credit card, PayPal, etc.)</li>
-                                <li>Freelancers receive payment after successful service completion</li>
+                                <li>Mentors receive payment after successful service completion</li>
                                 <li>Partcer retains a service fee (typically 10-20% of transaction)</li>
-                                <li>Payouts to Freelancers are processed weekly</li>
+                                <li>Payouts to Mentors are processed weekly</li>
                                 <li>Refunds are handled according to our Refund Policy</li>
                             </ul>
                         </div>
@@ -127,13 +127,13 @@ const TermsOfUse = () => {
                             <div className="bg-yellow-50 p-4 rounded mb-3">
                                 <p className="text-gray-800 font-bold text-center mb-2">PROFESSIONAL CONDUCT EXPECTED</p>
                                 <div className="text-center space-y-1">
-                                    <p className="text-gray-700">Freelancers must deliver services as described</p>
+                                    <p className="text-gray-700">Mentors must deliver services as described</p>
                                     <p className="text-gray-700">Customers must provide clear requirements</p>
                                     <p className="text-gray-700">Both parties must maintain professional behavior</p>
                                 </div>
                             </div>
                             <p className="text-gray-700">
-                                Freelancers are responsible for the quality of their services. 
+                                Mentors are responsible for the quality of their services. 
                                 Partcer provides a rating system to help maintain quality standards.
                             </p>
                         </div>
@@ -142,7 +142,7 @@ const TermsOfUse = () => {
                         <div className="border-t pt-6">
                             <h2 className="text-xl font-bold text-gray-900 mb-3">8. Intellectual Property</h2>
                             <ul className="text-gray-700 space-y-2 list-disc pl-5">
-                                <li>Freelancers retain ownership of their materials and content</li>
+                                <li>Mentors retain ownership of their materials and content</li>
                                 <li>Customers own the results of work done for them</li>
                                 <li>Partcer's platform, design, and branding are our intellectual property</li>
                                 <li>No unauthorized copying or distribution of platform content</li>
@@ -184,7 +184,7 @@ const TermsOfUse = () => {
                             <ul className="text-gray-700 space-y-2 list-disc pl-5">
                                 <li>Direct damages up to the amount paid for the service in question</li>
                                 <li>We are not liable for indirect, incidental, or consequential damages</li>
-                                <li>We are not responsible for Freelancer performance issues</li>
+                                <li>We are not responsible for Mentor performance issues</li>
                                 <li>We are not liable for technical issues beyond our reasonable control</li>
                             </ul>
                         </div>

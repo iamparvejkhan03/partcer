@@ -1,4 +1,4 @@
-import { model, Schema } from "mongoose";
+import mongoose, { model, Schema } from "mongoose";
 
 const messageSchema = new Schema(
   {
@@ -72,6 +72,16 @@ const messageSchema = new Schema(
       enum: ["sent", "delivered", "read"],
       default: "sent",
     },
+    savedBy: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
+    ], // Users who saved this message
+    isResource: {
+      type: Boolean,
+      default: false,
+    }, // Mark as resource (files shared by mentor)
     isDeleted: {
       type: Boolean,
       default: false,

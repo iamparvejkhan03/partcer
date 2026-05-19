@@ -12,6 +12,7 @@ import {
 } from "../controllers/admin.controller.js";
 import { auth, authAdmin } from "../middlewares/auth.middleware.js";
 import upload from "../middlewares/multer.middleware.js";
+import { getAllOrdersForAdmin } from "../controllers/payment.controller.js";
 
 const adminRouter = Router();
 
@@ -28,5 +29,6 @@ adminRouter.post("/users/:userId/ban", banUser);
 adminRouter.post("/users/:userId/activate", activateUser);
 adminRouter.delete("/users/:userId", deleteUser);
 adminRouter.put("/users/:userId", upload.single('profileImage'), updateUser);
+adminRouter.get("/orders", getAllOrdersForAdmin);
 
 export default adminRouter;

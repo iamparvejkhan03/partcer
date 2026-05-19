@@ -632,7 +632,7 @@ const CategoryRow = ({
                 </td>
                 <td className="py-4 px-6">
                     <div className="text-sm text-gray-600">
-                        {category.serviceCount || 0}
+                        {category.freelancerCount || 0}
                     </div>
                 </td>
                 <td className="py-4 px-6">

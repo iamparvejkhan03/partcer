@@ -8,13 +8,40 @@ import {
     Image,
     Video,
     File,
-    X
+    X,
+    Bookmark,
+    BookmarkCheck
 } from 'lucide-react';
 import { useState } from 'react';
+import axiosInstance from '../../utils/axiosInstance';
+import toast from 'react-hot-toast';
 
-const MessageBubble = ({ message, isOwn, showAvatar, sender }) => {
+const MessageBubble = ({ message, isOwn, showAvatar, sender, onMessageSaved }) => {
     const [imageLoaded, setImageLoaded] = useState(false);
     const [imageError, setImageError] = useState(false);
+    const [isSaved, setIsSaved] = useState(message.savedBy?.includes(sender?._id) || false);
+    const [saving, setSaving] = useState(false);
+
+    const handleSaveMessage = async () => {
+        setSaving(true);
+        try {
+            if (isSaved) {
+                await axiosInstance.delete(`/api/v1/chat/messages/${message._id}/save`);
+                setIsSaved(false);
+                toast.success('Message removed from saved');
+            } else {
+                await axiosInstance.post(`/api/v1/chat/messages/${message._id}/save`);
+                setIsSaved(true);
+                toast.success('Message saved');
+            }
+            if (onMessageSaved) onMessageSaved();
+        } catch (error) {
+            console.error('Error saving message:', error);
+            toast.error('Failed to save message');
+        } finally {
+            setSaving(false);
+        }
+    };
 
     const getStatusIcon = () => {
         if (isOwn) {
@@ -183,11 +210,27 @@ const MessageBubble = ({ message, isOwn, showAvatar, sender }) => {
                         )}
                     </div>
 
-                    {/* Timestamp and Status */}
-                    <div className={`flex items-center space-x-1 mt-1 text-xs text-gray-400 ${isOwn ? 'flex-row' : 'flex-row-reverse'
-                        }`}>
-                        <span>{format(new Date(message.createdAt), 'h:mm a')}</span>
-                        {getStatusIcon()}
+                    {/* Timestamp, Status, and Save Button */}
+                    <div className={`flex items-center gap-2 mt-1 text-xs ${isOwn ? 'justify-end' : 'justify-start'}`}>
+                        <span className={isOwn ? 'text-white/60' : 'text-gray-400'}>
+                            {format(new Date(message.createdAt), 'h:mm a')}
+                        </span>
+                        {isOwn && message.status === 'read' && (
+                            <span className="text-blue-500 text-xs">✓✓</span>
+                        )}
+
+                        {/* Save button for all messages */}
+                        <button
+                            onClick={handleSaveMessage}
+                            disabled={saving}
+                            className="hover:opacity-70 transition-opacity"
+                        >
+                            {isSaved ? (
+                                <BookmarkCheck size={12} className="text-primary" />
+                            ) : (
+                                <Bookmark size={12} className="text-gray-400" />
+                            )}
+                        </button>
                     </div>
                 </div>
             </div>

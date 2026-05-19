@@ -72,7 +72,7 @@ const registerUser = asyncHandler(async (req, res) => {
   if (existingUser) {
     throw new ApiError(409, "User with this email already exists");
   }
-
+  
   // Create user
   const user = await User.create({
     firstName,
@@ -85,6 +85,7 @@ const registerUser = asyncHandler(async (req, res) => {
     country: country || "",
     isVerified: false,
     isActive: true,
+    currencyPreference: country === "United States" ? "USD" : "INR", // Default to USD for USA students, INR for others
     notificationPreferences: {
       email: true,
       push: true,
@@ -437,6 +438,7 @@ const updateProfile = asyncHandler(async (req, res) => {
     displayName,
     phone,
     country,
+    currencyPreference,
     city,
     address,
     postalCode,
@@ -447,12 +449,17 @@ const updateProfile = asyncHandler(async (req, res) => {
     hourlyRate,
     englishLevel,
     skills,
+    categories,
+    services,
     languages,
     companyName,
     notificationPreferences,
   } = req.body;
 
   const user = await User.findById(req.user._id);
+
+  // Store old categories to update counts later
+  const oldCategories = [...(user.categories || [])];
 
   // Handle profile image upload if present
   if (req.file) {
@@ -489,6 +496,7 @@ const updateProfile = asyncHandler(async (req, res) => {
 
   // Update location
   if (country !== undefined) user.country = country;
+  if (currencyPreference !== undefined) user.currencyPreference = currencyPreference;
   if (city !== undefined) user.city = city;
   if (address !== undefined) user.address = address;
   if (postalCode !== undefined) user.postalCode = postalCode;
@@ -555,6 +563,68 @@ const updateProfile = asyncHandler(async (req, res) => {
         }
       }
     }
+
+    // Handle categories - with count update
+    if (categories) {
+      let newCategories = [];
+      try {
+        // Check if it's a JSON string (like from FormData)
+        if (typeof categories === "string" && categories.startsWith("[")) {
+          newCategories = JSON.parse(categories);
+        }
+        // Check if it's a comma-separated string
+        else if (typeof categories === "string" && categories.includes(",")) {
+          newCategories = categories.split(",").map((c) => c.trim());
+        }
+        // Check if it's already an array
+        else if (Array.isArray(categories)) {
+          newCategories = categories;
+        }
+        // Single category as string
+        else if (typeof categories === "string") {
+          newCategories = [categories];
+        }
+
+        user.categories = newCategories;
+      } catch (error) {
+        console.error("Error parsing categories:", error);
+        // If parsing fails, treat as comma-separated
+        if (typeof categories === "string") {
+          user.categories = categories.split(",").map((c) => c.trim());
+        }
+      }
+
+      // Update category counts (decrement old, increment new)
+      await updateCategoryCounts(oldCategories, user.categories);
+    }
+
+    // Handle services
+    if (services) {
+      try {
+        // Check if it's a JSON string (like from FormData)
+        if (typeof services === "string" && services.startsWith("[")) {
+          user.services = JSON.parse(services);
+        }
+        // Check if it's a comma-separated string
+        else if (typeof services === "string" && services.includes(",")) {
+          user.services = services.split(",").map((s) => s.trim());
+        }
+        // Check if it's already an array
+        else if (Array.isArray(services)) {
+          user.services = services;
+        }
+        // Single service as string
+        else if (typeof services === "string") {
+          user.services = [services];
+        }
+      } catch (error) {
+        console.error("Error parsing services:", error);
+        // If parsing fails, treat as comma-separated
+        if (typeof services === "string") {
+          user.services = services.split(",").map((s) => s.trim());
+        }
+      }
+    }
   }
 
   // Update company fields
@@ -588,6 +658,33 @@ const updateProfile = asyncHandler(async (req, res) => {
     .status(200)
     .json(new ApiResponse(200, updatedUser, "Profile updated successfully"));
 });
+
+// Helper function to update category counts
+async function updateCategoryCounts(oldCategories, newCategories) {
+  const Category = await import("../models/category.model.js").then(m => m.default);
+
+  // Categories that were removed
+  const removedCategories = oldCategories.filter(cat => !newCategories.includes(cat));
+
+  // Categories that were added
+  const addedCategories = newCategories.filter(cat => !oldCategories.includes(cat));
+
+  // Decrement counts for removed categories
+  for (const categoryName of removedCategories) {
+    await Category.findOneAndUpdate(
+      { name: categoryName },
+      { $inc: { freelancerCount: -1 } }
+    ).catch(err => console.error(`Failed to decrement freelancer count for ${categoryName}:`, err));
+  }
+
+  // Increment counts for added categories
+  for (const categoryName of addedCategories) {
+    await Category.findOneAndUpdate(
+      { name: categoryName },
+      { $inc: { freelancerCount: 1 } }
+    ).catch(err => console.error(`Failed to increment freelancer count for ${categoryName}:`, err));
+  }
+}
 
 // ==================== UPLOAD PROFILE IMAGE (separate endpoint) ====================
 
@@ -879,6 +976,64 @@ const removeSkill = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, user.skills, "Skill removed successfully"));
 });
 
+// ==================== ADD CATEGORY ====================
+
+const addCategory = asyncHandler(async (req, res) => {
+  const { category } = req.body;
+
+  if (!category) {
+    throw new ApiError(400, "Category is required");
+  }
+
+  const user = await User.findById(req.user._id);
+
+  if (user.userType !== "freelancer") {
+    throw new ApiError(403, "Only freelancers can add categories");
+  }
+
+  await user.addCategory(category);
+
+  // Increment freelancer count in Category model
+  const Category = await import("../models/category.model.js").then(m => m.default);
+  await Category.findOneAndUpdate(
+    { name: category },
+    { $inc: { freelancerCount: 1 } }
+  ).catch(err => console.error("Failed to update category count:", err));
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, user.categories, "Category added successfully"));
+});
+
+// ==================== REMOVE CATEGORY ====================
+
+const removeCategory = asyncHandler(async (req, res) => {
+  const { category } = req.params;
+
+  if (!category) {
+    throw new ApiError(400, "Category is required");
+  }
+
+  const user = await User.findById(req.user._id);
+
+  if (user.userType !== "freelancer") {
+    throw new ApiError(403, "Only freelancers can remove categories");
+  }
+
+  await user.removeCategory(category);
+
+  // Decrement freelancer count in Category model
+  const Category = await import("../models/category.model.js").then(m => m.default);
+  await Category.findOneAndUpdate(
+    { name: category },
+    { $inc: { freelancerCount: -1 } }
+  ).catch(err => console.error("Failed to update category count:", err));
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, user.categories, "Category removed successfully"));
+});
+
 // ==================== ADD LANGUAGE ====================
 
 const addLanguage = asyncHandler(async (req, res) => {
@@ -938,6 +1093,7 @@ const deleteAccount = asyncHandler(async (req, res) => {
   user.profileImage = undefined;
   user.address = undefined;
   user.skills = [];
+  user.categories = [];
   user.languages = [];
   user.experience = [];
   user.education = [];
@@ -991,7 +1147,7 @@ const getFreelancerPublicProfile = asyncHandler(async (req, res) => {
     userType: "freelancer",
     isActive: true,
   }).select(
-    "firstName lastName displayName companyName profileImage tagline bio hourlyRate englishLevel skills languages completedProjects rating reviewCount experience education country city",
+    "firstName lastName displayName companyName profileImage tagline bio hourlyRate englishLevel skills categories languages completedProjects rating reviewCount experience education country city",
   );
 
   if (!freelancer) {
@@ -1014,6 +1170,8 @@ const getFreelancerPublicProfile = asyncHandler(async (req, res) => {
 const searchFreelancers = asyncHandler(async (req, res) => {
   const {
     skill,
+    category,
+    service,
     language,
     minRate,
     maxRate,
@@ -1042,7 +1200,25 @@ const searchFreelancers = asyncHandler(async (req, res) => {
   // Filter by skill
   if (skill) {
     const skillsArray = Array.isArray(skill) ? skill : [skill];
-    query.skills = { $in: skillsArray };
+    // Use case-insensitive regex for partial matching
+    query.skills = {
+      $in: skillsArray.map(s => new RegExp(s, 'i'))
+    };
+  }
+
+  // Filter by category
+  if (category) {
+    const categoriesArray = Array.isArray(category) ? category : [category];
+    // Use case-insensitive regex for partial matching
+    query.categories = {
+      $in: categoriesArray.map(s => new RegExp(s, 'i'))
+    };
+  }
+
+  // Filter by service
+  if (service) {
+    const servicesArray = Array.isArray(service) ? service : [service];
+    query.services = { $in: servicesArray };
   }
 
   // Filter by language
@@ -1081,7 +1257,7 @@ const searchFreelancers = asyncHandler(async (req, res) => {
 
   const freelancers = await User.find(query)
     .select(
-      "firstName lastName displayName profileImage tagline bio hourlyRate englishLevel skills languages freelancerType createdAt country city experience education rating reviewCount hired rejected",
+      "firstName lastName displayName profileImage tagline bio hourlyRate englishLevel skills categories services languages freelancerType createdAt country city experience education rating reviewCount hired rejected",
     )
     .sort(sort)
     .skip(skip)
@@ -1245,6 +1421,8 @@ export {
   deleteEducation,
   addSkill,
   removeSkill,
+  addCategory,
+  removeCategory,
   addLanguage,
   removeLanguage,
   deleteAccount,

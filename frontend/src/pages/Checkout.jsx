@@ -676,7 +676,7 @@ const Checkout = () => {
                                         {...register('notes')}
                                         rows={3}
                                         className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-                                        placeholder="Any special requirements or instructions for the freelancer?"
+                                        placeholder="Any special requirements or instructions for the mentor?"
                                     />
                                 </div>
 
