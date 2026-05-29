@@ -6,6 +6,9 @@ import Message from "../models/message.model.js";
 import Conversation from "../models/conversation.model.js";
 import SavedMessage from "../models/savedMessage.model.js";
 import Meeting from "../models/meeting.model.js";
+import User from "../models/user.model.js";
+import { meetingNotificationForStudent } from "../utils/emailTemplates.js";
+import transporter from "../utils/nodemailer.js";
 
 export const uploadChatFile = asyncHandler(async (req, res) => {
   if (!req.file) {
@@ -241,6 +244,14 @@ export const updateMeeting = asyncHandler(async (req, res) => {
     { new: true }
   );
 
+  const student = await User.findById(meeting.learnerId);
+  const mentor = await User.findById(meeting.mentorId);
+  
+  if (student && mentor) {
+    meetingNotificationForStudent(transporter, student, mentor, meeting, 'updated')
+      .catch(err => console.error(`Meeting update email failed for ${student.email}:`, err.message));
+  }
+
   return res
     .status(200)
     .json(new ApiResponse(200, meeting, "Meeting details updated"));
@@ -324,6 +335,14 @@ export const createMeeting = asyncHandler(async (req, res) => {
   // Populate response
   await meeting.populate("mentorId", "firstName lastName profileImage");
   await meeting.populate("learnerId", "firstName lastName profileImage");
+
+  const student = await User.findById(meeting.learnerId).select("firstName lastName email");
+  const mentor = await User.findById(meeting.mentorId).select("firstName lastName");
+
+  if (student && mentor) {
+    meetingNotificationForStudent(transporter, student, mentor, meeting, 'created')
+      .catch(err => console.error(`Meeting creation email failed for ${student.email}:`, err.message));
+  }
 
   return res
     .status(201)

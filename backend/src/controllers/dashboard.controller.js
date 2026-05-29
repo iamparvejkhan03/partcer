@@ -1,9 +1,9 @@
 import User from "../models/user.model.js";
 import Service from "../models/service.model.js";
-// import Order from "../models/order.model.js";
+import Order from "../models/newOrder.model.js";
 import Portfolio from "../models/portfolio.model.js";
 import Review from "../models/review.model.js";
-// import Transaction from "../models/transaction.model.js";
+import Transaction from "../models/transaction.model.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import mongoose from "mongoose";
@@ -87,28 +87,33 @@ const getAdminDashboardStats = asyncHandler(async (req, res) => {
     ordersByMonth,
   ] = await Promise.all([
     Order.countDocuments(),
-    Order.countDocuments({ status: "completed" }),
-    Order.countDocuments({ status: "pending" }),
-    Order.countDocuments({ status: "in-progress" }),
-    Order.countDocuments({ status: "cancelled" }),
+    Order.countDocuments({ orderStatus: "completed" }),
+    Order.countDocuments({ orderStatus: "pending" }),
+    Order.countDocuments({ orderStatus: "in-progress" }),
+    Order.countDocuments({ orderStatus: "cancelled" }),
     Order.aggregate([
-      { $match: { status: "completed" } },
+      { $match: { paymentStatus: "paid" } },
       { $group: { _id: null, total: { $sum: "$amount" } } },
     ]),
     Order.aggregate([
       {
         $match: {
-          status: "completed",
+          paymentStatus: "paid",
           createdAt: { $gte: startOfMonth },
         },
       },
       { $group: { _id: null, total: { $sum: "$amount" } } },
     ]),
     Order.aggregate([
-      { $match: { status: "completed" } },
+      { $match: { paymentStatus: "paid" } },
       { $group: { _id: null, avg: { $avg: "$amount" } } },
     ]),
     Order.aggregate([
+      {
+        $match: {
+          paymentStatus: "paid" 
+        }
+      },
       {
         $group: {
           _id: { $dateToString: { format: "%Y-%m", date: "$createdAt" } },
@@ -147,7 +152,7 @@ const getAdminDashboardStats = asyncHandler(async (req, res) => {
     Transaction.find()
       .sort({ createdAt: -1 })
       .limit(10)
-      .populate("userId", "firstName lastName email profileImage"),
+    // .populate("userId", "firstName lastName email profileImage"),
   ]);
 
   return res.status(200).json(

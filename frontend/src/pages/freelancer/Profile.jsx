@@ -626,10 +626,14 @@ const LanguagesSelect = ({ selectedLanguages, onChange }) => {
     const dropdownRef = useRef(null);
 
     const allLanguages = [
+        // International
         "English", "Spanish", "French", "German", "Italian", "Portuguese",
         "Dutch", "Russian", "Japanese", "Korean", "Chinese", "Arabic",
-        "Hindi", "Bengali", "Urdu", "Turkish", "Vietnamese", "Thai",
-        "Greek", "Polish", "Swedish", "Norwegian", "Danish", "Finnish"
+        "Turkish", "Vietnamese", "Thai", "Greek", "Polish", "Swedish",
+        "Norwegian", "Danish", "Finnish",
+        // Indian languages
+        "Hindi", "Bengali", "Urdu", "Tamil", "Telugu", "Marathi",
+        "Gujarati", "Kannada", "Malayalam", "Punjabi", "Odia", "Assamese"
     ];
 
     const filteredLanguages = allLanguages.filter(lang =>

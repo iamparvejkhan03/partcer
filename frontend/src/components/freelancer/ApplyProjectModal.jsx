@@ -18,7 +18,7 @@ import {
     Loader
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import axiosInstance from '../../utils/axiosInstance';
+import axiosInstance from '../../utils/axiosInstanceOld';
 import { useAuth } from '../../contexts/AuthContext';
 
 const ApplyProjectModal = ({ isOpen, onClose, projectId, projectDetails, onSubmit }) => {

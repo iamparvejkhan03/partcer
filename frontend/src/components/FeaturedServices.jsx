@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { ChevronRight } from 'lucide-react';
 import { Container, Subheading, Heading, HeadingDescription } from '../components';
 import ServiceCard from '../components/ServiceCard';
-import axiosInstance from '../utils/axiosInstance';
+import axiosInstance from '../utils/axiosInstanceOld';
 
 const FeaturedServices = () => {
     const [services, setServices] = useState([]);

@@ -18,7 +18,7 @@ import {
     ChevronDown
 } from 'lucide-react';
 import { Container } from '../components';
-import axiosInstance from '../utils/axiosInstance';
+import axiosInstance from '../utils/axiosInstanceOld';
 import { toast } from 'react-hot-toast';
 import { useAuth } from '../contexts/AuthContext';
 import useCountryStates from '../hooks/useCountryStates';
@@ -140,7 +140,7 @@ function Register() {
                 localStorage.setItem('user', JSON.stringify(userInfo));
                 setUser(userInfo);
 
-                toast.success(response.data.message || 'Registration successful!');
+                toast.success(response.data.message || 'Registration successful! Please verify your email.');
 
                 // Redirect based on user type
                 const redirectPath = userData.userType === 'freelancer'

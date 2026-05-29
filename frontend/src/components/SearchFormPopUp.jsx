@@ -3,7 +3,7 @@ import { Search, X } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
 import { usePopUp } from "../contexts/PopUpContextProvider";
-import axiosInstance from "../utils/axiosInstance";
+import axiosInstance from "../utils/axiosInstanceOld";
 
 function SearchFormPopUp({ closePopup }) {
     const searchForm = useForm({

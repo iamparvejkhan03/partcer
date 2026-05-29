@@ -1148,6 +1148,7 @@ const Withdrawals = () => {
                                 <label className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
                                     <input
                                         type="checkbox"
+                                        defaultChecked
                                         id="markComplete"
                                         className="w-4 h-4 text-primary"
                                     />

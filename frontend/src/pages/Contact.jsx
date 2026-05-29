@@ -23,9 +23,11 @@ import {
 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { otherData } from '../assets';
+import axiosInstance from '../utils/axiosInstanceOld';
+import toast from 'react-hot-toast';
 
 const Contact = () => {
-    const [isSubmitted, setIsSubmitted] = useState(false);
+    const [sending, setSending] = useState(false);
     const [userType, setUserType] = useState('freelancer');
 
     const {
@@ -95,17 +97,39 @@ const Contact = () => {
             answer: 'Yes, our support team is available on Saturdays from 10 AM to 6 PM. For Sunday inquiries, we will respond on Monday.',
         },
         {
-        question: 'Can I get help finding the right mentor?',
-        answer: 'Absolutely! Contact us and we\'ll personally help you browse mentors, understand their expertise, and find the perfect match for your career goals.',
-    }
+            question: 'Can I get help finding the right mentor?',
+            answer: 'Absolutely! Contact us and we\'ll personally help you browse mentors, understand their expertise, and find the perfect match for your career goals.',
+        }
     ];
 
-    const onSubmit = (data) => {
-        console.log('Form submitted:', data);
-        setIsSubmitted(true);
-        reset();
-        // Reset success message after 5 seconds
-        setTimeout(() => setIsSubmitted(false), 5000);
+    const onSubmit = async (data) => {
+        try {
+            setSending(true);
+
+            // Combine first + last name into one 'name' field
+            const payload = {
+                name: `${data.firstName} ${data.lastName}`.trim(),
+                email: data.email,
+                phone: data.phone || '',
+                userType: data.userType,
+                message: `${data.subject}\n\n${data.message}`,
+            };
+
+            const { data: response } = await axiosInstance.post('/api/v1/contact/submit', payload);
+
+            if (response?.success) {
+                toast.success(response.message || 'Message sent successfully!');
+                reset();
+                setSending(false);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            } else {
+                toast.error(response.message || 'Failed to send message');
+            }
+        } catch (error) {
+            toast.error(error.response?.data?.message || 'Something went wrong. Please try again.');
+        } finally {
+            setSending(false);
+        }
     };
 
     return (
@@ -280,15 +304,6 @@ const Contact = () => {
                                 <h3 className="text-xl font-bold text-gray-900">Send us a Message</h3>
                             </div>
 
-                            {isSubmitted && (
-                                <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg flex items-center gap-3">
-                                    <CheckCircle size={20} className="text-green-500 flex-shrink-0" />
-                                    <p className="text-green-700 text-sm">
-                                        Thank you for reaching out! We'll get back to you within 24 hours.
-                                    </p>
-                                </div>
-                            )}
-
                             <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                                     <div>
@@ -423,10 +438,11 @@ const Contact = () => {
 
                                 <button
                                     type="submit"
-                                    className="w-full bg-primary hover:bg-primary/90 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-300 flex items-center justify-center gap-2 group"
+                                    disabled={sending}
+                                    className="w-full bg-primary hover:bg-primary/90 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-300 flex items-center justify-center gap-2 group disabled:opacity-70 disabled:cursor-not-allowed"
                                 >
                                     <Send size={18} className="group-hover:translate-x-1 transition-transform" />
-                                    Send Message
+                                    {sending ? 'Sending...' : 'Send Message'}
                                 </button>
                             </form>
                         </div>

@@ -421,7 +421,7 @@ const Earnings = () => {
                                                     <div className="text-sm font-medium text-gray-900">{transaction.id}</div>
                                                 </td>
                                                 <td className="px-4 py-3">
-                                                    <div className="text-sm font-bold text-green-600">{formatCurrency(transaction.netEarnings)}</div>{console.log(transaction)}
+                                                    <div className="text-sm font-bold text-green-600">{formatCurrency(transaction.netEarnings)}</div>
                                                 </td>
                                                 <td className="px-4 py-3">
                                                     {getStatusBadge(transaction.status)}
@@ -599,7 +599,7 @@ const Earnings = () => {
                                                 <span className="text-blue-500 text-xs">✓ Verified</span>
                                             )}
                                         </p>
-                                        <p className="text-sm text-gray-600">{selectedTransaction.customer.email}</p>
+                                        {/* <p className="text-sm text-gray-600">{selectedTransaction.customer.email}</p> */}
                                         <p className="text-sm text-gray-600">{selectedTransaction.customer.location}</p>
                                     </div>
                                 </div>
@@ -705,19 +705,19 @@ const Earnings = () => {
                             )}
 
                             {/* Invoice Number */}
-                            <div className="bg-gray-50 p-4 rounded-lg">
+                            {/* <div className="bg-gray-50 p-4 rounded-lg">
                                 <h4 className="font-medium mb-2 flex items-center gap-2">
                                     <FileText size={16} />
                                     Invoice
                                 </h4>
                                 <p className="text-sm">Invoice #{selectedTransaction.invoice}</p>
-                            </div>
+                            </div> */}
 
                             {/* Actions */}
                             <div className="flex gap-3 pt-4">
-                                <button className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
+                                {/* <button className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
                                     Download Invoice
-                                </button>
+                                </button> */}
                                 <Link
                                     to={`/freelancer/orders/${selectedTransaction.id}`}
                                     className="flex-1 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark text-center"

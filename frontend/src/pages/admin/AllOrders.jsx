@@ -169,7 +169,7 @@ const NewOrders = () => {
 
     const getOrderStatusBadge = (status) => {
         const config = {
-            confirmed: { label: 'Confirmed', bg: 'bg-green-100', text: 'text-green-700', icon: CheckCircle },
+            confirmed: { label: 'Running', bg: 'bg-green-100', text: 'text-green-700', icon: CheckCircle },
             pending: { label: 'Pending', bg: 'bg-yellow-100', text: 'text-yellow-700', icon: Clock },
             cancelled: { label: 'Cancelled', bg: 'bg-red-100', text: 'text-red-700', icon: XCircle },
             completed: { label: 'Completed', bg: 'bg-blue-100', text: 'text-blue-700', icon: Package }
@@ -340,7 +340,7 @@ const NewOrders = () => {
                                         className="px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-white min-w-[130px]"
                                     >
                                         <option value="all">All Order Status</option>
-                                        <option value="confirmed">Confirmed</option>
+                                        <option value="confirmed">Running</option>
                                         <option value="pending">Pending</option>
                                         <option value="cancelled">Cancelled</option>
                                         <option value="completed">Completed</option>

@@ -3,8 +3,10 @@ import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import Resolution from "../models/resolution.model.js";
 import Transaction from "../models/transaction.model.js";
-import Order from "../models/newOrder.model.js";
+// import Order from "../models/newOrder.model.js";
 import NewOrder from "../models/newOrder.model.js";
+import { complaintNotificationForAdmin, complaintNotificationForMentor, resolutionStatusUpdateEmail } from "../utils/emailTemplates.js";
+import transporter from "../utils/nodemailer.js";
 // import { sendEmail } from "../utils/email.js";
 
 // Submit a resolution complaint
@@ -23,7 +25,7 @@ export const submitComplaint = asyncHandler(async (req, res) => {
     }
 
     // Find the order
-    const order = await Order.findById(orderId)
+    const order = await NewOrder.findById(orderId)
         .populate("studentId", "firstName lastName email")
         .populate("mentorId", "firstName lastName email");
 
@@ -67,8 +69,11 @@ export const submitComplaint = asyncHandler(async (req, res) => {
         status: "pending",
     });
 
-    // Send email to admin
-    await sendResolutionEmailToAdmin(resolution, order, req.user);
+    complaintNotificationForAdmin(transporter, resolution, order, order.studentId, order.mentorId)
+        .catch(err => console.error('Admin complaint email failed:', err.message));
+
+    complaintNotificationForMentor(transporter, order.mentorId, order, order.studentId, resolution)
+        .catch(err => console.error('Mentor complaint email failed:', err.message));
 
     return res
         .status(201)
@@ -120,91 +125,114 @@ export const getAllResolutions = asyncHandler(async (req, res) => {
 
 // Updated updateResolutionStatus function with order status sync
 export const updateResolutionStatus = asyncHandler(async (req, res) => {
-  const { resolutionId } = req.params;
-  const { 
-    status, 
-    adminNotes, 
-    resolution, 
-    refundAmount,
-    updateOrderStatus,  // boolean flag
-    orderStatusUpdate,  // { paymentStatus, orderStatus }
-    sendEmailNotification = true
-  } = req.body;
+    const { resolutionId } = req.params;
+    const {
+        status,
+        adminNotes,
+        resolution,
+        refundAmount,
+        updateOrderStatus,  // boolean flag
+        orderStatusUpdate,  // { paymentStatus, orderStatus }
+        sendEmailNotification = true
+    } = req.body;
 
-  const resolutionDoc = await Resolution.findById(resolutionId)
-    .populate("userId", "firstName lastName email")
-    .populate("mentorId", "firstName lastName email")
-    .populate("orderId");
+    const resolutionDoc = await Resolution.findById(resolutionId)
+        .populate("userId", "firstName lastName email")
+        .populate("mentorId", "firstName lastName email")
+        .populate("orderId");
 
-  if (!resolutionDoc) {
-    throw new ApiError(404, "Resolution not found");
-  }
-
-  // Update resolution fields
-  resolutionDoc.status = status || resolutionDoc.status;
-  resolutionDoc.adminNotes = adminNotes || resolutionDoc.adminNotes;
-  resolutionDoc.resolution = resolution || resolutionDoc.resolution;
-  
-  if (refundAmount) {
-    resolutionDoc.refundAmount = refundAmount;
-  }
-
-  if (status === "resolved") {
-    resolutionDoc.resolvedAt = new Date();
-  }
-
-  // Update order status if requested
-  if (updateOrderStatus && orderStatusUpdate) {
-    const order = await NewOrder.findById(resolutionDoc.orderId._id);
-    
-    if (order) {
-      // Update payment status
-      if (orderStatusUpdate.paymentStatus) {
-        order.paymentStatus = orderStatusUpdate.paymentStatus;
-        
-        // If refunded, add refund details
-        if (orderStatusUpdate.paymentStatus === "refunded") {
-          order.refundAmount = refundAmount || order.amount;
-          order.refundedAt = new Date();
-          order.refundReason = resolution;
-          
-          // Create refund transaction record
-          await Transaction.create({
-            orderId: order._id,
-            razorpayOrderId: order.razorpayOrderId,
-            razorpayPaymentId: order.razorpayPaymentId,
-            amount: refundAmount || order.amount,
-            status: "refunded",
-            transactionType: "refund",
-            notes: adminNotes || `Refund processed for complaint: ${resolutionDoc._id}`
-          });
-        }
-      }
-      
-      // Update order status
-      if (orderStatusUpdate.orderStatus) {
-        order.orderStatus = orderStatusUpdate.orderStatus;
-      }
-      
-      await order.save();
-      
-      // Send order status update email
-    //   if (sendEmailNotification) {
-    //     await sendOrderStatusUpdateEmail(order, orderStatusUpdate, resolution);
-    //   }
+    if (!resolutionDoc) {
+        throw new ApiError(404, "Resolution not found");
     }
-  }
 
-  await resolutionDoc.save();
+    // Update resolution fields
+    resolutionDoc.status = status || resolutionDoc.status;
+    resolutionDoc.adminNotes = adminNotes || resolutionDoc.adminNotes;
+    resolutionDoc.resolution = resolution || resolutionDoc.resolution;
 
-  // Send resolution update email to user
-//   if (sendEmailNotification) {
-//     await sendResolutionUpdateEmail(resolutionDoc);
-//   }
+    if (refundAmount) {
+        resolutionDoc.refundAmount = refundAmount;
+    }
 
-  return res
-    .status(200)
-    .json(new ApiResponse(200, resolutionDoc, "Resolution status updated successfully"));
+    if (status === "resolved") {
+        resolutionDoc.resolvedAt = new Date();
+    }
+
+    const order = await NewOrder.findById(resolutionDoc.orderId._id);
+
+    // Update order status if requested
+    if (updateOrderStatus && orderStatusUpdate) {
+
+        if (order) {
+            // Update payment status
+            if (orderStatusUpdate.paymentStatus) {
+                order.paymentStatus = orderStatusUpdate.paymentStatus;
+
+                // If refunded, add refund details
+                if (orderStatusUpdate.paymentStatus === "refunded") {
+                    order.refundAmount = refundAmount || order.amount;
+                    order.refundedAt = new Date();
+                    order.refundReason = resolution;
+
+                    // Create refund transaction record
+                    await Transaction.create({
+                        orderId: order._id,
+                        razorpayOrderId: order.razorpayOrderId,
+                        razorpayPaymentId: order.razorpayPaymentId,
+                        amount: refundAmount || order.amount,
+                        status: "refunded",
+                        transactionType: "refund",
+                        notes: adminNotes || `Refund processed for complaint: ${resolutionDoc._id}`
+                    });
+                }
+            }
+
+            // Update order status
+            if (orderStatusUpdate.orderStatus) {
+                order.orderStatus = orderStatusUpdate.orderStatus;
+            }
+
+            await order.save();
+        }
+    }
+
+    await resolutionDoc.save();
+
+    // Prepare update details object
+    const updateDetails = {
+        newStatus: resolutionDoc.status,
+        adminNotes: resolutionDoc.adminNotes,
+        resolutionText: resolutionDoc.resolution,
+        refundAmount: resolutionDoc.refundAmount || null,
+        orderPaymentStatus: null,
+        orderStatus: null,
+        isRefunded: false
+    };
+
+    // If order status was updated
+    if (updateOrderStatus && orderStatusUpdate) {
+        updateDetails.orderPaymentStatus = orderStatusUpdate.paymentStatus || null;
+        updateDetails.orderStatus = orderStatusUpdate.orderStatus || null;
+        if (orderStatusUpdate.paymentStatus === 'refunded') {
+            updateDetails.isRefunded = true;
+        }
+    }
+
+    // Send email to student (userId)
+    if (resolutionDoc.userId) {
+        resolutionStatusUpdateEmail(transporter, resolutionDoc.userId, resolutionDoc, order, updateDetails)
+            .catch(err => console.error(`Resolution email to student failed: ${err.message}`));
+    }
+
+    // Send email to mentor (mentorId)
+    if (resolutionDoc.mentorId) {
+        resolutionStatusUpdateEmail(transporter, resolutionDoc.mentorId, resolutionDoc, order, updateDetails)
+            .catch(err => console.error(`Resolution email to mentor failed: ${err.message}`));
+    }
+
+    return res
+        .status(200)
+        .json(new ApiResponse(200, resolutionDoc, "Resolution status updated successfully"));
 });
 
 // Helper: Send email to admin

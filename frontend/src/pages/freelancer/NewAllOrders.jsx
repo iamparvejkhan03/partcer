@@ -227,7 +227,7 @@ const NewAllOrders = () => {
 
     const getOrderStatusBadge = (status) => {
         const config = {
-            confirmed: { label: 'Confirmed', bg: 'bg-green-100', text: 'text-green-700', icon: CheckCircle },
+            confirmed: { label: 'Running', bg: 'bg-green-100', text: 'text-green-700', icon: CheckCircle },
             pending: { label: 'Pending', bg: 'bg-yellow-100', text: 'text-yellow-700', icon: Clock },
             cancelled: { label: 'Cancelled', bg: 'bg-red-100', text: 'text-red-700', icon: XCircle },
             completed: { label: 'Completed', bg: 'bg-blue-100', text: 'text-blue-700', icon: Package }
@@ -249,7 +249,8 @@ const NewAllOrders = () => {
 
     const handleMessage = (order) => {
         // window.location.href = `/freelancer/chat?user=${order.studentId?._id}`;
-        navigate(`/freelancer/chat?user=${order.studentId?._id}`);
+        navigate(`/freelancer/orders/${order?._id}`);
+        // navigate(`/freelancer/chat?user=${order.studentId?._id}`);
     };
 
     const handleSubmitReview = async () => {
@@ -669,7 +670,7 @@ const NewAllOrders = () => {
                             <div className="flex flex-wrap justify-between items-center gap-4">
                                 <div className="flex gap-2">
                                     {getPaymentStatusBadge(selectedOrder.paymentStatus)}
-                                    {getOrderStatusBadge(selectedOrder.orderStatus)}
+                                    {/* {getOrderStatusBadge(selectedOrder.orderStatus)} */}
                                 </div>
                                 {selectedOrder.paymentCompletedAt && (
                                     <div className="text-sm text-gray-500">
@@ -913,7 +914,7 @@ const NewAllOrders = () => {
                                 />
                             </div>
 
-                            <div>
+                            {/* <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-2">
                                     Attachments (Optional)
                                 </label>
@@ -933,7 +934,7 @@ const NewAllOrders = () => {
                                         ))}
                                     </div>
                                 )}
-                            </div>
+                            </div> */}
 
                             <div className="bg-yellow-50 p-3 rounded-lg">
                                 <p className="text-xs text-yellow-700">

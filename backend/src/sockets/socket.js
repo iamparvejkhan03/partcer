@@ -4,6 +4,8 @@ import User from "../models/user.model.js";
 import Conversation from "../models/conversation.model.js";
 import Message from "../models/message.model.js";
 import { uploadFile } from "../utils/cloudinary.js";
+import { newMessageEmail } from "../utils/emailTemplates.js";
+import transporter from "../utils/nodemailer.js";
 
 // Store online users
 const onlineUsers = new Map();
@@ -207,6 +209,28 @@ export const initializeSocket = (server) => {
 
         // Emit to receiver if online
         const receiverSocket = onlineUsers.get(receiverId);
+        const isReceiverOnline = !!receiverSocket;
+
+        // If receiver is offline, send email notification (fire-and-forget)
+        if (!isReceiverOnline) {
+          // Generate a plain-text preview (no HTML tags, max 150 chars)
+          let messagePreview = content || "";
+          if (messagePreview.length > 150) {
+            messagePreview = messagePreview.substring(0, 150) + "...";
+          }
+          // If only attachments (no text), show a placeholder
+          if (!messagePreview && attachments && attachments.length > 0) {
+            messagePreview = "[Attachment]";
+          }
+
+          // Send email in background – don't await
+          const receiver = await User.findById(receiverId).select("firstName lastName email");
+          if (receiver) {
+            newMessageEmail(transporter, receiver, socket.user, messagePreview, conversation._id)
+              .catch(err => console.error("Email error for new message:", err));
+          }
+        }
+
         if (receiverSocket) {
           io.to(receiverSocket.socketId).emit("message:received", message);
 

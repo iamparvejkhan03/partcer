@@ -14,6 +14,7 @@ import {
     adminGetOrderById,
     adminUpdateOrderStatus,
     adminGetOrderStats,
+    getOrderHistoryBetweenUsers,
 } from "../controllers/payment.controller.js";
 import { verifyJWT, authAdmin } from "../middlewares/auth.middleware.js";
 import upload from "../middlewares/multer.middleware.js";
@@ -28,6 +29,9 @@ paymentRouter.post("/create-order", verifyJWT, createOrder);
 paymentRouter.post("/verify", verifyJWT, verifyPayment);
 paymentRouter.get("/status/:orderId", verifyJWT, getOrderStatus);
 paymentRouter.get("/user/:userId", verifyJWT, getUserOrders);
+
+// Order history between two users
+paymentRouter.get("/history/:userId1/:userId2", verifyJWT, getOrderHistoryBetweenUsers);
 
 // Delivery and completion routes
 paymentRouter.post("/orders/:orderId/deliver", verifyJWT, upload.array('attachments', 5), markOrderDelivered);

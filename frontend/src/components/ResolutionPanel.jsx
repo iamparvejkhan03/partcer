@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { ArrowLeft, AlertCircle, CheckCircle, Send, Mail } from 'lucide-react';
 import toast from 'react-hot-toast';
-import axiosInstance from '../utils/axiosInstance';
+import axiosInstance from '../utils/axiosInstanceOld';
 
 const ResolutionPanel = ({ order, onBack }) => {
     const [selectedIssue, setSelectedIssue] = useState(null);

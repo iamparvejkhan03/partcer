@@ -1277,7 +1277,7 @@ const AllUsers = () => {
                             </div>
 
                             {/* Role-specific Stats */}
-                            {selectedUser?.userType === 'freelancer' && (
+                            {/* {selectedUser?.userType === 'freelancer' && (
                                 <div className="bg-gray-50 p-4 rounded-lg">
                                     <h4 className="font-medium mb-3 flex items-center gap-2">
                                         <Briefcase size={16} />
@@ -1343,7 +1343,7 @@ const AllUsers = () => {
                                         </div>
                                     </div>
                                 </div>
-                            )}
+                            )} */}
 
                             {/* Issue Details */}
                             {selectedUser.status === 'suspended' && selectedUser.suspensionReason && (

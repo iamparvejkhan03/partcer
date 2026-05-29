@@ -186,7 +186,7 @@ const NewAllOrders = () => {
 
     const getOrderStatusBadge = (status) => {
         const config = {
-            confirmed: { label: 'Confirmed', bg: 'bg-green-100', text: 'text-green-700', icon: CheckCircle },
+            confirmed: { label: 'Running', bg: 'bg-green-100', text: 'text-green-700', icon: CheckCircle },
             pending: { label: 'Pending', bg: 'bg-yellow-100', text: 'text-yellow-700', icon: Clock },
             cancelled: { label: 'Cancelled', bg: 'bg-red-100', text: 'text-red-700', icon: XCircle },
             completed: { label: 'Completed', bg: 'bg-blue-100', text: 'text-blue-700', icon: Package }
@@ -202,7 +202,7 @@ const NewAllOrders = () => {
     };
 
     const deliveryStatusConfig = {
-        pending: { label: 'Pending', bg: 'bg-yellow-100', text: 'text-yellow-700', icon: Clock },
+        pending: { label: 'Not Delivered', bg: 'bg-yellow-100', text: 'text-yellow-700', icon: Clock },
         delivered: { label: 'Delivered', bg: 'bg-blue-100', text: 'text-blue-700', icon: Package },
         completed: { label: 'Completed', bg: 'bg-green-100', text: 'text-green-700', icon: CheckCircle }
     };
@@ -499,7 +499,7 @@ const NewAllOrders = () => {
                                                                 onClick={() => {
                                                                     handleCompleteOrder(order._id);
                                                                 }}
-                                                                className="mt-2 text-xs bg-green-600 text-white px-2 py-1 rounded"
+                                                                className="mt-2 text-xs bg-green-600 text-white px-2 py-1 rounded block"
                                                             >
                                                                 Complete Order
                                                             </button>
@@ -637,7 +637,7 @@ const NewAllOrders = () => {
                             <div className="flex flex-wrap justify-between items-center gap-4">
                                 <div className="flex gap-2">
                                     {getPaymentStatusBadge(selectedOrder.paymentStatus)}
-                                    {getOrderStatusBadge(selectedOrder.orderStatus)}
+                                    {/* {getOrderStatusBadge(selectedOrder.orderStatus)} */}
                                 </div>
                                 {selectedOrder.paymentCompletedAt && (
                                     <div className="text-sm text-gray-500">
@@ -671,7 +671,7 @@ const NewAllOrders = () => {
                                                 View Profile
                                             </Link>
                                             <Link
-                                                to={`/buyer/chat?user=${selectedOrder.mentorId?._id}`}
+                                                to={`/buyer/orders/${selectedOrder?._id}`}
                                                 className="text-sm text-primary hover:underline"
                                             >
                                                 Send Message
@@ -828,7 +828,8 @@ const NewAllOrders = () => {
                             {/* Actions */}
                             <div className="flex gap-3 pt-4">
                                 <Link
-                                    to={`/buyer/chat?user=${selectedOrder.mentorId?._id}`}
+                                    to={`/buyer/orders/${selectedOrder?._id}`}
+                                    // to={`/buyer/chat?user=${selectedOrder.mentorId?._id}`}
                                     className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-center flex items-center justify-center gap-2"
                                 >
                                     <MessageCircle size={16} />

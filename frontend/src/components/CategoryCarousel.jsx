@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useKeenSlider } from 'keen-slider/react';
 import { Link } from 'react-router-dom';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import axiosInstance from '../utils/axiosInstance';
+import axiosInstance from '../utils/axiosInstanceOld';
 import 'keen-slider/keen-slider.min.css';
 
 const CategoryCarousel = () => {

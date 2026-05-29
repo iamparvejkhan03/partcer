@@ -30,14 +30,14 @@ const Footer = () => {
     const footerLinks = [
         { text: "Terms & Conditions", path: "/terms-conditions" },
         { text: "Privacy Policy", path: "/privacy-policy" },
+        { text: "Refund Policy", path: "/refund-policy" },
+        { text: "Shipping Policy", path: "/shipping-policy" },
     ];
 
     const socialLinks = [
         { icon: Facebook, href: "https://facebook.com", label: "Facebook" },
         { icon: Linkedin, href: "https://linkedin.com", label: "LinkedIn" },
         { icon: Youtube, href: "https://youtube.com", label: "YouTube" },
-        { icon: Twitter, href: "https://twitter.com", label: "Twitter" },
-        { icon: Dribbble, href: "https://dribbble.com", label: "Dribbble" }
     ];
 
     return (
@@ -186,7 +186,7 @@ const Footer = () => {
                         </div>
 
                         {/* Social Links */}
-                        <div className="flex items-center gap-4">
+                        {/* <div className="flex items-center gap-4">
                             {socialLinks.map((social, index) => (
                                 <a
                                     key={index}
@@ -202,7 +202,7 @@ const Footer = () => {
                                     />
                                 </a>
                             ))}
-                        </div>
+                        </div> */}
                     </div>
                 </Container>
             </div>

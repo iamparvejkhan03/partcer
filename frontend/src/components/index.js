@@ -42,6 +42,7 @@ import ChatTabs from "./chat/ChatTabs";
 import MeetingTab from "./chat/MeetingTab";
 import ExpressInterestModal from "./freelancer/ExpressInterestModal";
 import ResolutionPanel from "./ResolutionPanel";
+import OrderHistoryPanel from "./OrdersHistoryPanel";
 
 export {
     Header,
@@ -86,4 +87,5 @@ export {
     PricingSection,
     ExpressInterestModal,
     ResolutionPanel,
+    OrderHistoryPanel,
 }

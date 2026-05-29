@@ -174,6 +174,20 @@ const Withdrawals = () => {
         }
     };
 
+    const handleCancelWithdrawal = async (withdrawalId) => {
+        try {
+            const response = await axiosInstance.post(`/api/v1/withdrawals/${withdrawalId}/cancel`);
+
+            if (response.data?.success) {
+                toast.success(`Withdrawal request cancelled successfully!`);
+                setShowWithdrawModal(false);
+                fetchEarningsData(); // Refresh data
+            }
+        } catch (error) {
+            toast.error(error.response?.data?.message || 'Failed to process withdrawal');
+        }
+    };
+
     const getStatusBadge = (status) => {
         const statusConfig = {
             completed: {
@@ -794,13 +808,13 @@ const Withdrawals = () => {
                                 >
                                     Close
                                 </button>
-                                {selectedWithdrawal.status === 'completed' && (
+                                {/* {selectedWithdrawal.status === 'completed' && (
                                     <button className="flex-1 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark">
                                         Download Receipt
                                     </button>
-                                )}
-                                {selectedWithdrawal.status === 'clearing' && (
-                                    <button className="flex-1 px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600">
+                                )} */}
+                                {selectedWithdrawal.status === 'pending' && (
+                                    <button onClick={() => handleCancelWithdrawal(selectedWithdrawal?._id)} className="flex-1 px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600">
                                         Cancel Request
                                     </button>
                                 )}

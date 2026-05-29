@@ -378,15 +378,6 @@ const FreelancerProfile = () => {
                                         About Me
                                     </button>
                                     <button
-                                        onClick={() => setActiveTab("portfolio")}
-                                        className={`flex-1 py-4 px-6 text-sm font-medium ${activeTab === "portfolio"
-                                            ? "text-primary border-b-2 border-primary"
-                                            : "text-gray-500 hover:text-gray-700"
-                                            }`}
-                                    >
-                                        Portfolio
-                                    </button>
-                                    <button
                                         onClick={() => setActiveTab("reviews")}
                                         className={`flex-1 py-4 px-6 text-sm font-medium ${activeTab === "reviews"
                                             ? "text-primary border-b-2 border-primary"
@@ -394,6 +385,15 @@ const FreelancerProfile = () => {
                                             }`}
                                     >
                                         Reviews
+                                    </button>
+                                    <button
+                                        onClick={() => setActiveTab("portfolio")}
+                                        className={`flex-1 py-4 px-6 text-sm font-medium ${activeTab === "portfolio"
+                                            ? "text-primary border-b-2 border-primary"
+                                            : "text-gray-500 hover:text-gray-700"
+                                            }`}
+                                    >
+                                        Portfolio
                                     </button>
                                 </div>
 
@@ -435,6 +435,9 @@ const FreelancerProfile = () => {
                                                         <p className="text-gray-600">{edu.instituteName}</p>
                                                         <p className="text-sm text-gray-500">
                                                             {new Date(edu.startDate).getFullYear()} - {edu.current ? 'Present' : new Date(edu.endDate).getFullYear()}
+                                                        </p>
+                                                        <p className="text-sm mt-2 text-gray-600">
+                                                            {edu?.description}
                                                         </p>
                                                     </div>
                                                 ))}

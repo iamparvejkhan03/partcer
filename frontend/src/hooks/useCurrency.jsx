@@ -1,5 +1,5 @@
 import { useState, useEffect, createContext, useContext } from 'react';
-import axiosInstance from '../utils/axiosInstance';
+import axiosInstance from '../utils/axiosInstanceOld';
 import { useAuth } from '../contexts/AuthContext';
 
 // Create context for currency

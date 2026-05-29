@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { ChevronRight, Search, X, ChevronDown, Check } from 'lucide-react';
 import { Container, Subheading, Heading, HeadingDescription } from '../components';
 import FreelancerProfileCard from '../components/FreelancerProfileCard';
-import axiosInstance from '../utils/axiosInstance';
+import axiosInstance from '../utils/axiosInstanceOld';
 import toast from 'react-hot-toast';
 
 // Services Select Component (similar to your profile page)

@@ -8,6 +8,8 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import NewOrder from "../models/newOrder.model.js";
 import Review from "../models/review.model.js";
 import Resolution from "../models/resolution.model.js";
+import { orderCompletedEmail, orderConfirmationForMentor, orderConfirmationForStudent, orderDeliveredEmail } from "../utils/emailTemplates.js";
+import transporter from "../utils/nodemailer.js";
 
 // Initialize Razorpay
 const razorpay = new Razorpay({
@@ -211,7 +213,7 @@ export const createOrder = asyncHandler(async (req, res) => {
     // Calculate amounts for Razorpay
     let razorpayAmount;
     let razorpayCurrency;
-    
+
     if (studentCurrency === "USD") {
         // Student pays in USD
         razorpayAmount = Math.round(studentPaidAmount * 100); // Convert to cents
@@ -260,20 +262,20 @@ export const createOrder = asyncHandler(async (req, res) => {
         period,
         duration,
         durationDetails: period === "One-time" ? "Single session" : duration,
-        
+
         // New currency fields
         studentPaidAmount: studentPaidAmount,
         studentCurrency: studentCurrency,
         exchangeRateUsed: exchangeRateUsed || null,
-        
+
         // Keep for backward compatibility
         amount: amountReceivedInINR,  // INR amount received
         currency: "INR",               // Always INR for settlement
-        
+
         // Fee breakdown (always in INR)
         mentorFee: mentorFeeINR || Math.round(amountReceivedInINR * 0.8),
         partnerFee: partnerFeeINR || Math.round(amountReceivedInINR * 0.2),
-        
+
         paymentStatus: "created",
         orderStatus: "pending",
         notes: {
@@ -370,6 +372,9 @@ export const createOrder = asyncHandler(async (req, res) => {
 //     );
 // });
 
+
+
+
 // 2. Verify Payment (updated to handle both currencies)
 export const verifyPayment = asyncHandler(async (req, res) => {
     const {
@@ -421,6 +426,20 @@ export const verifyPayment = asyncHandler(async (req, res) => {
     // Populate user details
     await order.populate("studentId", "firstName lastName email");
     await order.populate("mentorId", "firstName lastName email profileImage");
+
+    const student = await User.findById(order.studentId);
+    const mentor = await User.findById(order.mentorId);
+
+    const sessionDetails = {
+        serviceType: order.serviceType,
+        duration: order.durationDetails,
+        mentorName: `${mentor.firstName} ${mentor.lastName}`,
+    };
+
+    orderConfirmationForStudent(transporter, student, order, sessionDetails)
+        .catch(err => console.error('Student email failed:', err));
+    orderConfirmationForMentor(transporter, mentor, order, student, sessionDetails)
+        .catch(err => console.error('Mentor email failed:', err));
 
     return res.status(200).json(
         new ApiResponse(200, {
@@ -650,6 +669,14 @@ export const markOrderDelivered = asyncHandler(async (req, res) => {
 
     await order.save();
 
+    const student = await User.findById(order.studentId).select("firstName lastName email");
+    const mentor = await User.findById(order.mentorId).select("firstName lastName");
+
+    if (student && mentor) {
+        orderDeliveredEmail(transporter, student, order, mentor, order.deliveryDetails)
+            .catch(err => console.error(`Failed to send delivery email to student ${student.email}:`, err.message));
+    }
+
     return res.status(200).json(new ApiResponse(200, order, "Order marked as delivered"));
 });
 
@@ -672,6 +699,17 @@ export const completeOrder = asyncHandler(async (req, res) => {
     order.deliveryDetails.completedAt = new Date();
 
     await order.save();
+
+    const student = await User.findById(order.studentId).select("firstName lastName email");
+    const mentor = await User.findById(order.mentorId).select("firstName lastName email");
+
+    if (student && mentor) {
+        const completionDetails = {
+            completedAt: order.deliveryDetails.completedAt
+        };
+        orderCompletedEmail(transporter, mentor, order, student, completionDetails)
+            .catch(err => console.error(`Failed to send completion email to mentor ${mentor.email}:`, err.message));
+    }
 
     return res.status(200).json(new ApiResponse(200, order, "Order completed successfully"));
 });
@@ -859,164 +897,164 @@ export const getTransactionSummary = asyncHandler(async (req, res) => {
 
 // Admin: Update order status (refund, cancel, etc.)
 export const adminUpdateOrderStatus = asyncHandler(async (req, res) => {
-  const { orderId } = req.params;
-  const { paymentStatus, orderStatus, refundAmount, adminNotes } = req.body;
+    const { orderId } = req.params;
+    const { paymentStatus, orderStatus, refundAmount, adminNotes } = req.body;
 
-  const order = await NewOrder.findById(orderId)
-    .populate("studentId", "firstName lastName email")
-    .populate("mentorId", "firstName lastName email");
+    const order = await NewOrder.findById(orderId)
+        .populate("studentId", "firstName lastName email")
+        .populate("mentorId", "firstName lastName email");
 
-  if (!order) {
-    throw new ApiError(404, "Order not found");
-  }
-
-  // Update payment status
-  if (paymentStatus) {
-    order.paymentStatus = paymentStatus;
-    
-    // If refunded, process refund logic
-    if (paymentStatus === "refunded") {
-      // Here you would integrate with Razorpay refund API
-      // For now, we'll just mark it as refunded
-      order.refundAmount = refundAmount || order.amount;
-      order.refundedAt = new Date();
-      
-      // Create refund transaction record
-      await Transaction.create({
-        orderId: order._id,
-        razorpayOrderId: order.razorpayOrderId,
-        razorpayPaymentId: order.razorpayPaymentId,
-        amount: refundAmount || order.amount,
-        status: "refunded",
-        transactionType: "refund",
-        notes: adminNotes || "Refund processed by admin"
-      });
+    if (!order) {
+        throw new ApiError(404, "Order not found");
     }
-  }
 
-  // Update order status
-  if (orderStatus) {
-    order.orderStatus = orderStatus;
-    
-    // If cancelled, also update payment status to refunded if paid
-    if (orderStatus === "cancelled" && order.paymentStatus === "paid") {
-      order.paymentStatus = "refunded";
+    // Update payment status
+    if (paymentStatus) {
+        order.paymentStatus = paymentStatus;
+
+        // If refunded, process refund logic
+        if (paymentStatus === "refunded") {
+            // Here you would integrate with Razorpay refund API
+            // For now, we'll just mark it as refunded
+            order.refundAmount = refundAmount || order.amount;
+            order.refundedAt = new Date();
+
+            // Create refund transaction record
+            await Transaction.create({
+                orderId: order._id,
+                razorpayOrderId: order.razorpayOrderId,
+                razorpayPaymentId: order.razorpayPaymentId,
+                amount: refundAmount || order.amount,
+                status: "refunded",
+                transactionType: "refund",
+                notes: adminNotes || "Refund processed by admin"
+            });
+        }
     }
-  }
 
-  // Add admin notes
-  if (adminNotes) {
-    order.adminNotes = adminNotes;
-  }
+    // Update order status
+    if (orderStatus) {
+        order.orderStatus = orderStatus;
 
-  await order.save();
+        // If cancelled, also update payment status to refunded if paid
+        if (orderStatus === "cancelled" && order.paymentStatus === "paid") {
+            order.paymentStatus = "refunded";
+        }
+    }
 
-  // Send email notification to both parties
-  await sendOrderStatusUpdateEmail(order, { paymentStatus, orderStatus, adminNotes });
+    // Add admin notes
+    if (adminNotes) {
+        order.adminNotes = adminNotes;
+    }
 
-  return res.status(200).json(
-    new ApiResponse(200, order, "Order status updated successfully")
-  );
+    await order.save();
+
+    // Send email notification to both parties
+    await sendOrderStatusUpdateEmail(order, { paymentStatus, orderStatus, adminNotes });
+
+    return res.status(200).json(
+        new ApiResponse(200, order, "Order status updated successfully")
+    );
 });
 
 // Admin: Get single order details
 export const adminGetOrderById = asyncHandler(async (req, res) => {
-  const { orderId } = req.params;
+    const { orderId } = req.params;
 
-  const order = await NewOrder.findById(orderId)
-    .populate("studentId", "firstName lastName email profileImage phone")
-    .populate("mentorId", "firstName lastName email profileImage phone");
+    const order = await NewOrder.findById(orderId)
+        .populate("studentId", "firstName lastName email profileImage phone")
+        .populate("mentorId", "firstName lastName email profileImage phone");
 
-  if (!order) {
-    throw new ApiError(404, "Order not found");
-  }
+    if (!order) {
+        throw new ApiError(404, "Order not found");
+    }
 
-  // Get resolution/complaint if exists
-  const resolution = await Resolution.findOne({ orderId: order._id })
-    .populate("userId", "firstName lastName email");
+    // Get resolution/complaint if exists
+    const resolution = await Resolution.findOne({ orderId: order._id })
+        .populate("userId", "firstName lastName email");
 
-  // Get all transactions for this order
-  const transactions = await Transaction.find({ orderId: order._id })
-    .sort({ createdAt: -1 });
+    // Get all transactions for this order
+    const transactions = await Transaction.find({ orderId: order._id })
+        .sort({ createdAt: -1 });
 
-  return res.status(200).json(
-    new ApiResponse(200, { 
-      order, 
-      resolution: resolution || null,
-      transactions 
-    }, "Order details retrieved successfully")
-  );
+    return res.status(200).json(
+        new ApiResponse(200, {
+            order,
+            resolution: resolution || null,
+            transactions
+        }, "Order details retrieved successfully")
+    );
 });
 
 // Admin: Get order statistics
 export const adminGetOrderStats = asyncHandler(async (req, res) => {
-  const totalOrders = await NewOrder.countDocuments();
-  const paidOrders = await NewOrder.countDocuments({ paymentStatus: "paid" });
-  const pendingOrders = await NewOrder.countDocuments({ paymentStatus: { $in: ["pending", "created", "attempted"] } });
-  const failedOrders = await NewOrder.countDocuments({ paymentStatus: "failed" });
-  const refundedOrders = await NewOrder.countDocuments({ paymentStatus: "refunded" });
-  
-  const confirmedOrders = await NewOrder.countDocuments({ orderStatus: "confirmed" });
-  const completedOrders = await NewOrder.countDocuments({ orderStatus: "completed" });
-  const cancelledOrders = await NewOrder.countDocuments({ orderStatus: "cancelled" });
+    const totalOrders = await NewOrder.countDocuments();
+    const paidOrders = await NewOrder.countDocuments({ paymentStatus: "paid" });
+    const pendingOrders = await NewOrder.countDocuments({ paymentStatus: { $in: ["pending", "created", "attempted"] } });
+    const failedOrders = await NewOrder.countDocuments({ paymentStatus: "failed" });
+    const refundedOrders = await NewOrder.countDocuments({ paymentStatus: "refunded" });
 
-  // Revenue calculations
-  const revenueAggregation = await NewOrder.aggregate([
-    { $match: { paymentStatus: "paid" } },
-    {
-      $group: {
-        _id: null,
-        totalRevenue: { $sum: "$amount" },
-        totalMentorFees: { $sum: "$mentorFee" },
-        totalPlatformFees: { $sum: "$partnerFee" }
-      }
-    }
-  ]);
+    const confirmedOrders = await NewOrder.countDocuments({ orderStatus: "confirmed" });
+    const completedOrders = await NewOrder.countDocuments({ orderStatus: "completed" });
+    const cancelledOrders = await NewOrder.countDocuments({ orderStatus: "cancelled" });
 
-  const revenue = revenueAggregation[0] || { totalRevenue: 0, totalMentorFees: 0, totalPlatformFees: 0 };
+    // Revenue calculations
+    const revenueAggregation = await NewOrder.aggregate([
+        { $match: { paymentStatus: "paid" } },
+        {
+            $group: {
+                _id: null,
+                totalRevenue: { $sum: "$amount" },
+                totalMentorFees: { $sum: "$mentorFee" },
+                totalPlatformFees: { $sum: "$partnerFee" }
+            }
+        }
+    ]);
 
-  // Monthly revenue for charts
-  const monthlyRevenue = await NewOrder.aggregate([
-    { 
-      $match: { 
-        paymentStatus: "paid",
-        paymentCompletedAt: { $exists: true }
-      } 
-    },
-    {
-      $group: {
-        _id: {
-          year: { $year: "$paymentCompletedAt" },
-          month: { $month: "$paymentCompletedAt" }
+    const revenue = revenueAggregation[0] || { totalRevenue: 0, totalMentorFees: 0, totalPlatformFees: 0 };
+
+    // Monthly revenue for charts
+    const monthlyRevenue = await NewOrder.aggregate([
+        {
+            $match: {
+                paymentStatus: "paid",
+                paymentCompletedAt: { $exists: true }
+            }
         },
-        revenue: { $sum: "$amount" },
-        count: { $sum: 1 }
-      }
-    },
-    { $sort: { "_id.year": -1, "_id.month": -1 } },
-    { $limit: 12 }
-  ]);
+        {
+            $group: {
+                _id: {
+                    year: { $year: "$paymentCompletedAt" },
+                    month: { $month: "$paymentCompletedAt" }
+                },
+                revenue: { $sum: "$amount" },
+                count: { $sum: 1 }
+            }
+        },
+        { $sort: { "_id.year": -1, "_id.month": -1 } },
+        { $limit: 12 }
+    ]);
 
-  return res.status(200).json(
-    new ApiResponse(200, {
-      counts: {
-        total: totalOrders,
-        paid: paidOrders,
-        pending: pendingOrders,
-        failed: failedOrders,
-        refunded: refundedOrders,
-        confirmed: confirmedOrders,
-        completed: completedOrders,
-        cancelled: cancelledOrders
-      },
-      revenue: {
-        total: revenue.totalRevenue,
-        mentorFees: revenue.totalMentorFees,
-        platformFees: revenue.totalPlatformFees
-      },
-      monthlyRevenue
-    }, "Order statistics retrieved")
-  );
+    return res.status(200).json(
+        new ApiResponse(200, {
+            counts: {
+                total: totalOrders,
+                paid: paidOrders,
+                pending: pendingOrders,
+                failed: failedOrders,
+                refunded: refundedOrders,
+                confirmed: confirmedOrders,
+                completed: completedOrders,
+                cancelled: cancelledOrders
+            },
+            revenue: {
+                total: revenue.totalRevenue,
+                mentorFees: revenue.totalMentorFees,
+                platformFees: revenue.totalPlatformFees
+            },
+            monthlyRevenue
+        }, "Order statistics retrieved")
+    );
 });
 
 // Helper function to send email
@@ -1024,7 +1062,7 @@ export const adminGetOrderStats = asyncHandler(async (req, res) => {
 //   // Get user emails
 //   const student = order.studentId;
 //   const mentor = order.mentorId;
-  
+
 //   let statusMessage = "";
 //   if (updates.paymentStatus === "refunded") {
 //     statusMessage = "Your payment has been refunded.";
@@ -1063,3 +1101,48 @@ export const adminGetOrderStats = asyncHandler(async (req, res) => {
 //     html: emailHtml
 //   });
 // };
+
+// Get order history between two users (mentor and student)
+export const getOrderHistoryBetweenUsers = asyncHandler(async (req, res) => {
+    const { userId1, userId2 } = req.params;
+    const { page = 1, limit = 20 } = req.query;
+
+    // Verify that the requesting user is one of the two users (or admin)
+    if (
+        req.user.userType !== "admin" &&
+        req.user._id.toString() !== userId1 &&
+        req.user._id.toString() !== userId2
+    ) {
+        throw new ApiError(403, "Unauthorized to view this order history");
+    }
+
+    const query = {
+        $or: [
+            { studentId: userId1, mentorId: userId2 },
+            { studentId: userId2, mentorId: userId1 }
+        ]
+    };
+
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    const orders = await Order.find(query)
+        .populate("studentId", "firstName lastName email profileImage")
+        .populate("mentorId", "firstName lastName email profileImage")
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(parseInt(limit));
+
+    const total = await Order.countDocuments(query);
+
+    return res.status(200).json(
+        new ApiResponse(200, {
+            orders,
+            pagination: {
+                page: parseInt(page),
+                limit: parseInt(limit),
+                total,
+                pages: Math.ceil(total / parseInt(limit))
+            }
+        }, "Order history fetched successfully")
+    );
+});

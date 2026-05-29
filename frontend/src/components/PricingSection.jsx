@@ -299,7 +299,7 @@ const PricingSection = ({ freelancerName, freelancerId, freelancerEmail }) => {
             if (verifyResponse.success) {
                 toast.success('Payment successful! Your booking has been confirmed.');
                 setTimeout(() => {
-                    window.location.href = `/buyer/order/${verifyResponse.data.order._id}`;
+                    window.location.href = `/buyer/orders/${verifyResponse.data.order._id}`;
                 }, 2000);
             } else {
                 throw new Error(verifyResponse.message || 'Payment verification failed');

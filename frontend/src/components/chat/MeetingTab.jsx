@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { Copy, Check, ExternalLink, Video, Edit2, Save, X, Plus } from 'lucide-react';
 import toast from 'react-hot-toast';
-import axiosInstance from '../../utils/axiosInstance';
+import axiosInstance from '../../utils/axiosInstanceOld';
 
 const videoApps = [
     { name: 'Google Meet', icon: '🎥', color: 'bg-blue-50 text-blue-600', placeholder: 'meet.google.com/xxx-xxxx-xxx' },
@@ -173,47 +173,22 @@ const MeetingTab = ({ conversationId, userType }) => {
         <div className="h-full overflow-y-auto p-4 space-y-6">
             {/* Suggested Video Apps */}
             <div>
-                <h3 className="text-sm font-medium text-gray-700 mb-3 flex items-center gap-2">
-                    <Video size={16} />
-                    Select Video App
-                </h3>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                    {videoApps.map((app) => (
-                        <button
-                            key={app.name}
-                            onClick={() => {
-                                if (isEditing) {
-                                    setEditData({ ...editData, platform: app.name });
-                                }
-                            }}
-                            className={`flex items-center gap-2 p-2 rounded-lg transition-all ${editData.platform === app.name && isEditing
-                                    ? 'bg-primary text-white'
-                                    : editData.platform === app.name
-                                        ? 'bg-primary/10 text-primary border border-primary/20'
-                                        : 'bg-gray-50 hover:bg-gray-100 text-gray-700'
-                                } ${!isEditing && 'cursor-default'}`}
-                            disabled={!isEditing}
-                        >
-                            <span className="text-xl">{app.icon}</span>
-                            <span className="text-sm">{app.name}</span>
-                        </button>
-                    ))}
-                </div>
-            </div>
+                <div className='flex justify-between items-center mb-3'>
+                    <h3 className="text-sm font-medium text-gray-700 mb-3 flex items-center gap-2">
+                        <Video size={16} />
+                        Select Video App
+                    </h3>
 
-            {/* Meeting Details Form */}
-            <div className="bg-gray-50 rounded-xl p-4 space-y-4">
-                <div className="flex justify-between items-center">
-                    <h3 className="text-sm font-medium text-gray-700">Meeting Details</h3>
                     {userType === 'freelancer' && !isEditing && (
                         <button
                             onClick={() => {
                                 setIsEditing(true);
                                 setEditData(meeting);
                             }}
-                            className="p-1 hover:bg-gray-200 rounded-lg transition-colors"
+                            className="bg-green-600 hover:bg-green-600/90 text-white py-1.5 px-3 rounded-md flex items-center text-sm gap-2"
                         >
-                            <Edit2 size={14} className="text-gray-500" />
+                            <Edit2 size={16} className="text-white" />
+                            <span>Edit</span>
                         </button>
                     )}
                     {isEditing && (
@@ -233,20 +208,52 @@ const MeetingTab = ({ conversationId, userType }) => {
                                         });
                                     }
                                 }}
-                                className="p-1 hover:bg-gray-200 rounded-lg"
+                                className="bg-red-500 hover:bg-red-500/90 text-white py-1.5 px-3 rounded-md flex items-center text-sm gap-2"
                                 disabled={isCreating}
                             >
-                                <X size={14} className="text-red-500" />
+                                <X size={16} className="text-white" />
+                                <span>Discard</span>
                             </button>
                             <button
                                 onClick={meeting ? handleUpdateMeeting : handleCreateMeeting}
-                                className="p-1 hover:bg-gray-200 rounded-lg"
+                                className="bg-primary hover:bg-primary/90 text-white py-1.5 px-3 rounded-md flex items-center text-sm gap-2"
                                 disabled={isCreating}
                             >
-                                <Save size={14} className="text-green-500" />
+                                <Save size={16} className="text-white" />
+                                <span>Save</span>
                             </button>
                         </div>
                     )}
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    {videoApps.map((app) => (
+                        <button
+                            key={app.name}
+                            onClick={() => {
+                                if (isEditing) {
+                                    setEditData({ ...editData, platform: app.name });
+                                }
+                            }}
+                            className={`flex items-center gap-2 p-2 rounded-lg transition-all ${editData.platform === app.name && isEditing
+                                ? 'bg-primary text-white'
+                                : editData.platform === app.name
+                                    ? 'bg-primary/10 text-primary border border-primary/20'
+                                    : 'bg-gray-50 hover:bg-gray-100 text-gray-700'
+                                } ${!isEditing && 'cursor-default'}`}
+                            disabled={!isEditing}
+                        >
+                            <span className="text-xl">{app.icon}</span>
+                            <span className="text-sm">{app.name}</span>
+                        </button>
+                    ))}
+                </div>
+            </div>
+
+            {/* Meeting Details Form */}
+            <div className="bg-gray-50 rounded-xl p-4 space-y-4">
+                <div className="flex justify-between items-center">
+                    <h3 className="text-sm font-medium text-gray-700">Meeting Details</h3>
                 </div>
 
                 {meeting && !isEditing && (

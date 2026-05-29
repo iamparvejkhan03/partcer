@@ -3,6 +3,8 @@ import User from "../models/user.model.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
+import { newProposalNotification, projectCreatedConfirmation, projectMatchingNotification, projectUpdatedByAdminNotification, proposalStatusUpdateEmail } from "../utils/emailTemplates.js";
+import transporter from "../utils/nodemailer.js";
 
 // ==================== HELPER FUNCTIONS ====================
 
@@ -84,6 +86,30 @@ const createProject = asyncHandler(async (req, res) => {
     await project.populate("buyer", "firstName lastName displayName profileImage");
     await project.populate("category", "name");
     await project.populate("subCategory", "name");
+
+    const student = await User.findById(req.user._id).select("firstName lastName email");
+
+    // Send confirmation to student
+    if (student) {
+        projectCreatedConfirmation(transporter, student, project)
+            .catch(err => console.error('Project confirmation email failed:', err.message));
+    }
+
+    // Find matching mentors
+    const matchingMentors = await User.find({
+        userType: 'freelancer',
+        isActive: true,
+        $or: [
+            { skills: { $in: project.skills } },
+            { categories: project.category }
+        ]
+    }).select("firstName lastName email");
+
+    // Send to each mentor (fire-and-forget)
+    for (const mentor of matchingMentors) {
+        projectMatchingNotification(transporter, mentor, project)
+            .catch(err => console.error(`Matching email to ${mentor.email} failed:`, err.message));
+    }
 
     return res.status(201).json(
         new ApiResponse(201, project, "Project created successfully")
@@ -337,7 +363,7 @@ const applyToProject = asyncHandler(async (req, res) => {
     const freelancer = await User.findById(req.user._id);
 
     if (!freelancer || freelancer.userType !== "freelancer") {
-        throw new ApiError(403, "Only freelancers/mentors can apply to projects");
+        throw new ApiError(403, "Only mentors can apply to projects");
     }
 
     // Check if already applied
@@ -359,6 +385,13 @@ const applyToProject = asyncHandler(async (req, res) => {
         duration || project.duration,
         service || project.service
     );
+
+    const student = await User.findById(project.buyer).select("firstName lastName email");
+
+    if (student) {
+        newProposalNotification(transporter, student, project, freelancer, proposal)
+            .catch(err => console.error(`Proposal notification email failed for ${student.email}:`, err.message));
+    }
 
     return res.status(200).json(
         new ApiResponse(200, { projectId }, "Interest expressed successfully")
@@ -439,6 +472,12 @@ const updateProposalStatus = asyncHandler(async (req, res) => {
     }
 
     await project.save();
+
+    const mentor = await User.findById(proposal.freelancer).select("firstName lastName email");
+    if (mentor) {
+        proposalStatusUpdateEmail(transporter, mentor, project, proposal, status)
+            .catch(err => console.error(`Proposal status email failed for ${mentor.email}:`, err.message));
+    }
 
     return res.status(200).json(
         new ApiResponse(200, proposal, `Proposal ${status} successfully`)
@@ -703,295 +742,302 @@ const searchProjects = asyncHandler(async (req, res) => {
 // ==================== ADMIN: GET ALL PROJECTS ====================
 
 const adminGetAllProjects = asyncHandler(async (req, res) => {
-  const {
-    status,
-    buyer,
-    category,
-    search,
-    page = 1,
-    limit = 20,
-    sortBy = "createdAt",
-    sortOrder = "desc",
-  } = req.query;
+    const {
+        status,
+        buyer,
+        category,
+        search,
+        page = 1,
+        limit = 20,
+        sortBy = "createdAt",
+        sortOrder = "desc",
+    } = req.query;
 
-  const query = {};
+    const query = {};
 
-  if (status) query.status = status;
-  if (buyer) query.buyer = buyer;
-  if (category) query.category = category;
-  if (search) {
-    query.$text = { $search: search };
-  }
-
-  const skip = (Number(page) - 1) * Number(limit);
-  const sort = { [sortBy]: sortOrder === "desc" ? -1 : 1 };
-
-  const projects = await Project.find(query)
-    .populate("buyer", "firstName lastName email userType displayName profileImage createdAt isVerified rating reviewCount")
-    .populate("category", "name")
-    .populate("subCategory", "name")
-    .sort(sort)
-    .skip(skip)
-    .limit(Number(limit));
-
-  const total = await Project.countDocuments(query);
-
-  // Get summary stats by status
-  const stats = await Project.aggregate([
-    {
-      $group: {
-        _id: "$status",
-        count: { $sum: 1 },
-        totalProposals: { $sum: "$proposalsCount" },
-        totalViews: { $sum: "$views" }
-      }
+    if (status) query.status = status;
+    if (buyer) query.buyer = buyer;
+    if (category) query.category = category;
+    if (search) {
+        query.$text = { $search: search };
     }
-  ]);
 
-  return res.status(200).json(
-    new ApiResponse(
-      200,
-      {
-        projects,
-        stats,
-        pagination: {
-          page: Number(page),
-          limit: Number(limit),
-          total,
-          pages: Math.ceil(total / Number(limit)),
-        },
-      },
-      "All projects fetched successfully",
-    ),
-  );
+    const skip = (Number(page) - 1) * Number(limit);
+    const sort = { [sortBy]: sortOrder === "desc" ? -1 : 1 };
+
+    const projects = await Project.find(query)
+        .populate("buyer", "firstName lastName email userType displayName profileImage createdAt isVerified rating reviewCount")
+        .populate("category", "name")
+        .populate("subCategory", "name")
+        .sort(sort)
+        .skip(skip)
+        .limit(Number(limit));
+
+    const total = await Project.countDocuments(query);
+
+    // Get summary stats by status
+    const stats = await Project.aggregate([
+        {
+            $group: {
+                _id: "$status",
+                count: { $sum: 1 },
+                totalProposals: { $sum: "$proposalsCount" },
+                totalViews: { $sum: "$views" }
+            }
+        }
+    ]);
+
+    return res.status(200).json(
+        new ApiResponse(
+            200,
+            {
+                projects,
+                stats,
+                pagination: {
+                    page: Number(page),
+                    limit: Number(limit),
+                    total,
+                    pages: Math.ceil(total / Number(limit)),
+                },
+            },
+            "All projects fetched successfully",
+        ),
+    );
 });
 
 // ==================== ADMIN: UPDATE PROJECT STATUS ====================
 
 const adminUpdateProjectStatus = asyncHandler(async (req, res) => {
-  const { projectId } = req.params;
-  const { status, featured, featuredUntil, cancellationReason } = req.body;
+    const { projectId } = req.params;
+    const { status, featured, featuredUntil, cancellationReason } = req.body;
 
-  const project = await Project.findById(projectId);
+    const project = await Project.findById(projectId);
 
-  if (!project) {
-    throw new ApiError(404, "Project not found");
-  }
-
-  if (status) {
-    const validStatuses = [
-      "draft", "pending", "active", "paused", "completed", 
-      "cancelled", "expired", "suspended", "rejected", "filled"
-    ];
-    if (!validStatuses.includes(status)) {
-      throw new ApiError(400, "Invalid status");
+    if (!project) {
+        throw new ApiError(404, "Project not found");
     }
-    project.status = status;
-    
-    // If rejecting, store reason
-    if (status === 'rejected' && cancellationReason) {
-      project.cancellationReason = cancellationReason;
+
+    if (status) {
+        const validStatuses = [
+            "draft", "pending", "active", "paused", "completed",
+            "cancelled", "expired", "suspended", "rejected", "filled"
+        ];
+        if (!validStatuses.includes(status)) {
+            throw new ApiError(400, "Invalid status");
+        }
+        project.status = status;
+
+        // If rejecting, store reason
+        if (status === 'rejected' && cancellationReason) {
+            project.cancellationReason = cancellationReason;
+        }
     }
-  }
 
-  if (featured !== undefined) {
-    project.featured = featured;
-    if (featured && featuredUntil) {
-      project.featuredUntil = new Date(featuredUntil);
-    } else if (!featured) {
-      project.featuredUntil = null;
+    if (featured !== undefined) {
+        project.featured = featured;
+        if (featured && featuredUntil) {
+            project.featuredUntil = new Date(featuredUntil);
+        } else if (!featured) {
+            project.featuredUntil = null;
+        }
     }
-  }
 
-  await project.save();
+    await project.save();
 
-  return res
-    .status(200)
-    .json(new ApiResponse(200, project, "Project status updated successfully"));
+    return res
+        .status(200)
+        .json(new ApiResponse(200, project, "Project status updated successfully"));
 });
 
 // ==================== ADMIN: DELETE PROJECT (hard delete) ====================
 
 const adminDeleteProject = asyncHandler(async (req, res) => {
-  const { projectId } = req.params;
+    const { projectId } = req.params;
 
-  const project = await Project.findById(projectId);
+    const project = await Project.findById(projectId);
 
-  if (!project) {
-    throw new ApiError(404, "Project not found");
-  }
-
-  // Delete attachments from Cloudinary if any
-  if (project.attachments && project.attachments.length > 0) {
-    const publicIds = project.attachments.map((att) => att.publicId).filter(Boolean);
-    if (publicIds.length > 0) {
-      try {
-        await deleteMultipleFiles(publicIds);
-      } catch (error) {
-        console.error("Error deleting attachments:", error);
-      }
+    if (!project) {
+        throw new ApiError(404, "Project not found");
     }
-  }
 
-  await project.deleteOne();
+    // Delete attachments from Cloudinary if any
+    if (project.attachments && project.attachments.length > 0) {
+        const publicIds = project.attachments.map((att) => att.publicId).filter(Boolean);
+        if (publicIds.length > 0) {
+            try {
+                await deleteMultipleFiles(publicIds);
+            } catch (error) {
+                console.error("Error deleting attachments:", error);
+            }
+        }
+    }
 
-  return res
-    .status(200)
-    .json(new ApiResponse(200, {}, "Project permanently deleted"));
+    await project.deleteOne();
+
+    return res
+        .status(200)
+        .json(new ApiResponse(200, {}, "Project permanently deleted"));
 });
 
 // ==================== ADMIN: GET PROJECT FOR EDITING ====================
 
 const adminGetProjectForEdit = asyncHandler(async (req, res) => {
-  const { projectId } = req.params;
+    const { projectId } = req.params;
 
-  const project = await Project.findById(projectId)
-    .populate("buyer", "firstName lastName displayName email profileImage createdAt location isVerified rating reviewCount")
-    .populate("category", "name")
-    .populate("subCategory", "name")
-    .populate("proposals.freelancer", "firstName lastName displayName profileImage rating email");
+    const project = await Project.findById(projectId)
+        .populate("buyer", "firstName lastName displayName email profileImage createdAt location isVerified rating reviewCount")
+        .populate("category", "name")
+        .populate("subCategory", "name")
+        .populate("proposals.freelancer", "firstName lastName displayName profileImage rating email");
 
-  if (!project) {
-    throw new ApiError(404, "Project not found");
-  }
+    if (!project) {
+        throw new ApiError(404, "Project not found");
+    }
 
-  return res
-    .status(200)
-    .json(new ApiResponse(200, project, "Project fetched successfully"));
+    return res
+        .status(200)
+        .json(new ApiResponse(200, project, "Project fetched successfully"));
 });
 
 // ==================== ADMIN: UPDATE PROJECT ====================
 
 const adminUpdateProject = asyncHandler(async (req, res) => {
-  const { projectId } = req.params;
-  const updates = JSON.parse(req.body.data || "{}");
+    const { projectId } = req.params;
+    const updates = JSON.parse(req.body.data || "{}");
 
-  const project = await Project.findById(projectId);
+    const project = await Project.findById(projectId);
 
-  if (!project) {
-    throw new ApiError(404, "Project not found");
-  }
-
-  // Validate skills if being updated
-  if (updates.skills) {
-    if (!updates.skills || updates.skills.length === 0) {
-      throw new ApiError(400, "At least one skill is required");
-    }
-    if (updates.skills.length > 10) {
-      throw new ApiError(400, "Maximum 10 skills allowed");
-    }
-  }
-
-  // Handle removed attachments
-  if (updates.removedAttachments && updates.removedAttachments.length > 0) {
-    const remainingAttachments = project.attachments.filter(
-      (att) =>
-        !updates.removedAttachments.includes(att._id?.toString()) &&
-        !updates.removedAttachments.includes(att.publicId)
-    );
-    project.attachments = remainingAttachments;
-
-    try {
-      await deleteMultipleFiles(updates.removedAttachments);
-    } catch (error) {
-      console.error("Error deleting attachments:", error);
-    }
-  }
-
-  // Handle new attachments
-  if (req.files && req.files.length > 0) {
-    const currentTotal = project.attachments.length;
-    if (currentTotal + req.files.length > 5) {
-      throw new ApiError(400, "Maximum 5 files allowed");
+    if (!project) {
+        throw new ApiError(404, "Project not found");
     }
 
-    const newAttachments = [...project.attachments];
+    // Validate skills if being updated
+    if (updates.skills) {
+        if (!updates.skills || updates.skills.length === 0) {
+            throw new ApiError(400, "At least one skill is required");
+        }
+        if (updates.skills.length > 10) {
+            throw new ApiError(400, "Maximum 10 skills allowed");
+        }
+    }
 
-    for (let i = 0; i < req.files.length; i++) {
-      const file = req.files[i];
-      if (file.size > 10 * 1024 * 1024) {
-        throw new ApiError(400, `File ${file.originalname} exceeds 10MB limit`);
-      }
-
-      try {
-        const result = await uploadFile(
-          file.buffer,
-          `projects/${project.slug}/attachments/${Date.now()}-${file.originalname}`,
+    // Handle removed attachments
+    if (updates.removedAttachments && updates.removedAttachments.length > 0) {
+        const remainingAttachments = project.attachments.filter(
+            (att) =>
+                !updates.removedAttachments.includes(att._id?.toString()) &&
+                !updates.removedAttachments.includes(att.publicId)
         );
-        newAttachments.push({
-          name: file.originalname,
-          url: result.secure_url,
-          publicId: result.public_id,
-          type: file.mimetype,
-          size: file.size,
+        project.attachments = remainingAttachments;
+
+        try {
+            await deleteMultipleFiles(updates.removedAttachments);
+        } catch (error) {
+            console.error("Error deleting attachments:", error);
+        }
+    }
+
+    // Handle new attachments
+    if (req.files && req.files.length > 0) {
+        const currentTotal = project.attachments.length;
+        if (currentTotal + req.files.length > 5) {
+            throw new ApiError(400, "Maximum 5 files allowed");
+        }
+
+        const newAttachments = [...project.attachments];
+
+        for (let i = 0; i < req.files.length; i++) {
+            const file = req.files[i];
+            if (file.size > 10 * 1024 * 1024) {
+                throw new ApiError(400, `File ${file.originalname} exceeds 10MB limit`);
+            }
+
+            try {
+                const result = await uploadFile(
+                    file.buffer,
+                    `projects/${project.slug}/attachments/${Date.now()}-${file.originalname}`,
+                );
+                newAttachments.push({
+                    name: file.originalname,
+                    url: result.secure_url,
+                    publicId: result.public_id,
+                    type: file.mimetype,
+                    size: file.size,
+                });
+            } catch (error) {
+                console.error("Error uploading file:", error);
+                throw new ApiError(500, "Failed to upload attachments");
+            }
+        }
+        updates.attachments = newAttachments;
+    }
+
+    // Update title and regenerate slug if title changed
+    if (updates.title && updates.title !== project.title) {
+        const generateSlug = (title) => {
+            return title
+                .toLowerCase()
+                .replace(/[^a-z0-9]+/g, "-")
+                .replace(/(^-|-$)/g, "");
+        };
+        updates.slug = generateSlug(updates.title);
+
+        const existingProject = await Project.findOne({
+            slug: updates.slug,
+            _id: { $ne: projectId },
         });
-      } catch (error) {
-        console.error("Error uploading file:", error);
-        throw new ApiError(500, "Failed to upload attachments");
-      }
+        if (existingProject) {
+            throw new ApiError(400, "A project with this title already exists");
+        }
     }
-    updates.attachments = newAttachments;
-  }
 
-  // Update title and regenerate slug if title changed
-  if (updates.title && updates.title !== project.title) {
-    const generateSlug = (title) => {
-      return title
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, "-")
-        .replace(/(^-|-$)/g, "");
-    };
-    updates.slug = generateSlug(updates.title);
+    // Remove temporary fields from updates
+    delete updates.removedAttachments;
+    delete updates.moderationNotes;
 
-    const existingProject = await Project.findOne({
-      slug: updates.slug,
-      _id: { $ne: projectId },
-    });
-    if (existingProject) {
-      throw new ApiError(400, "A project with this title already exists");
+    // Update project
+    Object.assign(project, updates);
+    await project.save();
+
+    await project.populate("buyer", "firstName lastName displayName profileImage rating email reviewCount");
+
+    const student = await User.findById(project.buyer).select("firstName lastName email");
+
+    if (student) {
+        projectUpdatedByAdminNotification(transporter, student, project)
+            .catch(err => console.error(`Project update notification email failed for ${student.email}:`, err.message));
     }
-  }
 
-  // Remove temporary fields from updates
-  delete updates.removedAttachments;
-  delete updates.moderationNotes;
-
-  // Update project
-  Object.assign(project, updates);
-  await project.save();
-
-  await project.populate("buyer", "firstName lastName displayName profileImage rating email reviewCount");
-
-  return res
-    .status(200)
-    .json(new ApiResponse(200, project, "Project updated successfully"));
+    return res
+        .status(200)
+        .json(new ApiResponse(200, project, "Project updated successfully"));
 });
 
 // ==================== ADMIN: GET PROJECT PROPOSALS ====================
 
 const adminGetProjectProposals = asyncHandler(async (req, res) => {
-  const { projectId } = req.params;
+    const { projectId } = req.params;
 
-  const project = await Project.findById(projectId)
-    .populate("proposals.freelancer", "firstName lastName displayName profileImage rating reviewCount title");
+    const project = await Project.findById(projectId)
+        .populate("proposals.freelancer", "firstName lastName displayName profileImage rating reviewCount title");
 
-  if (!project) {
-    throw new ApiError(404, "Project not found");
-  }
+    if (!project) {
+        throw new ApiError(404, "Project not found");
+    }
 
-  const stats = {
-    total: project.proposals.length,
-    pending: project.proposals.filter(p => p.status === "pending").length,
-    accepted: project.proposals.filter(p => p.status === "accepted").length,
-    rejected: project.proposals.filter(p => p.status === "rejected").length,
-  };
+    const stats = {
+        total: project.proposals.length,
+        pending: project.proposals.filter(p => p.status === "pending").length,
+        accepted: project.proposals.filter(p => p.status === "accepted").length,
+        rejected: project.proposals.filter(p => p.status === "rejected").length,
+    };
 
-  return res.status(200).json(
-    new ApiResponse(200, {
-      proposals: project.proposals,
-      stats
-    }, "Proposals fetched successfully")
-  );
+    return res.status(200).json(
+        new ApiResponse(200, {
+            proposals: project.proposals,
+            stats
+        }, "Proposals fetched successfully")
+    );
 });
 
 export {

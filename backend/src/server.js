@@ -28,6 +28,7 @@ import earningRouter from "./routes/earning.route.js";
 import withdrawalRouter from "./routes/withdrawal.route.js";
 import resolutionRouter from "./routes/resolution.route.js";
 import currencyRouter from "./routes/currency.route.js";
+import { submitContactQuery } from "./controllers/contact.controller.js";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -80,6 +81,7 @@ app.use("/api/v1/freelancer/earnings", earningRouter);
 app.use("/api/v1/withdrawals", withdrawalRouter);
 app.use("/api/v1/resolution", resolutionRouter);
 app.use('/api/v1/currency', currencyRouter);
+app.use('/api/v1/contact', submitContactQuery);
 
 // 404 handler - SIMPLIFIED VERSION
 app.use((req, res, next) => {

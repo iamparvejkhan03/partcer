@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { MessageSquare } from 'lucide-react';
 import toast from 'react-hot-toast';
-import axiosInstance from '../utils/axiosInstance';
+import axiosInstance from '../utils/axiosInstanceOld';
 
 const StartChatButton = ({ userId, userName }) => {
     const navigate = useNavigate();

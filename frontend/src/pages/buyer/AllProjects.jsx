@@ -178,7 +178,7 @@ const AllProjects = () => {
     const handleStatusChange = async (projectId, newStatus) => {
         try {
             await axiosInstance.post(`/api/v1/projects/${projectId}/complete`);
-            toast.success(`Project status updated to ${newStatus}`);
+            toast.success(`Project has been marked as completed and will be removed from browse projects page.`);
             fetchProjects();
         } catch (error) {
             const errorMessage = error?.response?.data?.message || 'Failed to update project status';

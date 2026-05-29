@@ -6,6 +6,8 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import PaymentDetail from "../models/paymentDetail.model.js";
+import { withdrawalCancellationAdminNotification, withdrawalRequestAdminNotification, withdrawalStatusUpdateEmail } from "../utils/emailTemplates.js";
+import transporter from "../utils/nodemailer.js";
 
 const generateWithdrawalId = () => {
     return `WD-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
@@ -143,6 +145,7 @@ const getWithdrawalHistory = asyncHandler(async (req, res) => {
 
     // Format withdrawals for frontend
     const formattedWithdrawals = withdrawals.map(w => ({
+        _id: w._id,
         id: w.withdrawalId,
         amount: w.amount,
         date: w.createdAt,
@@ -206,6 +209,13 @@ const requestWithdrawal = asyncHandler(async (req, res) => {
         notes: notes || ""
     });
 
+    const adminEmail = process.env.EMAIL_USER; // Set this in your .env
+
+    if (adminEmail) {
+        withdrawalRequestAdminNotification(transporter, adminEmail, withdrawal, req.user, paymentDetail.upiId)
+            .catch(err => console.error(`Admin withdrawal notification failed: ${err.message}`));
+    }
+
     return res.status(201).json(
         new ApiResponse(201, {
             id: withdrawal.withdrawalId,
@@ -223,9 +233,10 @@ const requestWithdrawal = asyncHandler(async (req, res) => {
 const cancelWithdrawal = asyncHandler(async (req, res) => {
     const { withdrawalId } = req.params;
     const freelancerId = req.user.id;
+    console.log(withdrawalId)
 
     const withdrawal = await Withdrawal.findOne({
-        withdrawalId,
+        _id: withdrawalId,
         freelancerId,
         status: "pending"
     });
@@ -235,8 +246,20 @@ const cancelWithdrawal = asyncHandler(async (req, res) => {
     }
 
     withdrawal.status = "cancelled";
-    withdrawal.cancellationReason = req.body.reason || "Cancelled by user";
+    withdrawal.cancellationReason = req.body?.reason || "Cancelled by user";
+
     await withdrawal.save();
+
+    const adminEmail = process.env.EMAIL_USER;
+
+    if (adminEmail) {
+        const mentor = await User.findById(freelancerId).select("firstName lastName email");
+        if (mentor) {
+            const cancellationReason = withdrawal.cancellationReason;
+            withdrawalCancellationAdminNotification(transporter, adminEmail, withdrawal, mentor, cancellationReason)
+                .catch(err => console.error(`Admin withdrawal cancellation notification failed: ${err.message}`));
+        }
+    }
 
     return res.status(200).json(
         new ApiResponse(200, null, "Withdrawal cancelled successfully")
@@ -302,6 +325,20 @@ const processWithdrawal = asyncHandler(async (req, res) => {
     }
 
     await withdrawal.save();
+
+    const mentor = await User.findById(withdrawal.freelancerId).select("firstName lastName email");
+
+    if (mentor) {
+        const updateDetails = {
+            status: withdrawal.status,
+            transactionId: withdrawal.transactionId,
+            notes: notes || withdrawal.notes,
+            processedBy: req.user.id
+        };
+
+        withdrawalStatusUpdateEmail(transporter, mentor, withdrawal, updateDetails)
+            .catch(err => console.error(`Withdrawal status email failed for ${mentor.email}:`, err.message));
+    }
 
     return res.status(200).json(
         new ApiResponse(200, withdrawal, "Withdrawal processed successfully")

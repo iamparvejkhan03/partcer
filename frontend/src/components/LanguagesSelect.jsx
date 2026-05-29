@@ -10,10 +10,14 @@ const LanguagesSelect = ({ selectedLanguages, onChange }) => {
     const dropdownRef = useRef(null);
 
     const allLanguages = [
+        // International
         "English", "Spanish", "French", "German", "Italian", "Portuguese",
         "Dutch", "Russian", "Japanese", "Korean", "Chinese", "Arabic",
-        "Hindi", "Bengali", "Urdu", "Turkish", "Vietnamese", "Thai",
-        "Greek", "Polish", "Swedish", "Norwegian", "Danish", "Finnish"
+        "Turkish", "Vietnamese", "Thai", "Greek", "Polish", "Swedish",
+        "Norwegian", "Danish", "Finnish",
+        // Indian languages
+        "Hindi", "Bengali", "Urdu", "Tamil", "Telugu", "Marathi",
+        "Gujarati", "Kannada", "Malayalam", "Punjabi", "Odia", "Assamese"
     ];
 
     const filteredLanguages = allLanguages.filter(lang =>
@@ -187,11 +191,10 @@ const LanguagesSelect = ({ selectedLanguages, onChange }) => {
                                 return (
                                     <div
                                         key={index}
-                                        className={`px-3 py-2.5 text-sm cursor-pointer flex items-center justify-between transition-colors ${
-                                            isSelected
+                                        className={`px-3 py-2.5 text-sm cursor-pointer flex items-center justify-between transition-colors ${isSelected
                                                 ? "bg-blue-50 text-blue-800"
                                                 : "text-gray-700 hover:bg-gray-50"
-                                        }`}
+                                            }`}
                                         onMouseDown={(e) => {
                                             e.preventDefault(); // prevent blur before click registers
                                             toggleLanguage(lang);

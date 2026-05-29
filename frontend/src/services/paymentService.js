@@ -1,4 +1,4 @@
-import axiosInstance from "../utils/axiosInstance";
+import axiosInstance from "../utils/axiosInstanceOld";
 
 // Load Razorpay script dynamically
 export const loadRazorpayScript = () => {

@@ -5,6 +5,8 @@ import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import mongoose from "mongoose";
 import { deleteFileByUrl, uploadImage } from "../utils/cloudinary.js";
+import transporter from "../utils/nodemailer.js";
+import { accountReactivatedEmail, accountSuspendedEmail } from "../utils/emailTemplates.js";
 
 // ==================== GET ALL USERS (Admin) ====================
 const getAllUsers = asyncHandler(async (req, res) => {
@@ -191,11 +193,15 @@ const suspendUser = asyncHandler(async (req, res) => {
     throw new ApiError(404, "User not found");
   }
 
+  // Update user status
   user.isActive = false;
   user.status = "suspended";
   user.suspensionReason = reason;
   user.suspendedAt = new Date();
   await user.save();
+
+  accountSuspendedEmail(transporter, user, reason, false)
+    .catch(err => console.error(`Failed to send suspension email to ${user.email}:`, err.message));
 
   return res
     .status(200)
@@ -227,6 +233,9 @@ const banUser = asyncHandler(async (req, res) => {
   user.bannedAt = new Date();
   await user.save();
 
+  accountSuspendedEmail(transporter, user, reason, true)
+    .catch(err => console.error(`Failed to send ban email to ${user.email}:`, err.message));
+
   return res
     .status(200)
     .json(new ApiResponse(200, user, "User banned successfully"));
@@ -253,6 +262,9 @@ const activateUser = asyncHandler(async (req, res) => {
   user.suspendedAt = undefined;
   user.bannedAt = undefined;
   await user.save();
+
+  accountReactivatedEmail(transporter, user, true)
+    .catch(err => console.error(`Failed to send account reactivate email to ${user.email}:`, err.message));
 
   return res
     .status(200)

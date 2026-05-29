@@ -16,6 +16,8 @@ const VerifyEmail = lazy(() => import('./pages/VerifyEmail'));
 const AllFreelancers = lazy(() => import('./pages/AllFreelancers'));
 const AllServices = lazy(() => import('./pages/AllServices'));
 const TermsOfUse = lazy(() => import('./pages/TermsOfUse'));
+const RefundPolicy = lazy(() => import('./pages/RefundPolicy'));
+const ShippingPolicy = lazy(() => import('./pages/ShippingPolicy'));
 const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'));
 const ServiceDetails = lazy(() => import('./pages/ServiceDetails'));
 const ProjectDetails = lazy(() => import('./pages/ProjectDetails'));
@@ -161,6 +163,18 @@ createRoot(document.getElementById('root')).render(
                 <Route path='/terms-conditions' element={
                   <Suspense fallback={<LoadingSpinner height={'725px'} />}>
                     <TermsOfUse />
+                  </Suspense>
+                } />
+
+                <Route path='/refund-policy' element={
+                  <Suspense fallback={<LoadingSpinner height={'725px'} />}>
+                    <RefundPolicy />
+                  </Suspense>
+                } />
+
+                <Route path='/shipping-policy' element={
+                  <Suspense fallback={<LoadingSpinner height={'725px'} />}>
+                    <ShippingPolicy />
                   </Suspense>
                 } />
 

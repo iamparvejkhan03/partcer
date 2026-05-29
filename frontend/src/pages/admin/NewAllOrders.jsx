@@ -171,7 +171,7 @@ const NewOrders = () => {
 
     const getOrderStatusBadge = (status) => {
         const config = {
-            confirmed: { label: 'Confirmed', bg: 'bg-green-100', text: 'text-green-700', icon: CheckCircle },
+            confirmed: { label: 'Running', bg: 'bg-green-100', text: 'text-green-700', icon: CheckCircle },
             pending: { label: 'Pending', bg: 'bg-yellow-100', text: 'text-yellow-700', icon: Clock },
             cancelled: { label: 'Cancelled', bg: 'bg-red-100', text: 'text-red-700', icon: XCircle },
             completed: { label: 'Completed', bg: 'bg-blue-100', text: 'text-blue-700', icon: Package }
@@ -232,7 +232,7 @@ const NewOrders = () => {
                         </div>
 
                         {/* Stats Cards */}
-                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-6">
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-6">
                             <div className="bg-white p-4 rounded-xl border border-gray-200">
                                 <div className="flex items-center gap-3">
                                     <div className="p-2 bg-blue-100 rounded-lg">
@@ -288,7 +288,7 @@ const NewOrders = () => {
                                     </div>
                                 </div>
                             </div> */}
-                            <div className="bg-white p-4 rounded-xl border border-gray-200">
+                            {/* <div className="bg-white p-4 rounded-xl border border-gray-200">
                                 <div className="flex items-center gap-3">
                                     <div className="p-2 bg-orange-100 rounded-lg">
                                         <Users size={20} className="text-orange-600" />
@@ -298,7 +298,7 @@ const NewOrders = () => {
                                         <p className="text-lg font-bold text-orange-600">{formatCurrency(stats.totalPlatformFees)}</p>
                                     </div>
                                 </div>
-                            </div>
+                            </div> */}
                         </div>
 
                         {/* Filters */}
@@ -342,7 +342,7 @@ const NewOrders = () => {
                                         className="px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-white min-w-[130px]"
                                     >
                                         <option value="all">All Order Status</option>
-                                        <option value="confirmed">Confirmed</option>
+                                        <option value="confirmed">Running</option>
                                         <option value="pending">Pending</option>
                                         <option value="cancelled">Cancelled</option>
                                         <option value="completed">Completed</option>

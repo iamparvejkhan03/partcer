@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useSocket } from '../../contexts/SocketContext';
 import { useAuth } from '../../contexts/AuthContext';
-import { BuyerContainer, BuyerHeader, BuyerSidebar, ResolutionPanel } from '../../components';
+import { BuyerContainer, BuyerHeader, BuyerSidebar, OrderHistoryPanel, ResolutionPanel } from '../../components';
 import {
     Calendar,
     DollarSign,
@@ -75,6 +75,11 @@ const OrderDetails = () => {
         : order?.mentorReviewed;
 
     const [showResolution, setShowResolution] = useState(false);
+    const [showOrderHistory, setShowOrderHistory] = useState(false);
+
+    const [mentorReview, setMentorReview] = useState(null);
+    const [studentReview, setStudentReview] = useState(null);
+    const [loadingReviews, setLoadingReviews] = useState(false);
 
     // Save or unsave a message
     const handleSaveMessage = async (messageId, isCurrentlySaved) => {
@@ -101,7 +106,7 @@ const OrderDetails = () => {
         } finally {
             setSavingMessageId(null);
         }
-    }; 
+    };
 
     // Load saved messages for this conversation
     const loadSavedMessages = async () => {
@@ -257,6 +262,37 @@ const OrderDetails = () => {
         };
     }, [socket, isConnected, order]);
 
+    useEffect(() => {
+        const fetchOrderReviews = async () => {
+            if (!order || order.deliveryStatus !== 'completed') return;
+            if (user?.userType !== 'buyer') return; // student = buyer
+
+            setLoadingReviews(true);
+            try {
+                const response = await axiosInstance.get(`/api/v1/reviews/order/${orderId}`);
+
+                if (response.data?.success && Array.isArray(response.data.data)) {
+                    const reviews = response.data.data;
+
+                    // Student's own review (reviewer is the student)
+                    const myReview = reviews.find(r => r.reviewer?._id === user._id);
+                    setStudentReview(myReview || null);
+
+                    const mentorReviewData = reviews.find(r =>
+                        r.reviewerRole === 'mentor' && r.reviewee?._id === user._id
+                    );
+                    setMentorReview(mentorReviewData || null);
+                }
+            } catch (error) {
+                console.error('Error fetching order reviews:', error);
+            } finally {
+                setLoadingReviews(false);
+            }
+        };
+
+        fetchOrderReviews();
+    }, [order, orderId, user]);
+
     const fetchOrderDetails = async () => {
         try {
             setLoading(true);
@@ -404,7 +440,8 @@ const OrderDetails = () => {
         const config = {
             paid: { label: 'Paid', bg: 'bg-green-100', text: 'text-green-700', icon: CheckCircle },
             pending: { label: 'Pending', bg: 'bg-yellow-100', text: 'text-yellow-700', icon: Clock },
-            failed: { label: 'Failed', bg: 'bg-red-100', text: 'text-red-700', icon: XCircle }
+            failed: { label: 'Failed', bg: 'bg-red-100', text: 'text-red-700', icon: XCircle },
+            refunded: { label: 'Refunded', bg: 'bg-red-100', text: 'text-red-700', icon: XCircle },
         };
         const cfg = config[status] || config.pending;
         const Icon = cfg.icon;
@@ -416,9 +453,26 @@ const OrderDetails = () => {
         );
     };
 
+    const getOrderStatusBadge = (status) => {
+        const config = {
+            confirmed: { label: 'Running', bg: 'bg-green-100', text: 'text-green-700', icon: CheckCircle },
+            pending: { label: 'Pending', bg: 'bg-yellow-100', text: 'text-yellow-700', icon: Clock },
+            cancelled: { label: 'Cancelled', bg: 'bg-red-100', text: 'text-red-700', icon: XCircle },
+            completed: { label: 'Completed', bg: 'bg-blue-100', text: 'text-blue-700', icon: Package }
+        };
+        const cfg = config[status] || config.pending;
+        const Icon = cfg.icon;
+        return (
+            <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${cfg.bg} ${cfg.text}`}>
+                <Icon size={12} />
+                {cfg.label}
+            </span>
+        );
+    };
+
     const getDeliveryStatusBadge = (status) => {
         const config = {
-            pending: { label: 'Pending', bg: 'bg-yellow-100', text: 'text-yellow-700', icon: Clock },
+            pending: { label: 'Not Delivered', bg: 'bg-yellow-100', text: 'text-yellow-700', icon: Clock },
             delivered: { label: 'Delivered', bg: 'bg-blue-100', text: 'text-blue-700', icon: Package },
             completed: { label: 'Completed', bg: 'bg-green-100', text: 'text-green-700', icon: CheckCircle }
         };
@@ -732,7 +786,7 @@ const OrderDetails = () => {
 
                             {/* Right Column - Order Info (1/3) */}
                             <div className="lg:w-1/3 space-y-4">
-                                {!showResolution ? (
+                                {!showResolution && !showOrderHistory ? (
                                     <>
                                         {/* Order Summary Card */}
                                         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
@@ -805,14 +859,16 @@ const OrderDetails = () => {
                                                 </div>
 
                                                 {/* Status Badges */}
-                                                <div className="flex flex-wrap gap-2">
-                                                    {getStatusBadge(order.paymentStatus)}
-                                                    {getDeliveryStatusBadge(order.deliveryStatus || 'pending')}
+                                                <div className="flex flex-col gap-2">
+                                                    <span className='text-sm text-gray-600 flex items-center gap-1'>Payment: {getStatusBadge(order.paymentStatus)}</span>
+                                                    <span className='text-sm text-gray-600 flex items-center gap-1'>Order: {getOrderStatusBadge(order.orderStatus || 'pending')}</span>
+                                                    <span className='text-sm text-gray-600 flex items-center gap-1'>Delivery: {getDeliveryStatusBadge(order.deliveryStatus || 'pending')}</span>
                                                 </div>
 
-                                                {/* Action Buttons */}
+                                                {/* Action Buttons & Reviews for Student */}
                                                 <div className="space-y-2">
-                                                    {order.deliveryStatus === 'delivered' && order.deliveryStatus !== 'completed' && (
+                                                    {/* Confirm & Complete Order (only when delivered but not completed) */}
+                                                    {order.deliveryStatus === 'delivered' && order.orderStatus !== 'completed' && (
                                                         <button
                                                             onClick={handleCompleteOrder}
                                                             className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium"
@@ -820,21 +876,110 @@ const OrderDetails = () => {
                                                             Confirm & Complete Order
                                                         </button>
                                                     )}
-                                                    {order.deliveryStatus === 'completed' && !hasUserReviewed && (
-                                                        <button
-                                                            onClick={() => setShowReviewModal(true)}
-                                                            className="w-full px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 font-medium"
-                                                        >
-                                                            Leave a Review
-                                                        </button>
+
+                                                    {/* Order Completed Section */}
+                                                    {order.deliveryStatus === 'completed' && (
+                                                        <>
+                                                            {/* Show loading state if fetching reviews */}
+                                                            {loadingReviews ? (
+                                                                <div className="bg-white border border-gray-200 rounded-lg p-4 flex justify-center">
+                                                                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary"></div>
+                                                                </div>
+                                                            ) : (
+                                                                <>
+                                                                    {/* Student's own review (of the mentor) */}
+                                                                    {!hasUserReviewed ? (
+                                                                        <button
+                                                                            onClick={() => setShowReviewModal(true)}
+                                                                            className="w-full px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 font-medium"
+                                                                        >
+                                                                            Leave a Review for Mentor
+                                                                        </button>
+                                                                    ) : studentReview ? (
+                                                                        <div className="bg-white border border-gray-200 rounded-lg p-4 space-y-3">
+                                                                            <div className="flex items-center justify-between">
+                                                                                <h4 className="font-medium text-gray-900">Your Review (for Mentor)</h4>
+                                                                                <span className="text-xs text-gray-500">
+                                                                                    {studentReview.createdAt ? format(new Date(studentReview.createdAt), 'MMM d, yyyy') : ''}
+                                                                                </span>
+                                                                            </div>
+                                                                            <div className="flex items-center gap-1">
+                                                                                {[1, 2, 3, 4, 5].map((star) => (
+                                                                                    <Star
+                                                                                        key={star}
+                                                                                        size={16}
+                                                                                        className={star <= (studentReview.rating || 0)
+                                                                                            ? "fill-yellow-400 text-yellow-400"
+                                                                                            : "text-gray-300"}
+                                                                                    />
+                                                                                ))}
+                                                                                <span className="ml-2 text-sm text-gray-600">
+                                                                                    {studentReview.rating}.0 / 5
+                                                                                </span>
+                                                                            </div>
+                                                                            {studentReview.comment && (
+                                                                                <p className="text-sm text-gray-700 bg-gray-50 p-3 rounded-lg">
+                                                                                    {studentReview.comment}
+                                                                                </p>
+                                                                            )}
+                                                                            <div className="text-xs text-green-600 flex items-center gap-1">
+                                                                                <CheckCircle size={12} />
+                                                                                Your review submitted
+                                                                            </div>
+                                                                        </div>
+                                                                    ) : null}
+
+                                                                    {/* Mentor's review (of the student) - visible to student */}
+                                                                    {mentorReview ? (
+                                                                        <div className="bg-white border border-gray-200 rounded-lg p-4 space-y-3">
+                                                                            <div className="flex items-center justify-between">
+                                                                                <h4 className="font-medium text-gray-900">Mentor's Review (of you)</h4>
+                                                                                <span className="text-xs text-gray-500">
+                                                                                    {mentorReview.createdAt ? format(new Date(mentorReview.createdAt), 'MMM d, yyyy') : ''}
+                                                                                </span>
+                                                                            </div>
+                                                                            <div className="flex items-center gap-1">
+                                                                                {[1, 2, 3, 4, 5].map((star) => (
+                                                                                    <Star
+                                                                                        key={star}
+                                                                                        size={16}
+                                                                                        className={star <= (mentorReview.rating || 0)
+                                                                                            ? "fill-yellow-400 text-yellow-400"
+                                                                                            : "text-gray-300"}
+                                                                                    />
+                                                                                ))}
+                                                                                <span className="ml-2 text-sm text-gray-600">
+                                                                                    {mentorReview.rating}.0 / 5
+                                                                                </span>
+                                                                            </div>
+                                                                            {mentorReview.comment && (
+                                                                                <p className="text-sm text-gray-700 bg-gray-50 p-3 rounded-lg">
+                                                                                    {mentorReview.comment}
+                                                                                </p>
+                                                                            )}
+                                                                            <div className="text-xs text-blue-600 flex items-center gap-1">
+                                                                                <ThumbsUp size={12} />
+                                                                                Feedback from mentor
+                                                                            </div>
+                                                                        </div>
+                                                                    ) : (
+                                                                        <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 text-center">
+                                                                            <p className="text-sm text-gray-500">Mentor hasn't left a review yet.</p>
+                                                                        </div>
+                                                                    )}
+                                                                </>
+                                                            )}
+                                                        </>
                                                     )}
-                                                    {/* <button
-                                                onClick={() => window.location.href = `/buyer/chat?user=${order.mentorId?._id}`}
-                                                className="w-full px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 font-medium flex items-center justify-center gap-2"
-                                            >
-                                                <MessageCircle size={16} />
-                                                Message Mentor (Full Chat)
-                                            </button> */}
+
+                                                    {/* Order History Button */}
+                                                    <button
+                                                        onClick={() => setShowOrderHistory(true)}
+                                                        className="w-full px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium flex items-center justify-center gap-2"
+                                                    >
+                                                        <Package size={16} />
+                                                        Order History
+                                                    </button>
                                                 </div>
                                             </div>
                                         </div>
@@ -852,12 +997,19 @@ const OrderDetails = () => {
                                             </div>
                                         </div>
                                     </>
-                                ) : (
+                                ) : showResolution ? (
                                     <ResolutionPanel
                                         order={order}
                                         onBack={() => setShowResolution(false)}
                                     />
-                                )}
+                                ) : showOrderHistory ? (
+                                    <OrderHistoryPanel
+                                        userId1={user._id}
+                                        userId2={user.userType === 'buyer' ? order.mentorId._id : order.studentId._id}
+                                        userType={user.userType}
+                                        onBack={() => setShowOrderHistory(false)}
+                                    />
+                                ) : null}
                             </div>
                         </div>
                     </div>

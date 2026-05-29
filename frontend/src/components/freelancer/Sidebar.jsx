@@ -26,7 +26,8 @@ import {
     FolderOpen,
     Search,
     Headphones,
-    FolderCheck
+    FolderCheck,
+    BanknoteArrowUp
 } from "lucide-react";
 import { Link, NavLink } from "react-router-dom";
 import { logo } from "../../assets";
@@ -77,17 +78,29 @@ const navigationItems = [
         icon: <TrendingUp size={20} />
     },
     {
-        type: 'dropdown',
-        name: 'Finance',
-        icon: <CreditCard size={20} />,
-        isOpen: false,
-        subItems: [
-            // { name: 'Billing', path: '/freelancer/finance/billing', icon: <CreditCard size={18} /> },
-            // { name: 'Transactions', path: '/freelancer/finance/transactions', icon: <DollarSign size={18} /> },
-            { name: 'Earnings', path: '/freelancer/finance/earnings', icon: <DollarSign size={18} /> },
-            { name: 'Withdrawals', path: '/freelancer/finance/withdrawals', icon: <BanknoteArrowDown size={18} /> },
-        ]
+        type: 'link',
+        name: 'Earnings',
+        path: '/freelancer/finance/earnings',
+        icon: <BanknoteArrowUp size={20} />
     },
+    {
+        type: 'link',
+        name: 'Withdrawals',
+        path: '/freelancer/finance/withdrawals',
+        icon: <BanknoteArrowDown size={20} />
+    },
+    // {
+    //     type: 'dropdown',
+    //     name: 'Finance',
+    //     icon: <CreditCard size={20} />,
+    //     isOpen: false,
+    //     subItems: [
+    //         // { name: 'Billing', path: '/freelancer/finance/billing', icon: <CreditCard size={18} /> },
+    //         // { name: 'Transactions', path: '/freelancer/finance/transactions', icon: <DollarSign size={18} /> },
+    //         { name: 'Earnings', path: '/freelancer/finance/earnings', icon: <DollarSign size={18} /> },
+    //         { name: 'Withdrawals', path: '/freelancer/finance/withdrawals', icon: <BanknoteArrowDown size={18} /> },
+    //     ]
+    // },
     {
         type: 'dropdown',
         name: 'Profile',

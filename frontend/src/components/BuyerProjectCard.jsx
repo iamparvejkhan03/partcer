@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { Clock, Users, ChevronRight, Bookmark } from 'lucide-react';
 import { useState } from 'react';
 import toast from 'react-hot-toast';
-import axiosInstance from '../utils/axiosInstance';
+import axiosInstance from '../utils/axiosInstanceOld';
 import { useAuth } from '../contexts/AuthContext';
 import ExpressInterestModal from '../components/freelancer/ExpressInterestModal';
 

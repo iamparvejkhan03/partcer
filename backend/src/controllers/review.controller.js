@@ -5,6 +5,8 @@ import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import mongoose from "mongoose";
+import { reviewReceivedEmail } from "../utils/emailTemplates.js";
+import transporter from "../utils/nodemailer.js";
 
 // ==================== REVIEW CONTROLLERS ====================
 
@@ -101,6 +103,21 @@ export const addOrderReview = asyncHandler(async (req, res) => {
     }
 
     await order.save();
+
+    const revieweeUser = await User.findById(reviewee).select("firstName lastName email");
+    const reviewerUser = await User.findById(reviewer).select("firstName lastName");
+
+    if (revieweeUser && reviewerUser) {
+        const reviewDetails = {
+            rating: rating,
+            comment: comment,
+            reviewerRole: reviewerRole,
+            revieweeRole: revieweeRole
+        };
+
+        reviewReceivedEmail(transporter, revieweeUser, reviewerUser, order, reviewDetails)
+            .catch(err => console.error(`Failed to send review email to ${revieweeUser.email}:`, err.message));
+    }
 
     // Populate response
     await review.populate([

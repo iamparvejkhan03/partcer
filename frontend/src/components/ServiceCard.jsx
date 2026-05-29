@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Heart, MapPin, Star, CheckCircle } from 'lucide-react';
 import { useState } from 'react';
-import axiosInstance from '../utils/axiosInstance';
+import axiosInstance from '../utils/axiosInstanceOld';
 import toast from 'react-hot-toast';
 
 const ServiceCard = ({ service }) => {

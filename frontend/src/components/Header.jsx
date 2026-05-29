@@ -279,6 +279,9 @@ const Header = () => {
                         {user && <nav className="hidden lg:flex items-center gap-8">
                             {user && user?.userType == 'buyer' && (
                                 <>
+                                    <NavLink to="/" className="text-white/90 hover:text-white">
+                                        Home
+                                    </NavLink>
                                     <NavLink to="/freelancers" className="text-white/90 hover:text-white">
                                         Search {userTypes?.freelancer}
                                     </NavLink>
