@@ -124,7 +124,7 @@ function Home() {
             </Suspense> 
 
             {/* Features Section */}
-            <Container className="mt-8 mb-16">
+            <Container className="mt-8 mb-8">
                 <div className="w-full flex flex-col items-center justify-center text-center">
                     <Subheading content={'More Than Just a Marketplace'} />
                     <Heading content={'Why Mentors & Students Trust Us'} className="text-black" />

@@ -7,6 +7,7 @@ import Transaction from "../models/transaction.model.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import mongoose from "mongoose";
+import Withdrawal from "../models/withdrawal.model.js";
 
 // ==================== ADMIN DASHBOARD STATS ====================
 const getAdminDashboardStats = asyncHandler(async (req, res) => {
@@ -144,9 +145,9 @@ const getAdminDashboardStats = asyncHandler(async (req, res) => {
     recentTransactions,
   ] = await Promise.all([
     Transaction.countDocuments(),
-    Transaction.countDocuments({ status: "pending", type: "withdrawal" }),
-    Transaction.aggregate([
-      { $match: { status: "completed", type: "withdrawal" } },
+    Withdrawal.countDocuments({ status: "pending" }),
+    Withdrawal.aggregate([
+      { $match: { status: "completed" } },
       { $group: { _id: null, total: { $sum: "$amount" } } },
     ]),
     Transaction.find()

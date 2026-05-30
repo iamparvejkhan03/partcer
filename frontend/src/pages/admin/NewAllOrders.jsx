@@ -607,12 +607,12 @@ const NewOrders = () => {
                                                 {selectedOrder.studentId?.firstName} {selectedOrder.studentId?.lastName}
                                             </p>
                                             <p className="text-sm text-gray-600">{selectedOrder.studentId?.email}</p>
-                                            <Link
+                                            {/* <Link
                                                 to={`/admin/users/${selectedOrder.studentId?._id}`}
                                                 className="text-xs text-primary hover:underline mt-1 inline-block"
                                             >
                                                 View Profile →
-                                            </Link>
+                                            </Link> */}
                                         </div>
                                     </div>
                                 </div>
@@ -634,7 +634,7 @@ const NewOrders = () => {
                                             </p>
                                             <p className="text-sm text-gray-600">{selectedOrder.mentorId?.email}</p>
                                             <Link
-                                                to={`/admin/users/${selectedOrder.mentorId?._id}`}
+                                                to={`/freelancer/${selectedOrder.mentorId?._id}`}
                                                 className="text-xs text-primary hover:underline mt-1 inline-block"
                                             >
                                                 View Profile →

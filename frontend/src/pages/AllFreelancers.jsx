@@ -306,8 +306,8 @@ function AllFreelancers() {
                         </div> */}
 
                         {/* Filter Row */}
-                        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-                            <div className="relative md:col-span-2">
+                        <div className="grid grid-cols-1 md:grid-cols-10 gap-4">
+                            <div className="relative md:col-span-3">
                                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
                                 <input
                                     type="text"
@@ -319,12 +319,12 @@ function AllFreelancers() {
                                 />
                             </div>
                             {/* Category Select */}
-                            <div className="relative md:col-span-1">
+                            <div className="relative md:col-span-3">
                                 <select
                                     name="category"
                                     value={filters.category}
                                     onChange={handleFilterChange}
-                                    className="px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary bg-white"
+                                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary bg-white"
                                 >
                                     <option value="">Select Category</option>
                                     {categories.map(cat => (
@@ -349,7 +349,7 @@ function AllFreelancers() {
                             </select> */}
 
                             {/* Service Select */}
-                            <div className="relative md:col-span-1">
+                            <div className="relative md:col-span-2">
                                 <select
                                     name="service"
                                     value={filters.service}
@@ -363,7 +363,7 @@ function AllFreelancers() {
                             </div>
 
                             {/* Skills Select - Dropdown for better UX */}
-                            <div className="relative md:col-span-1">
+                            <div className="relative md:col-span-2">
                                 <select
                                     value=""
                                     onChange={(e) => {

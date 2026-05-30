@@ -34,7 +34,7 @@ function FAQSection() {
     };
 
     return (
-        <section className="mt-16 bg-white">
+        <section className="mt-8 pt-8 bg-white">
             <Container>
                 <div className="flex flex-col lg:flex-row gap-8 lg:gap-12">
 

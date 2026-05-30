@@ -90,7 +90,7 @@ const Dashboard = () => {
       description: "All registered users"
     },
     {
-      title: "Freelancers",
+      title: "Mentors",
       value: formatNumber(dashboardData.users?.freelancers),
       change: `${dashboardData.users?.active || 0} active`,
       icon: <UserCheck size={24} />,
@@ -98,7 +98,7 @@ const Dashboard = () => {
       description: "Service providers"
     },
     {
-      title: "Buyers (Students)",
+      title: "Students",
       value: formatNumber(dashboardData.users?.buyers),
       change: `${dashboardData.users?.newThisWeek || 0} this week`,
       icon: <ShoppingBag size={24} />,
@@ -155,7 +155,7 @@ const Dashboard = () => {
     },
     {
       title: "Pending Payouts",
-      value: formatCurrency(dashboardData.transactions?.pendingPayouts),
+      value: (dashboardData.transactions?.pendingPayouts),
       change: "To be processed",
       icon: <CreditCard size={24} />,
       trend: "down",

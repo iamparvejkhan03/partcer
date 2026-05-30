@@ -481,6 +481,7 @@ const NewAllOrders = () => {
                                         {/* <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">Period</th> */}
                                         <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">Mentor Fee</th>
                                         <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">Payment Status</th>
+                                        <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">Delivery Status</th>
                                         <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">Order Status</th>
                                         {/* <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">Date</th> */}
                                         <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
@@ -548,6 +549,9 @@ const NewAllOrders = () => {
                                                             Mark as Delivered
                                                         </button>
                                                     )}
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                        {getOrderStatusBadge(order.orderStatus || 'pending')}
                                                 </td>
                                                 {/* <td className="px-6 py-4">
                                                     <div className="text-sm text-gray-900">{formatDate(order.createdAt)}</div>
@@ -670,7 +674,7 @@ const NewAllOrders = () => {
                             <div className="flex flex-wrap justify-between items-center gap-4">
                                 <div className="flex gap-2">
                                     {getPaymentStatusBadge(selectedOrder.paymentStatus)}
-                                    {/* {getOrderStatusBadge(selectedOrder.orderStatus)} */}
+                                    {getOrderStatusBadge(selectedOrder.orderStatus)}
                                 </div>
                                 {selectedOrder.paymentCompletedAt && (
                                     <div className="text-sm text-gray-500">
