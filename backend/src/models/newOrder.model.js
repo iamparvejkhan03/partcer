@@ -141,6 +141,10 @@ const newOrderSchema = new Schema(
     errorDetails: {
       type: String,
     },
+    viewedByMentor: {
+      type: Boolean,
+      default: false
+    },
   },
   { timestamps: true }
 );

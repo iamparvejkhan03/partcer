@@ -7,6 +7,7 @@ import ChatWindow from '../../components/chat/ChatWindow';
 import { Menu, MessageSquare } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import { useNotifications } from '../../contexts/NotificationContext';
 
 const Chat = () => {
     const [searchParams] = useSearchParams();
@@ -19,6 +20,12 @@ const Chat = () => {
     const [loading, setLoading] = useState(true);
     const [showMobileList, setShowMobileList] = useState(false);
     const navigate = useNavigate();
+    const { markMessagesAsRead } = useNotifications();
+
+    // useEffect to mark as read when page loads
+    useEffect(() => {
+        markMessagesAsRead();
+    }, []);
 
     // Auto-start conversation with user from URL
     useEffect(() => {

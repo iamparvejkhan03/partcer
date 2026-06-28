@@ -37,14 +37,9 @@ function Header() {
                     )}
                 </button> */}
 
-                <Link to={`/buyer/chat`} className="relative p-2 text-secondary hover:text-black transition-colors">
+                {/* <Link to={`/buyer/chat`} className="relative p-2 text-secondary hover:text-black transition-colors">
                     <MessageSquare size={22} />
-                    {/* {messageCount > 0 && (
-                        <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                            {messageCount}
-                        </span>
-                    )} */}
-                </Link>
+                </Link> */}
 
                 {/* User profile */}
                 <div className="flex items-center space-x-3 pl-3 border-l border-gray-200">

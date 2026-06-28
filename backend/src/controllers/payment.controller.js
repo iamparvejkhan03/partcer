@@ -10,6 +10,7 @@ import Review from "../models/review.model.js";
 import Resolution from "../models/resolution.model.js";
 import { orderCompletedEmail, orderConfirmationForMentor, orderConfirmationForStudent, orderDeliveredEmail } from "../utils/emailTemplates.js";
 import transporter from "../utils/nodemailer.js";
+import { getIO } from '../sockets/socket.js';
 
 // Initialize Razorpay
 const razorpay = new Razorpay({
@@ -300,6 +301,21 @@ export const createOrder = asyncHandler(async (req, res) => {
         transactionAmountInCurrency: studentPaidAmount,
         inrEquivalent: amountReceivedInINR,
     });
+
+    if (order) {
+        try {
+            const io = getIO();
+            io.to(order.mentorId.toString()).emit('order:new', {
+                orderId: order._id,
+                mentorId: order.mentorId,
+                studentName: req.user.firstName + ' ' + req.user.lastName,
+                message: 'You have a new order!'
+            });
+        } catch (socketError) {
+            console.error('Error emitting order event:', socketError);
+            // Don't fail the request if socket emit fails
+        }
+    }
 
     return res.status(200).json(
         new ApiResponse(200, {

@@ -467,6 +467,58 @@ const getOrderByOrderId = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, order, "Order fetched successfully"));
 });
 
+// ==================== GET UNREAD ORDERS COUNT ====================
+export const getUnreadOrdersCount = async (req, res) => {
+  try {
+    const mentorId = req.user._id;
+    
+    const count = await Order.countDocuments({
+      mentorId: mentorId,
+      viewedByMentor: false,
+      orderStatus: 'confirmed' // Only count confirmed orders
+    });
+    
+    res.status(200).json({
+      success: true,
+      data: { count }
+    });
+  } catch (error) {
+    console.error('Error fetching unread orders:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch unread orders count'
+    });
+  }
+};
+
+// ==================== MARK ORDER AS VIEWED ====================
+export const markOrdersAsViewed = async (req, res) => {
+  try {
+    const mentorId = req.user._id;
+    
+    await Order.updateMany(
+      {
+        mentorId: mentorId,
+        viewedByMentor: false
+      },
+      {
+        $set: { viewedByMentor: true }
+      }
+    );
+    
+    res.status(200).json({
+      success: true,
+      message: 'Orders marked as viewed'
+    });
+  } catch (error) {
+    console.error('Error marking orders as viewed:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to mark orders as viewed'
+    });
+  }
+};
+
 // ==================== UPDATE ORDER STATUS ====================
 
 const updateOrderStatus = asyncHandler(async (req, res) => {

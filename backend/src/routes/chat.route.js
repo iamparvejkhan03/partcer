@@ -13,6 +13,8 @@ import {
   getOrCreateMeeting,
   updateMeeting,
   createMeeting,
+  getUnreadMessages,
+  markMessagesAsRead,
 } from "../controllers/chat.controller.js";
 
 const chatRouter = Router();
@@ -42,5 +44,8 @@ chatRouter.post("/messages/:messageId/resource", auth, markAsResource);
 chatRouter.get("/conversations/:conversationId/meeting", auth, getOrCreateMeeting);
 chatRouter.put("/meetings/:meetingId", auth, updateMeeting);
 chatRouter.post("/conversations/:conversationId/meeting", auth, createMeeting);
+
+chatRouter.get("/unread/count", auth, getUnreadMessages);
+chatRouter.put("/mark-all-read", auth, markMessagesAsRead);
 
 export default chatRouter;

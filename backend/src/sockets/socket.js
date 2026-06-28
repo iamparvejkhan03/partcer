@@ -9,6 +9,7 @@ import transporter from "../utils/nodemailer.js";
 
 // Store online users
 const onlineUsers = new Map();
+let ioInstance;
 
 export const initializeSocket = (server) => {
   const io = new Server(server, {
@@ -27,6 +28,9 @@ export const initializeSocket = (server) => {
     pingTimeout: 60000,
     pingInterval: 25000,
   });
+
+  // Store io instance
+  ioInstance = io;
 
   // Socket authentication middleware
   io.use(async (socket, next) => {
@@ -94,6 +98,17 @@ export const initializeSocket = (server) => {
       } catch (error) {
         console.error("Error getting conversations:", error);
         socket.emit("error", { message: "Failed to get conversations" });
+      }
+    });
+
+    // Add socket listener for marking orders as viewed (optional)
+    socket.on('orders:viewed', async () => {
+      try {
+        // You can optionally call the API here or handle it directly
+        // Or just emit back to update the badge
+        io.to(socket.user._id.toString()).emit('orders:count:update', { count: 0 });
+      } catch (error) {
+        console.error('Error updating orders view:', error);
       }
     });
 
@@ -328,6 +343,16 @@ export const initializeSocket = (server) => {
             readerId: socket.user._id,
           });
         }
+
+        // After resetting unread count, emit updated count to the user
+        const updatedCount = await Message.countDocuments({
+          receiver: socket.user._id,
+          status: { $in: ['sent', 'delivered'] },
+          'readBy.user': { $ne: socket.user._id }
+        });
+
+        // Emit to the user's personal room
+        io.to(socket.user._id.toString()).emit('messages:count:update', { count: updatedCount });
       } catch (error) {
         console.error("Error marking messages as read:", error);
       }
@@ -360,4 +385,12 @@ export const initializeSocket = (server) => {
   });
 
   return io;
+};
+
+// Helper function to get io instance
+export const getIO = () => {
+  if (!ioInstance) {
+    throw new Error('Socket.io not initialized');
+  }
+  return ioInstance;
 };

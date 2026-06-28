@@ -8,6 +8,7 @@ import { usePopUp } from "../contexts/PopUpContextProvider";
 import MegaMenuDesktop from './MegaMenuDesktop';
 import MegaMenuMobile from './MegaMenuMobile';
 import { dummyUserImg, logo, userTypes } from '../assets';
+import { useNotifications } from '../contexts/NotificationContext';
 
 const Header = () => {
     const [scrolled, setScrolled] = useState(false);
@@ -18,6 +19,8 @@ const Header = () => {
     const [mobileProfileMenuOpen, setMobileProfileMenuOpen] = useState(false);
     const dropdownRef = useRef(null);
     const navigate = useNavigate();
+
+    const { unreadMessages, unreadOrders, markMessagesAsRead, markOrdersAsViewed } = useNotifications();
 
     const location = useLocation();
     const { pathname } = location;
@@ -346,18 +349,40 @@ const Header = () => {
 
                         {/* Desktop Actions for logged-in users */}
                         {user && <div className="hidden lg:flex items-center gap-4 relative" ref={dropdownRef}>
-                            <button onClick={() => navigate(user?.userType == 'buyer' ? '/buyer/orders' : user?.userType == 'agency' ? '/agency/orders' : '/freelancer/orders/all')} className='text-white relative'>
+                            {/* Update the order button */}
+                            <button
+                                onClick={() => {
+                                    markOrdersAsViewed(); // Mark as viewed when navigating
+                                    navigate(user?.userType == 'buyer' ? '/buyer/orders' : '/freelancer/orders/all');
+                                }}
+                                className='text-white relative'
+                            >
                                 <ShoppingBag />
-                                <div className="absolute -top-2 -right-1 flex size-4 items-center justify-center rounded-full bg-red-500">
-                                    <p className="text-xs text-white">2</p>
-                                </div>
+                                {unreadOrders > 0 && (
+                                    <div className="absolute -top-2 -right-1 flex size-4 items-center justify-center rounded-full bg-red-500">
+                                        <p className="text-xs text-white font-semibold">
+                                            {unreadOrders > 9 ? '9+' : unreadOrders}
+                                        </p>
+                                    </div>
+                                )}
                             </button>
 
-                            <button onClick={() => navigate(`/${user?.userType}/chat`)} className='text-white relative'>
+                            {/* Update the message button */ }
+                            <button
+                                onClick={() => {
+                                    markMessagesAsRead(); // Mark as read when navigating
+                                    navigate(`/${user?.userType}/chat`);
+                                }}
+                                className='text-white relative'
+                            >
                                 <MessageSquare />
-                                <div className="absolute -top-2 -right-1 flex size-4 items-center justify-center rounded-full bg-red-500">
-                                    <p className="text-xs text-white">9</p>
-                                </div>
+                                {unreadMessages > 0 && (
+                                    <div className="absolute -top-2 -right-1 flex size-4 items-center justify-center rounded-full bg-red-500">
+                                        <p className="text-xs text-white font-semibold">
+                                            {unreadMessages > 9 ? '9+' : unreadMessages}
+                                        </p>
+                                    </div>
+                                )}
                             </button>
 
                             {user && user?.userType == 'buyer' && (

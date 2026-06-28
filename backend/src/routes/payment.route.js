@@ -18,6 +18,7 @@ import {
 } from "../controllers/payment.controller.js";
 import { verifyJWT, authAdmin } from "../middlewares/auth.middleware.js";
 import upload from "../middlewares/multer.middleware.js";
+import { getUnreadOrdersCount, markOrdersAsViewed } from "../controllers/newOrder.controller.js";
 
 const paymentRouter = express.Router();
 
@@ -36,6 +37,10 @@ paymentRouter.get("/history/:userId1/:userId2", verifyJWT, getOrderHistoryBetwee
 // Delivery and completion routes
 paymentRouter.post("/orders/:orderId/deliver", verifyJWT, upload.array('attachments', 5), markOrderDelivered);
 paymentRouter.post("/orders/:orderId/complete", verifyJWT, completeOrder);
+
+// Other orders routes
+paymentRouter.get("/unread/count", verifyJWT, getUnreadOrdersCount);
+paymentRouter.put("/mark-viewed", verifyJWT, markOrdersAsViewed);
 
 // Transaction routes (Admin only)
 paymentRouter.get("/admin/transactions", verifyJWT, authAdmin, getAllTransactions);

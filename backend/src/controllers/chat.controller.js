@@ -246,7 +246,7 @@ export const updateMeeting = asyncHandler(async (req, res) => {
 
   const student = await User.findById(meeting.learnerId);
   const mentor = await User.findById(meeting.mentorId);
-  
+
   if (student && mentor) {
     meetingNotificationForStudent(transporter, student, mentor, meeting, 'updated')
       .catch(err => console.error(`Meeting update email failed for ${student.email}:`, err.message));
@@ -348,3 +348,63 @@ export const createMeeting = asyncHandler(async (req, res) => {
     .status(201)
     .json(new ApiResponse(201, meeting, "Meeting created successfully"));
 });
+
+export const getUnreadMessages = asyncHandler(async (req, res) => {
+  try {
+    const userId = req.user._id;
+
+    // Count unread messages where user is the receiver
+    const count = await Message.countDocuments({
+      receiver: userId,
+      status: { $in: ['sent', 'delivered'] },
+      'readBy.user': { $ne: userId }
+    });
+
+    res.status(200).json({
+      success: true,
+      data: { count }
+    });
+  } catch (error) {
+    console.error('Error fetching unread count:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch unread messages count'
+    });
+  }
+})
+
+export const markMessagesAsRead = asyncHandler(async (req, res) => {
+  try {
+    const userId = req.user._id;
+
+    // Update all messages where user is the receiver and not yet read
+    const result = await Message.updateMany(
+      {
+        receiver: userId,
+        'readBy.user': { $ne: userId }
+      },
+      {
+        $push: { readBy: { user: userId, readAt: new Date() } },
+        status: "read"
+      }
+    );
+
+    // Reset unread counts in all conversations
+    await Conversation.updateMany(
+      { participants: userId },
+      { $set: { [`unreadCount.${userId.toString()}`]: 0 } }
+    );
+
+    res.status(200).json({
+      success: true,
+      message: 'All messages marked as read',
+      data: { modifiedCount: result.modifiedCount }
+    });
+  } catch (error) {
+    console.error('Error marking messages as read:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to mark messages as read'
+    });
+  }
+})

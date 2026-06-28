@@ -28,6 +28,7 @@ import toast from 'react-hot-toast';
 import axiosInstance from '../../utils/axiosInstance';
 import { useAuth } from '../../contexts/AuthContext';
 import { format } from 'date-fns';
+import { useNotifications } from '../../contexts/NotificationContext';
 
 const NewAllOrders = () => {
     const [orders, setOrders] = useState([]);
@@ -54,6 +55,12 @@ const NewAllOrders = () => {
 
     const { user } = useAuth();
     const navigate = useNavigate();
+    const { markOrdersAsViewed } = useNotifications();
+
+    // useEffect to mark as viewed when page loads
+    useEffect(() => {
+        markOrdersAsViewed();
+    }, []);
 
     useEffect(() => {
         fetchOrders();
@@ -551,7 +558,7 @@ const NewAllOrders = () => {
                                                     )}
                                                 </td>
                                                 <td className="px-6 py-4">
-                                                        {getOrderStatusBadge(order.orderStatus || 'pending')}
+                                                    {getOrderStatusBadge(order.orderStatus || 'pending')}
                                                 </td>
                                                 {/* <td className="px-6 py-4">
                                                     <div className="text-sm text-gray-900">{formatDate(order.createdAt)}</div>
@@ -785,7 +792,7 @@ const NewAllOrders = () => {
                                     </div>
                                 </div>
                             </div>
-                            
+
                             {/* Existing Review - Show if student already reviewed */}
                             {selectedOrder.studentReviewed && selectedOrder.studentReview && (
                                 <div className="bg-gray-50 p-4 rounded-lg">
