@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
-import { ChevronDown, Menu, X, Search, Plus, LogIn, LayoutDashboard, User, Settings, LogOut, Briefcase, FileText, ShoppingBag, Calendar, CreditCard, Star, HelpCircle, BanknoteArrowDown, BanknoteArrowUp, Users } from 'lucide-react';
+import { ChevronDown, Menu, X, Search, Plus, LogIn, LayoutDashboard, User, Settings, LogOut, Briefcase, FileText, ShoppingBag, Calendar, CreditCard, Star, HelpCircle, BanknoteArrowDown, BanknoteArrowUp, Users, MessageSquare } from 'lucide-react';
 import Container from './Container';
 import MegaMenu from './MegaMenu';
 import { useAuth } from "../contexts/AuthContext";
@@ -288,9 +288,9 @@ const Header = () => {
                                     <NavLink to="/buyer/projects/all" className="text-white/90 hover:text-white">
                                         My Projects
                                     </NavLink>
-                                    <NavLink to="/buyer/orders" className="text-white/90 hover:text-white">
+                                    {/* <NavLink to="/buyer/orders" className="text-white/90 hover:text-white">
                                         My Orders
-                                    </NavLink>
+                                    </NavLink> */}
                                 </>
                             )}
                             {user && user?.userType == 'freelancer' && (
@@ -304,9 +304,9 @@ const Header = () => {
                                     {/* <NavLink to="/freelancer/services" className="text-white/90 hover:text-white">
                                         My Services
                                     </NavLink> */}
-                                    <NavLink to="/freelancer/orders/all" className="text-white/90 hover:text-white">
+                                    {/* <NavLink to="/freelancer/orders/all" className="text-white/90 hover:text-white">
                                         My Orders
-                                    </NavLink>
+                                    </NavLink> */}
                                 </>
                             )}
                             {user && user?.userType == 'admin' && (
@@ -346,6 +346,20 @@ const Header = () => {
 
                         {/* Desktop Actions for logged-in users */}
                         {user && <div className="hidden lg:flex items-center gap-4 relative" ref={dropdownRef}>
+                            <button onClick={() => navigate(user?.userType == 'buyer' ? '/buyer/orders' : user?.userType == 'agency' ? '/agency/orders' : '/freelancer/orders/all')} className='text-white relative'>
+                                <ShoppingBag />
+                                <div className="absolute -top-2 -right-1 flex size-4 items-center justify-center rounded-full bg-red-500">
+                                    <p className="text-xs text-white">2</p>
+                                </div>
+                            </button>
+
+                            <button onClick={() => navigate(`/${user?.userType}/chat`)} className='text-white relative'>
+                                <MessageSquare />
+                                <div className="absolute -top-2 -right-1 flex size-4 items-center justify-center rounded-full bg-red-500">
+                                    <p className="text-xs text-white">9</p>
+                                </div>
+                            </button>
+
                             {user && user?.userType == 'buyer' && (
                                 <Link to="/buyer/projects/create" className="flex items-center gap-2 text-black cursor-pointer transition bg-white px-3 py-2.5 rounded-md text-sm font-medium hover:bg-white/90">
                                     <Plus size={20} strokeWidth={2.5} className="text-black cursor-pointer" />
@@ -393,8 +407,8 @@ const Header = () => {
                                                     setProfileDropdownOpen(false);
                                                 }}
                                                 className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-colors ${item.isLogout
-                                                        ? 'text-red-600 hover:bg-red-50 border-t border-gray-100 mt-1'
-                                                        : 'text-gray-700 hover:bg-gray-50'
+                                                    ? 'text-red-600 hover:bg-red-50 border-t border-gray-100 mt-1'
+                                                    : 'text-gray-700 hover:bg-gray-50'
                                                     }`}
                                             >
                                                 {item.icon}
@@ -523,8 +537,8 @@ const Header = () => {
                                         setMobileProfileMenuOpen(false);
                                     }}
                                     className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-base transition-colors ${item.isLogout
-                                            ? 'text-red-600 hover:bg-red-50'
-                                            : 'text-gray-800 hover:bg-gray-100'
+                                        ? 'text-red-600 hover:bg-red-50'
+                                        : 'text-gray-800 hover:bg-gray-100'
                                         }`}
                                 >
                                     {item.icon}
@@ -621,8 +635,8 @@ const Header = () => {
                                             setMobileProfileMenuOpen(false);
                                         }}
                                         className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg text-base transition-colors ${item.isLogout
-                                                ? 'text-red-600 hover:bg-red-50'
-                                                : 'text-gray-800 hover:bg-gray-100'
+                                            ? 'text-red-600 hover:bg-red-50'
+                                            : 'text-gray-800 hover:bg-gray-100'
                                             }`}
                                     >
                                         {item.icon}

@@ -71,6 +71,9 @@ function Login() {
                     isActive: userData.isActive,
                     profileImage: userData.profileImage,
                     country: userData.country,
+                    displayName: userData.displayName,
+                    isAgency: userData.isAgency,
+                    agencyName: userData.agencyName,
                 };
 
                 localStorage.setItem('user', JSON.stringify(userInfo));
@@ -78,13 +81,6 @@ function Login() {
                 setUser(userInfo);
 
                 toast.success(response.data.message || 'Login successful!');
-
-                // Redirect based on user type
-                // const redirectPath = userData.userType === 'freelancer'
-                //     ? '/freelancer/dashboard'
-                //     : userData.userType === 'admin'
-                //         ? '/admin/dashboard'
-                //         : '/buyer/dashboard';
 
                 const redirectPath = userData.userType === 'freelancer'
                     ? '/freelancer/profile/settings'
@@ -256,7 +252,7 @@ function Login() {
                             <p className="text-gray-600">
                                 Don't have an account?{' '}
                                 <Link
-                                    to="/register"
+                                    to="/register/user"
                                     className="font-medium text-primary hover:text-primary/80 transition-colors"
                                 >
                                     Sign up

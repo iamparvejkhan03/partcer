@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Search, SlidersHorizontal, X, ChevronDown, Filter, ChevronLeft, ChevronRight } from "lucide-react";
 import { Container } from "../components";
 import ProjectCard from "../components/BuyerProjectCard";
@@ -16,6 +16,9 @@ function AllProjects() {
         skills: []
     });
 
+    const [interestFilter, setInterestFilter] = useState("all");
+    const [sortBy, setSortBy] = useState("newest");
+
     const [allProjects, setAllProjects] = useState([]);
     const [filteredProjects, setFilteredProjects] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -27,6 +30,84 @@ function AllProjects() {
     const itemsPerPage = 10;
 
     const [searchParams, setSearchParams] = useSearchParams();
+
+    // Skills Multi-select Component (place inside AllProjects or import)
+    const SkillsSelect = ({ selectedSkills, onToggleSkill }) => {
+        const [isOpen, setIsOpen] = useState(false);
+        const [search, setSearch] = useState("");
+        const dropdownRef = useRef(null);
+
+        const filteredSkills = skillsList.filter(
+            (skill) =>
+                skill.name.toLowerCase().includes(search.toLowerCase()) &&
+                !selectedSkills.includes(skill.name)
+        );
+
+        useEffect(() => {
+            const handleClickOutside = (event) => {
+                if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+                    setIsOpen(false);
+                }
+            };
+            document.addEventListener("mousedown", handleClickOutside);
+            return () => document.removeEventListener("mousedown", handleClickOutside);
+        }, []);
+
+        return (
+            <div className="relative" ref={dropdownRef}>
+                <button
+                    type="button"
+                    onClick={() => setIsOpen(!isOpen)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary bg-white flex justify-between items-center hover:border-gray-400 transition-colors"
+                >
+                    <span className={selectedSkills.length > 0 ? "text-gray-900" : "text-gray-500"}>
+                        {selectedSkills.length > 0
+                            ? `${selectedSkills.length} skill${selectedSkills.length > 1 ? "s" : ""} selected`
+                            : "Select Skills"}
+                    </span>
+                    <ChevronDown size={16} className={`transform transition-transform ${isOpen ? "rotate-180" : ""}`} />
+                </button>
+
+                {isOpen && (
+                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-auto">
+                        <div className="p-2 border-b sticky top-0 bg-white">
+                            <div className="relative">
+                                <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                                <input
+                                    type="text"
+                                    placeholder="Search skills..."
+                                    className="w-full pl-9 pr-3 py-1.5 border border-gray-300 rounded-lg focus:ring-1 focus:ring-primary focus:border-primary"
+                                    value={search}
+                                    onChange={(e) => setSearch(e.target.value)}
+                                    onClick={(e) => e.stopPropagation()}
+                                />
+                            </div>
+                        </div>
+                        <div className="py-1">
+                            {filteredSkills.length > 0 ? (
+                                filteredSkills.map((skill) => (
+                                    <label
+                                        key={skill._id}
+                                        className="w-full px-4 py-2 flex items-center gap-2 cursor-pointer hover:bg-gray-50"
+                                    >
+                                        <input
+                                            type="checkbox"
+                                            checked={selectedSkills.includes(skill.name)}
+                                            onChange={() => onToggleSkill(skill.name)}
+                                            className="w-4 h-4 text-primary rounded focus:ring-primary"
+                                        />
+                                        <span className="flex-1">{skill.name}</span>
+                                    </label>
+                                ))
+                            ) : (
+                                <div className="px-4 py-2 text-sm text-gray-500">No skills found</div>
+                            )}
+                        </div>
+                    </div>
+                )}
+            </div>
+        );
+    };
 
     useEffect(() => {
         const searchFromURL = searchParams.get('search');
@@ -90,7 +171,7 @@ function AllProjects() {
     // Helper functions for new model
     const getPeriodLabel = (period) => {
         const map = {
-            one_time: 'One-time',
+            // one_time: 'One-time',
             per_day: 'Per day',
             weekly: 'Weekly',
             monthly: 'Monthly'
@@ -187,12 +268,11 @@ function AllProjects() {
             );
         }
 
-        // Category filter - handle both ID and name
+        // Category filter
         if (filters.category) {
             filtered = filtered.filter(project => {
                 const projectCategoryId = project.category?._id || project.category;
                 const projectCategoryName = project.category?.name || '';
-
                 return projectCategoryId === filters.category ||
                     projectCategoryName.toLowerCase() === decodeURIComponent(filters.category).toLowerCase();
             });
@@ -203,7 +283,6 @@ function AllProjects() {
             filtered = filtered.filter(project => {
                 const projectSubCategoryId = project.subCategory?._id || project.subCategory;
                 const projectSubCategoryName = project.subCategory?.name || '';
-
                 return projectSubCategoryId === filters.subCategory ||
                     projectSubCategoryName.toLowerCase() === decodeURIComponent(filters.subCategory).toLowerCase();
             });
@@ -229,9 +308,53 @@ function AllProjects() {
             });
         }
 
+        // Interest filter - using proposalsCount
+        if (interestFilter !== "all") {
+            filtered = filtered.filter(project => {
+                const count = project.proposalsCount || 0;
+                switch (interestFilter) {
+                    case "0":
+                        return count === 0;
+                    case "less_than_3":
+                        return count < 3;
+                    case "less_than_5":
+                        return count < 5;
+                    case "greater_than_5":
+                        return count > 5;
+                    default:
+                        return true;
+                }
+            });
+        }
+
+        // Sort
+        switch (sortBy) {
+            case "newest":
+                filtered.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+                break;
+            case "oldest":
+                filtered.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+                break;
+            case "most_interested":
+                filtered.sort((a, b) => (b.proposalsCount || 0) - (a.proposalsCount || 0));
+                break;
+            case "least_interested":
+                filtered.sort((a, b) => (a.proposalsCount || 0) - (b.proposalsCount || 0));
+                break;
+            case "most_viewed":
+                filtered.sort((a, b) => (b.views || 0) - (a.views || 0));
+                break;
+            default:
+                break;
+        }
+
         setFilteredProjects(filtered);
         setCurrentPage(1);
-    }, [allProjects, filters]);
+
+        // REMOVE THIS DUPLICATE LINE:
+        // setFilteredProjects(filtered);
+        // setCurrentPage(1);
+    }, [allProjects, filters, interestFilter, sortBy]); // <-- ADD interestFilter and sortBy here
 
     useEffect(() => {
         filterProjects();
@@ -269,7 +392,8 @@ function AllProjects() {
             period: "all",
             skills: []
         });
-        
+        setInterestFilter("all");
+        setSortBy("newest");
         navigate('/projects', { replace: true });
     };
 
@@ -288,7 +412,7 @@ function AllProjects() {
 
     const periodOptions = [
         { value: "all", label: "All periods" },
-        { value: "one_time", label: "One-time" },
+        // { value: "one_time", label: "One-time" },
         { value: "per_day", label: "Per day" },
         { value: "weekly", label: "Weekly" },
         { value: "monthly", label: "Monthly" }
@@ -371,7 +495,7 @@ function AllProjects() {
                             </select>
 
                             {/* SubCategory Select */}
-                            <select
+                            {/* <select
                                 name="subCategory"
                                 value={filters.subCategory}
                                 onChange={handleFilterChange}
@@ -382,10 +506,18 @@ function AllProjects() {
                                 {subCategories.map(sub => (
                                     <option key={sub._id} value={sub._id}>{sub.name}</option>
                                 ))}
-                            </select>
+                            </select> */}
+
+                            {/* Skills Multi-select */}
+                            <div className="relative">
+                                <SkillsSelect
+                                    selectedSkills={filters.skills}
+                                    onToggleSkill={toggleSkill}
+                                />
+                            </div>
 
                             {/* Service Select */}
-                            <select
+                            {/* <select
                                 name="service"
                                 value={filters.service}
                                 onChange={handleFilterChange}
@@ -394,10 +526,10 @@ function AllProjects() {
                                 {serviceOptions.map(opt => (
                                     <option key={opt.value} value={opt.value}>{opt.label}</option>
                                 ))}
-                            </select>
+                            </select> */}
 
                             {/* Period Select */}
-                            <select
+                            {/* <select
                                 name="period"
                                 value={filters.period}
                                 onChange={handleFilterChange}
@@ -406,7 +538,35 @@ function AllProjects() {
                                 {periodOptions.map(opt => (
                                     <option key={opt.value} value={opt.value}>{opt.label}</option>
                                 ))}
+                            </select> */}
+
+                            {/* Interest Filter */}
+                            <select
+                                name="interestFilter"
+                                value={interestFilter}
+                                onChange={(e) => setInterestFilter(e.target.value)}
+                                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary bg-white"
+                            >
+                                <option value="all">All Interests</option>
+                                <option value="0">0 interests</option>
+                                <option value="less_than_3">Less than 3</option>
+                                <option value="less_than_5">Less than 5</option>
+                                <option value="greater_than_5">Greater than 5</option>
                             </select>
+
+                            <select
+                                name="sortBy"
+                                value={sortBy}
+                                onChange={(e) => setSortBy(e.target.value)}
+                                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary bg-white"
+                            >
+                                <option value="newest">Newest First</option>
+                                <option value="oldest">Oldest First</option>
+                                <option value="most_interested">Most Interested</option>
+                                <option value="least_interested">Least Interested</option>
+                                <option value="most_viewed">Most Viewed</option>
+                            </select>
+
                         </div>
 
                         {/* Active Filters Tags */}
@@ -462,6 +622,19 @@ function AllProjects() {
                                         </button>
                                     </span>
                                 ))}
+                                {interestFilter !== "all" && (
+                                    <span className="inline-flex items-center gap-1 px-2 py-1 bg-yellow-100 text-yellow-700 text-xs rounded-full">
+                                        Proposals: {
+                                            interestFilter === "0" ? "0 proposals" :
+                                                interestFilter === "less_than_3" ? "Less than 3" :
+                                                    interestFilter === "less_than_5" ? "Less than 5" :
+                                                        "Greater than 5"
+                                        }
+                                        <button onClick={() => setInterestFilter("all")} className="hover:text-yellow-900">
+                                            <X size={12} />
+                                        </button>
+                                    </span>
+                                )}
                             </div>
                         )}
                     </div>
@@ -580,7 +753,7 @@ function AllProjects() {
                                     </div>
 
                                     {/* Subcategory */}
-                                    <div>
+                                    {/* <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-2">Subcategory</label>
                                         <select
                                             name="subCategory"
@@ -594,10 +767,10 @@ function AllProjects() {
                                                 <option key={sub._id} value={sub._id}>{sub.name}</option>
                                             ))}
                                         </select>
-                                    </div>
+                                    </div> */}
 
                                     {/* Service */}
-                                    <div>
+                                    {/* <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-2">Service</label>
                                         <select
                                             name="service"
@@ -609,10 +782,10 @@ function AllProjects() {
                                                 <option key={opt.value} value={opt.value}>{opt.label}</option>
                                             ))}
                                         </select>
-                                    </div>
+                                    </div> */}
 
                                     {/* Period */}
-                                    <div>
+                                    {/* <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-2">Period</label>
                                         <select
                                             name="period"
@@ -624,7 +797,7 @@ function AllProjects() {
                                                 <option key={opt.value} value={opt.value}>{opt.label}</option>
                                             ))}
                                         </select>
-                                    </div>
+                                    </div> */}
 
                                     {/* Skills */}
                                     <div>
@@ -642,6 +815,40 @@ function AllProjects() {
                                                 </label>
                                             ))}
                                         </div>
+                                    </div>
+
+                                    {/* Interest Filter */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">Interests</label>
+                                        <select
+                                            name="interestFilter"
+                                            value={interestFilter}
+                                            onChange={(e) => setInterestFilter(e.target.value)}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                                        >
+                                            <option value="all">All Interests</option>
+                                            <option value="0">0 interests</option>
+                                            <option value="less_than_3">Less than 3</option>
+                                            <option value="less_than_5">Less than 5</option>
+                                            <option value="greater_than_5">Greater than 5</option>
+                                        </select>
+                                    </div>
+
+                                    {/* Sort By */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">Sort By</label>
+                                        <select
+                                            name="sortBy"
+                                            value={sortBy}
+                                            onChange={(e) => setSortBy(e.target.value)}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                                        >
+                                            <option value="newest">Newest First</option>
+                                            <option value="oldest">Oldest First</option>
+                                            <option value="most_interested">Most Interested</option>
+                                            <option value="least_interested">Least Interested</option>
+                                            <option value="most_viewed">Most Viewed</option>
+                                        </select>
                                     </div>
                                 </div>
 

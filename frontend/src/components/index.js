@@ -43,6 +43,7 @@ import MeetingTab from "./chat/MeetingTab";
 import ExpressInterestModal from "./freelancer/ExpressInterestModal";
 import ResolutionPanel from "./ResolutionPanel";
 import OrderHistoryPanel from "./OrdersHistoryPanel";
+import TextTruncate from "./TextTruncate";
 
 export {
     Header,
@@ -88,4 +89,5 @@ export {
     ExpressInterestModal,
     ResolutionPanel,
     OrderHistoryPanel,
+    TextTruncate,
 }

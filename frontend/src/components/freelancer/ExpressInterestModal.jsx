@@ -7,15 +7,15 @@ import { useCurrency } from '../../hooks/useCurrency';
 
 // Pricing data mapping
 const PRICING_DATA = {
-    one_time: {
-        standard: {
-            mentorFee: 1000,
-            partnerFee: 300,
-            learnerPays: 1300,
-            durationLabel: "Single session",
-            periodLabel: "One-time"
-        }
-    },
+    // one_time: {
+    //     standard: {
+    //         mentorFee: 1000,
+    //         partnerFee: 300,
+    //         learnerPays: 1300,
+    //         durationLabel: "Single session",
+    //         periodLabel: "One-time"
+    //     }
+    // },
     per_day: {
         standard: {
             mentorFee: 1000,
@@ -67,14 +67,14 @@ const PRICING_DATA = {
 };
 
 const PERIODS = [
-    { id: 'one_time', label: 'One-time' },
+    // { id: 'one_time', label: 'One-time' },
     { id: 'per_day', label: 'Per day' },
     { id: 'weekly', label: 'Weekly' },
     { id: 'monthly', label: 'Monthly' }
 ];
 
 const DURATIONS = {
-    one_time: [{ id: 'standard', label: 'Single Session' }],
+    // one_time: [{ id: 'standard', label: 'Single Session' }],
     per_day: [
         { id: 'standard', label: 'Standard (2-3 hrs)' },
         { id: 'full_day', label: 'Full day (6-8 hrs)' }
@@ -159,7 +159,7 @@ const ExpressInterestModal = ({ isOpen, onClose, projectDetails, onSubmit, isSub
 
     // Get duration display text
     const getDurationDisplayText = () => {
-        if (selectedPeriod === 'one_time') return 'Single session';
+        // if (selectedPeriod === 'one_time') return 'Single session';
         if (selectedDuration === 'standard') return 'Standard (2-3 hrs)';
         return 'Full day (6-8 hrs)';
     };

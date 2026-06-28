@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from "react";
-import { Search, SlidersHorizontal, X, ChevronDown, Filter, ChevronLeft, ChevronRight } from "lucide-react";
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { Search, SlidersHorizontal, X, ChevronDown, Filter, ChevronLeft, ChevronRight, Check } from "lucide-react";
 import { Container, FreelancerProfileCard } from "../components";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import axiosInstance from "../utils/axiosInstance";
@@ -23,6 +23,15 @@ function AllFreelancers() {
     const [skillsList, setSkillsList] = useState([]);
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 12;
+
+    const [isSkillsOpen, setIsSkillsOpen] = useState(false);
+const [skillsSearch, setSkillsSearch] = useState("");
+
+const filteredSkills = useMemo(() => {
+    return skillsList.filter(skill =>
+        skill.name.toLowerCase().includes(skillsSearch.toLowerCase())
+    );
+}, [skillsList, skillsSearch]);
 
     const [searchParams] = useSearchParams();
 
@@ -362,24 +371,95 @@ function AllFreelancers() {
                                 </select>
                             </div>
 
-                            {/* Skills Select - Dropdown for better UX */}
-                            <div className="relative md:col-span-2">
-                                <select
-                                    value=""
-                                    onChange={(e) => {
-                                        if (e.target.value) {
-                                            toggleSkill(e.target.value);
-                                            e.target.value = "";
-                                        }
-                                    }}
-                                    className="px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary bg-white w-full"
-                                >
-                                    <option value="">Select Skill</option>
-                                    {skillsList.map(skill => (
-                                        <option key={skill._id} value={skill.name}>{skill.name}</option>
-                                    ))}
-                                </select>
-                            </div>
+                            {/* Skills Select - Multi-select Dropdown */}
+<div className="relative md:col-span-2">
+    <button
+        type="button"
+        onClick={() => setIsSkillsOpen(!isSkillsOpen)}
+        className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-white flex justify-between items-center hover:border-gray-400 transition-colors"
+    >
+        <span className={filters.skills.length > 0 ? "text-gray-900" : "text-gray-500"}>
+            {filters.skills.length > 0
+                ? `${filters.skills.length} skill${filters.skills.length > 1 ? "s" : ""} selected`
+                : "Select Skills"}
+        </span>
+        <ChevronDown size={16} className={`transform transition-transform ${isSkillsOpen ? "rotate-180" : ""}`} />
+    </button>
+
+    {isSkillsOpen && (
+        <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-auto">
+            <div className="p-2 border-b sticky top-0 bg-white">
+                <div className="relative">
+                    <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                    <input
+                        type="text"
+                        placeholder="Search skills..."
+                        className="w-full pl-9 pr-3 py-1.5 border border-gray-300 rounded-lg focus:ring-1 focus:ring-primary focus:border-primary"
+                        value={skillsSearch}
+                        onChange={(e) => setSkillsSearch(e.target.value)}
+                        onClick={(e) => e.stopPropagation()}
+                    />
+                </div>
+            </div>
+            <div className="py-1">
+                {/* Select All / Deselect All */}
+                {filteredSkills.length > 0 && (
+                    <button
+                        type="button"
+                        onClick={() => {
+                            if (filters.skills.length === filteredSkills.length) {
+                                // Deselect all filtered skills
+                                const filteredSkillNames = filteredSkills.map(s => s.name);
+                                setFilters(prev => ({
+                                    ...prev,
+                                    skills: prev.skills.filter(s => !filteredSkillNames.includes(s))
+                                }));
+                            } else {
+                                // Select all filtered skills
+                                const allSkillNames = filteredSkills.map(s => s.name);
+                                const uniqueSkills = [...new Set([...filters.skills, ...allSkillNames])];
+                                setFilters(prev => ({
+                                    ...prev,
+                                    skills: uniqueSkills
+                                }));
+                            }
+                            setSkillsSearch("");
+                        }}
+                        className="w-full px-4 py-2 text-left hover:bg-gray-50 text-sm text-primary border-b border-gray-100"
+                    >
+                        {filters.skills.length === filteredSkills.length && filteredSkills.length > 0 
+                            ? "Deselect All" 
+                            : "Select All"}
+                    </button>
+                )}
+                
+                {filteredSkills.length > 0 ? (
+                    filteredSkills.map((skill) => (
+                        <label
+                            key={skill._id}
+                            className={`w-full px-4 py-2 flex items-center gap-2 cursor-pointer hover:bg-gray-50 ${
+                                filters.skills.includes(skill.name) ? "bg-primary/5" : ""
+                            }`}
+                        >
+                            <input
+                                type="checkbox"
+                                checked={filters.skills.includes(skill.name)}
+                                onChange={() => toggleSkill(skill.name)}
+                                className="w-4 h-4 text-primary rounded focus:ring-primary"
+                            />
+                            <span className="flex-1">{skill.name}</span>
+                            {filters.skills.includes(skill.name) && (
+                                <Check size={16} className="text-primary" />
+                            )}
+                        </label>
+                    ))
+                ) : (
+                    <div className="px-4 py-2 text-sm text-gray-500">No skills found</div>
+                )}
+            </div>
+        </div>
+    )}
+</div>
                         </div>
 
                         {/* Active Filters Tags */}

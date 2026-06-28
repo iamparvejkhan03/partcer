@@ -11,7 +11,8 @@ import { CurrencyProvider } from './hooks/useCurrency.jsx';
 
 const Home = lazy(() => import('./pages/Home'));
 const Login = lazy(() => import('./pages/Login'));
-const Register = lazy(() => import('./pages/Register'));
+const UserRegister = lazy(() => import('./pages/UserRegister'));
+const AgencyRegister = lazy(() => import('./pages/AgencyRegister'));
 const VerifyEmail = lazy(() => import('./pages/VerifyEmail'));
 const AllFreelancers = lazy(() => import('./pages/AllFreelancers'));
 const AllServices = lazy(() => import('./pages/AllServices'));
@@ -100,9 +101,15 @@ createRoot(document.getElementById('root')).render(
                   </Suspense>
                 } />
 
-                <Route path='/register' element={
+                <Route path='/register/user' element={
                   <Suspense fallback={<LoadingSpinner height={'725px'} />}>
-                    <Register />
+                    <UserRegister />
+                  </Suspense>
+                } />
+
+                <Route path='/register/agency' element={
+                  <Suspense fallback={<LoadingSpinner height={'725px'} />}>
+                    <AgencyRegister />
                   </Suspense>
                 } />
 

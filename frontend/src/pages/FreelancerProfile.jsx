@@ -26,9 +26,11 @@ import {
     Languages,
     Wrench,
     Heart,
-    Download
+    Download,
+    Grid2X2,
+    Package
 } from "lucide-react";
-import { Container, StartChatButton, PricingSection } from "../components";
+import { Container, StartChatButton, PricingSection, TextTruncate } from "../components";
 import axiosInstance from "../utils/axiosInstance";
 import toast from "react-hot-toast";
 import { dummyUserImg } from "../assets";
@@ -198,9 +200,9 @@ const FreelancerProfile = () => {
     }
 
     const fullName = `${freelancer.firstName || ''} ${freelancer.lastName || ''}`.trim();
-    const location = [freelancer.city, freelancer.country].filter(Boolean).join(', ');
+    const location = [freelancer.country].filter(Boolean).join(', ');
     const experience = freelancer.experience?.length || 0;
-    const experienceText = experience > 0 ? `${experience}+ years` : 'Entry level';
+    const experienceText = experience > 0 ? `${freelancer?.yearsOfExperience}+ yrs exp.` : 'Entry level';
 
     // Calculate rating from reviews if available
     const calculateRating = () => {
@@ -223,11 +225,11 @@ const FreelancerProfile = () => {
     return (
         <Container>
             <div className="min-h-screen pt-32 md:pt-32 pb-16 bg-gray-50">
-                <div className="max-w-7xl mx-auto">
+                <div className="max-w-full mx-auto">
 
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <div className="grid grid-cols-1 lg:grid-cols-8 gap-8">
                         {/* Left Column - Profile Card */}
-                        <div className="lg:col-span-1">
+                        <div className="lg:col-span-2">
                             <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden sticky top-24">
                                 {/* Profile Header */}
                                 <div className="p-6 text-center border-b border-gray-100">
@@ -235,7 +237,7 @@ const FreelancerProfile = () => {
                                         <img
                                             src={freelancer.profileImage || dummyUserImg}
                                             alt={fullName}
-                                            className="w-32 h-32 rounded-full object-cover border-4 border-white shadow-lg mx-auto"
+                                            className="w-24 h-24 rounded-full object-cover border-4 border-white shadow-lg mx-auto"
                                         />
                                         {freelancer.isVerified && (
                                             <div className="absolute bottom-1 right-1 bg-blue-600 text-white p-1 rounded-full">
@@ -244,13 +246,23 @@ const FreelancerProfile = () => {
                                         )}
                                     </div>
 
-                                    <h1 className="text-2xl font-bold text-gray-900 mt-4">{fullName}</h1>
-                                    <p className="text-gray-600 mt-1">{freelancer.tagline || 'Not Provided'}</p>
+                                    <h1 className="text-xl font-bold text-gray-900 mt-4">{fullName}</h1>
+                                    <p className="text-orange-500 mt-1">{freelancer.tagline || 'Not Provided'}</p>
 
-                                    <div className="flex items-center justify-center gap-1 mt-2">
-                                        <Star size={16} className="fill-yellow-400 text-yellow-400" />
-                                        <span className="font-semibold">{displayRating}</span>
-                                        <span className="text-gray-500">({reviewCount} {reviewCount === 1 ? 'review' : 'reviews'})</span>
+                                    <div className="flex items-center justify-center gap-2">
+                                        <div className="flex items-center justify-center gap-1 mt-2">
+                                            {[...Array(5)].map((_, i) => (
+                                                <Star
+                                                    key={i}
+                                                    size={14}
+                                                    className={i < Math.round(parseFloat(displayRating))
+                                                        ? 'fill-primary text-primary'
+                                                        : 'text-gray-300'
+                                                    }
+                                                />
+                                            ))}
+                                        </div>
+                                        <p className="text-sm text-gray-500 mt-2">{displayRating} ({`${reviewCount} reviews`})</p>
                                     </div>
 
                                     <div className="flex items-center justify-center gap-4 mt-4 text-sm text-gray-600">
@@ -262,6 +274,14 @@ const FreelancerProfile = () => {
                                             <Briefcase size={16} className="text-gray-400" />
                                             <span>{experienceText}</span>
                                         </div>
+                                    </div>
+
+                                    {/* Order Completed */}
+                                    <div className="mt-4">
+                                        <span className="inline-flex items-center gap-1 px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-sm font-normal">
+                                            <Package size={14} />
+                                            {freelancer?.orderCount} mentorship(s) completed
+                                        </span>
                                     </div>
 
                                     {/* Availability Badge */}
@@ -286,6 +306,46 @@ const FreelancerProfile = () => {
                                         </div>
                                     </div>
                                 </div> */}
+
+                                {/* Categories */}
+                                {freelancer.categories?.length > 0 && (
+                                    <div className="p-6 border-b border-gray-100">
+                                        <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                                            <Grid2X2 size={16} />
+                                            Categories
+                                        </h3>
+                                        <div className="flex flex-wrap gap-2">
+                                            {freelancer.categories.map((category, index) => (
+                                                <span
+                                                    key={index}
+                                                    className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm"
+                                                >
+                                                    {category}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Skills */}
+                                {freelancer.skills?.length > 0 && (
+                                    <div className="p-6 border-b border-gray-100">
+                                        <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                                            <Wrench size={16} />
+                                            Skills
+                                        </h3>
+                                        <div className="flex flex-wrap gap-2">
+                                            {freelancer.skills.map((skill, index) => (
+                                                <span
+                                                    key={index}
+                                                    className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm"
+                                                >
+                                                    {skill}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
 
                                 <div className="p-6 border-b border-gray-100">
                                     <div className="space-y-4">
@@ -322,26 +382,6 @@ const FreelancerProfile = () => {
                                     </div>
                                 </div>
 
-                                {/* Skills */}
-                                {freelancer.skills?.length > 0 && (
-                                    <div className="p-6 border-b border-gray-100">
-                                        <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                                            <Wrench size={16} />
-                                            Skills
-                                        </h3>
-                                        <div className="flex flex-wrap gap-2">
-                                            {freelancer.skills.map((skill, index) => (
-                                                <span
-                                                    key={index}
-                                                    className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm"
-                                                >
-                                                    {skill}
-                                                </span>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-
                                 {/* Action Buttons */}
                                 <div className="p-6">
                                     {/* <button className="w-full bg-primary hover:bg-primary/90 text-white font-medium py-3 px-4 rounded-lg mb-3 flex items-center justify-center gap-2">
@@ -357,14 +397,8 @@ const FreelancerProfile = () => {
                             </div>
                         </div>
 
-                        {/* Right Column - Main Content */}
-                        <div className="lg:col-span-2">
-                            {/* Pricing Section */}
-                            <PricingSection
-                                freelancerName={fullName}
-                                freelancerId={freelancer?._id}
-                                freelancerEmail={freelancer?.email}
-                            />
+                        {/* Center Column - Main Content */}
+                        <div className="lg:col-span-3">
                             {/* Tabs */}
                             <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden mb-6">
                                 <div className="flex border-b border-gray-200">
@@ -403,9 +437,16 @@ const FreelancerProfile = () => {
                                         {/* About Me */}
                                         <div className="mb-8">
                                             <h2 className="text-xl font-bold text-gray-900 mb-4">About Me</h2>
-                                            <p className="text-gray-600 leading-relaxed">
-                                                {freelancer.bio || `Not Provided`}
-                                            </p>
+                                            {freelancer.bio && (
+                                                <TextTruncate
+                                                    text={freelancer.bio}
+                                                    maxLength={200}
+                                                    className="text-gray-600 leading-relaxed"
+                                                />
+                                            )}
+                                            {!freelancer.bio && (
+                                                <p className="text-gray-600 leading-relaxed">Not Provided</p>
+                                            )}
                                         </div>
 
                                         {/* Experience */}
@@ -419,7 +460,13 @@ const FreelancerProfile = () => {
                                                         <p className="text-sm text-gray-500 mt-1">
                                                             {new Date(exp.startDate).getFullYear()} - {exp.current ? 'Present' : new Date(exp.endDate).getFullYear()}
                                                         </p>
-                                                        <p className="text-gray-600 mt-2">{exp.description}</p>
+                                                        {exp.description && (
+                                                            <TextTruncate
+                                                                text={exp.description}
+                                                                maxLength={200}
+                                                                className="text-gray-600 mt-2"
+                                                            />
+                                                        )}
                                                     </div>
                                                 ))}
                                             </div>
@@ -436,9 +483,13 @@ const FreelancerProfile = () => {
                                                         <p className="text-sm text-gray-500">
                                                             {new Date(edu.startDate).getFullYear()} - {edu.current ? 'Present' : new Date(edu.endDate).getFullYear()}
                                                         </p>
-                                                        <p className="text-sm mt-2 text-gray-600">
-                                                            {edu?.description}
-                                                        </p>
+                                                        {edu?.description && (
+                                                            <TextTruncate
+                                                                text={edu.description}
+                                                                maxLength={200}
+                                                                className="text-sm mt-2 text-gray-600"
+                                                            />
+                                                        )}
                                                     </div>
                                                 ))}
                                             </div>
@@ -454,7 +505,7 @@ const FreelancerProfile = () => {
                                                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
                                             </div>
                                         ) : portfolioItems.length > 0 ? (
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div className="grid grid-cols-1 md:grid-cols-1 gap-6">
                                                 {portfolioItems.map((item) => (
                                                     <div key={item._id} className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
                                                         <div className="relative h-48 overflow-hidden">
@@ -507,26 +558,28 @@ const FreelancerProfile = () => {
                                 {activeTab === "reviews" && (
                                     <div className="p-6">
                                         {/* Rating Summary */}
-                                        <div className="flex items-start gap-8 mb-8 p-6 bg-gray-50 rounded-xl">
-                                            <div className="text-center">
-                                                <div className="text-5xl font-bold text-gray-900">{displayRating}</div>
-                                                <div className="flex items-center justify-center gap-1 mt-2">
-                                                    {[...Array(5)].map((_, i) => (
-                                                        <Star
-                                                            key={i}
-                                                            size={20}
-                                                            className={i < Math.round(parseFloat(displayRating))
-                                                                ? 'fill-yellow-400 text-yellow-400'
-                                                                : 'text-gray-300'
-                                                            }
-                                                        />
-                                                    ))}
+                                        <div className="flex items-start gap-8 mb-8 bg-gray-50 rounded-xl">
+                                            <div className="flex flex-col">
+                                                <div className="text-2xl font-bold text-gray-900">Reviews</div>
+                                                <div className="flex items-end gap-2">
+                                                    <div className="flex items-center justify-center gap-1.5 mt-2">
+                                                        {[...Array(5)].map((_, i) => (
+                                                            <Star
+                                                                key={i}
+                                                                size={20}
+                                                                className={i < Math.round(parseFloat(displayRating))
+                                                                    ? 'fill-yellow-400 text-yellow-400'
+                                                                    : 'text-gray-300'
+                                                                }
+                                                            />
+                                                        ))}
+                                                    </div>
+                                                    <p className="text-sm text-gray-500 mt-1">{displayRating} ({`${reviewCount} reviews`})</p>
                                                 </div>
-                                                <p className="text-sm text-gray-500 mt-1">{reviewCount} reviews</p>
                                             </div>
 
                                             {/* Rating Distribution - calculate from reviews if needed */}
-                                            <div className="flex-1 space-y-2">
+                                            {/* <div className="flex-1 space-y-2">
                                                 {[5, 4, 3, 2, 1].map((star) => {
                                                     // Calculate count from reviews array if ratingStats not available
                                                     let count = ratingStats?.ratingDistribution?.[star] ||
@@ -547,7 +600,7 @@ const FreelancerProfile = () => {
                                                         </div>
                                                     );
                                                 })}
-                                            </div>
+                                            </div> */}
                                         </div>
 
                                         {/* Review List */}
@@ -558,7 +611,7 @@ const FreelancerProfile = () => {
                                                 </div>
                                             ) : reviews.length > 0 ? (
                                                 reviews.map((review) => (
-                                                    <div key={review._id} className="border-b border-gray-100 pb-6 last:border-0">
+                                                    <div key={review._id} className="border-b border-gray-200 pb-6 last:border-0">
                                                         <div className="flex items-center gap-4">
                                                             <img
                                                                 src={review.reviewer?.profileImage || dummyUserImg}
@@ -660,6 +713,18 @@ const FreelancerProfile = () => {
                                         </div>
                                     </div>
                                 )}
+                            </div>
+                        </div>
+
+                        {/* Right Column - Pricing Table */}
+                        <div className="lg:col-span-3">
+                            <div className="sticky top-24">
+                                {/* Pricing Section */}
+                                <PricingSection
+                                    freelancerName={fullName}
+                                    freelancerId={freelancer?._id}
+                                    freelancerEmail={freelancer?.email}
+                                />
                             </div>
                         </div>
                     </div>

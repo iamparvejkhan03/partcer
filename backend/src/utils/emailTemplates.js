@@ -153,7 +153,7 @@ export const welcomeEmail = async (transporter, user, verificationToken) => {
     const verificationUrl = `${process.env.FRONTEND_URL}/verify-email/${verificationToken}`;
 
     const content = `
-        <h2>Welcome to Partcer, ${user.firstName}!</h2>
+        <h2>Welcome to Partcer, ${user.displayName}!</h2>
         <p>Thanks for joining. Please verify your email to unlock all features and start your journey with us.</p>
         
         <div style="text-align: center;">
@@ -165,21 +165,21 @@ export const welcomeEmail = async (transporter, user, verificationToken) => {
         
         ${createInfoCard(`
             <p style="margin: 0 0 8px 0;"><strong>Account Details:</strong></p>
-            <p style="margin: 4px 0;">${user.firstName} ${user.lastName}</p>
+            <p style="margin: 4px 0;">${user.displayName}</p>
             <p style="margin: 4px 0;">${user.email}</p>
-            <p style="margin: 4px 0;">Account: ${user.userType === 'freelancer' ? 'Mentor' : 'Student'}</p>
+            <p style="margin: 4px 0;">Account: ${user.userType === 'freelancer' ? 'Mentor' : user.userType === 'buyer' && isAgency ? 'Agency' : 'Student'}</p>
         `)}
         
         ${createInfoCard(`This verification link will expire in 24 hours.`, 'warning')}
     `;
 
-    const html = baseTemplate(content, `Welcome, ${user.firstName}`);
+    const html = baseTemplate(content, `Welcome, ${user.displayName}`);
 
     try {
         const info = await transporter.sendMail({
             from: `"Partcer" <${process.env.EMAIL_USER}>`,
             to: user.email,
-            subject: `Welcome to Partcer, ${user.firstName}! Verify your email`,
+            subject: `Welcome to Partcer, ${user.displayName}! Verify your email`,
             html
         });
         return !!info;

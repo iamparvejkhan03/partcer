@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Calendar, Clock, Briefcase, ChevronDown, Loader2 } from 'lucide-react';
+import { Calendar, Clock, Briefcase, ChevronDown, Loader2, Info } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../contexts/AuthContext';
 import {
@@ -20,15 +20,15 @@ const PricingSection = ({ freelancerName, freelancerId, freelancerEmail }) => {
 
     // Pricing data
     const pricingData = {
-        one_time: {
-            standard: {
-                mentorFee: 1000,
-                partnerFee: 300,
-                learnerPays: 1300,
-                duration: "Single session",
-                periodLabel: "One-time"
-            }
-        },
+        // one_time: {
+        //     standard: {
+        //         mentorFee: 1000,
+        //         partnerFee: 300,
+        //         learnerPays: 1300,
+        //         duration: "Single session",
+        //         periodLabel: "One-time"
+        //     }
+        // },
         per_day: {
             standard: {
                 mentorFee: 1000,
@@ -86,16 +86,16 @@ const PricingSection = ({ freelancerName, freelancerId, freelancerEmail }) => {
     ];
 
     const periods = [
-        { id: 'one_time', label: 'One-time', icon: Calendar },
+        // { id: 'one_time', label: 'One-time', icon: Calendar },
         { id: 'per_day', label: 'Per day', icon: Clock },
         { id: 'weekly', label: 'Weekly', icon: Briefcase },
         { id: 'monthly', label: 'Monthly', icon: Calendar }
     ];
 
     const getDurationOptions = () => {
-        if (selectedPeriod === 'one_time') {
-            return [{ id: 'standard', label: 'Single session' }];
-        }
+        // if (selectedPeriod === 'one_time') {
+        //     return [{ id: 'standard', label: 'Single session' }];
+        // }
         return [
             { id: 'standard', label: 'Standard (2-3 hrs)' },
             { id: 'full_day', label: 'Full day (6-8 hrs)' }
@@ -204,8 +204,8 @@ const PricingSection = ({ freelancerName, freelancerId, freelancerEmail }) => {
             return;
         }
 
-        if (user.userType !== 'buyer') {
-            toast.error('Only students can book sessions');
+        if (user.userType !== 'buyer' || user.userType !== 'agency') {
+            toast.error('Only students & agencies can book sessions');
             return;
         }
 
@@ -330,7 +330,7 @@ const PricingSection = ({ freelancerName, freelancerId, freelancerEmail }) => {
                     <label className="block text-sm font-medium text-gray-700 mb-3">
                         Select Period
                     </label>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                         {periods.map((period) => {
                             const Icon = period.icon;
                             const isSelected = selectedPeriod === period.id;
@@ -438,12 +438,12 @@ const PricingSection = ({ freelancerName, freelancerId, freelancerEmail }) => {
                                             <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
                                                 Mentor fee
                                             </th>
-                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
+                                            {/* <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
                                                 Partcer fee
                                             </th>
                                             <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
                                                 Learner pays
-                                            </th>
+                                            </th> */}
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-200">
@@ -469,7 +469,7 @@ const PricingSection = ({ freelancerName, freelancerId, freelancerEmail }) => {
                                                     ~₹{currentPricing.mentorFee.toLocaleString('en-IN')}
                                                 </div>}
                                             </td>
-                                            <td className="px-4 py-3">
+                                            {/* <td className="px-4 py-3">
                                                 <div className="text-sm font-medium text-gray-900">
                                                     {getCurrencySymbol()}{convertPrice(currentPricing.partnerFee).toLocaleString()}
                                                 </div>
@@ -488,12 +488,13 @@ const PricingSection = ({ freelancerName, freelancerId, freelancerEmail }) => {
                                                 </div> : <div className="text-xs text-gray-500">
                                                     ~₹{currentPricing.learnerPays.toLocaleString('en-IN')}
                                                 </div>}
-                                            </td>
+                                            </td> */}
                                         </tr>
                                     </tbody>
                                 </table>
                             </div>
                         </div>
+                        <p className='flex items-center gap-2 p-2 bg-blue-100 text-blue-700 rounded-lg mt-3 text-sm'><Info size={14}/> Final amount shown at checkout.</p>
                     </div>
                 )}
 

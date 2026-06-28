@@ -10,12 +10,10 @@ const userSchema = new Schema(
     // ==================== BASIC INFORMATION ====================
     firstName: {
       type: String,
-      required: true,
       trim: true,
     },
     lastName: {
       type: String,
-      required: true,
       trim: true,
     },
     displayName: {
@@ -63,7 +61,7 @@ const userSchema = new Schema(
     // ==================== USER TYPE ====================
     userType: {
       type: String,
-      enum: ["freelancer", "buyer", "admin"],
+      enum: ["freelancer", "buyer", "agency", "admin"],
       required: true,
     },
 
@@ -112,6 +110,15 @@ const userSchema = new Schema(
         trim: true,
       },
     ],
+    yearsOfExperience: {
+      type: Number,
+      trim: true,
+    },
+    experienceLevel: {
+      type: String,
+      enum: ["junior", "mid", "senior", ""],
+      trim: true,
+    },
 
     // Experience - Embedded Array
     experience: [
@@ -139,10 +146,16 @@ const userSchema = new Schema(
     ],
 
     // ==================== BUYER SPECIFIC FIELDS ====================
-    companyName: {
+    agencyName: {
       type: String,
       trim: true,
     }, // Empty by default, only for buyers if they are businesses
+
+    isAgency: {
+      type: Boolean,
+      trin: true,
+      default: false
+    },
 
     // ==================== LOCATION INFORMATION ====================
     country: {

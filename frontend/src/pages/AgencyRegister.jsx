@@ -15,7 +15,9 @@ import {
     Shield,
     Award,
     Phone,
-    ChevronDown
+    ChevronDown,
+    Star,
+    Info
 } from 'lucide-react';
 import { Container } from '../components';
 import axiosInstance from '../utils/axiosInstanceOld';
@@ -24,9 +26,10 @@ import { useAuth } from '../contexts/AuthContext';
 import useCountryStates from '../hooks/useCountryStates';
 import { userTypes } from '../assets';
 
-function Register() {
+function AgencyRegister() {
     const [showPassword, setShowPassword] = useState(false);
-    const [userType, setUserType] = useState('freelancer');
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+    const [userType, setUserType] = useState('agency');
     const [agreeTerms, setAgreeTerms] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
 
@@ -59,17 +62,26 @@ function Register() {
         setValue
     } = useForm({
         defaultValues: {
-            firstName: '',
-            lastName: '',
+            agencyName: '',
+            isAgency: true,
+            displayName: '',
             email: '',
             phone: '',
             password: '',
+            confirmPassword: '',
             country: '',
-            userType: 'freelancer'
+            userType: 'agency'
         },
     });
 
     const password = watch('password');
+
+    // Handle validation errors with useEffect
+    useEffect(() => {
+        if (errors.confirmPassword) {
+            toast.error(errors.confirmPassword.message);
+        }
+    }, [errors.confirmPassword]);
 
     // Password strength checker
     const getPasswordStrength = (password) => {
@@ -103,13 +115,14 @@ function Register() {
         try {
             // Prepare registration payload
             const registrationPayload = {
-                firstName: data.firstName,
-                lastName: data.lastName,
                 email: data.email.toLowerCase(),
                 phone: data.phone,
                 password: data.password,
                 country: countries.find(c => c.code === data.country)?.name || data.country,
                 userType: data.userType,
+                isAgency: true,
+                agencyName: data.agencyName,
+                displayName: data.agencyName,
                 agreeTerms: agreeTerms
             };
 
@@ -126,8 +139,6 @@ function Register() {
                 // Store user info
                 const userInfo = {
                     _id: userData._id,
-                    firstName: userData.firstName,
-                    lastName: userData.lastName,
                     email: userData.email,
                     userType: userData.userType,
                     phone: userData.phone,
@@ -135,6 +146,9 @@ function Register() {
                     isActive: userData.isActive,
                     profileImage: userData.profileImage,
                     country: userData.country,
+                    agencyName: userData.agencyName,
+                    displayName: userData.displayName,
+                    isAgency: userData.isAgency,
                 };
 
                 localStorage.setItem('user', JSON.stringify(userInfo));
@@ -144,8 +158,8 @@ function Register() {
 
                 // Redirect based on user type
                 const redirectPath = userData.userType === 'freelancer'
-                    ? '/freelancer/profile/settings'
-                    : '/buyer/profile/settings';
+                    ? '/freelancer/profile/settings' : userData.userType === 'agency'
+                    ? '/agency/profile/settings' : '/buyer/profile/settings';
                 navigate(redirectPath);
             }
         } catch (error) {
@@ -169,71 +183,43 @@ function Register() {
                             Join <span className="text-primary">Partcer</span>
                         </h1>
                         <p className="text-gray-600">
-                            We are delighted to welcome you as a member of our freelance marketplace for job training and support!
+                            We are delighted to welcome you as an agency of our freelance marketplace for job training and support!
                         </p>
+
+                        <div className='inline-flex items-center gap-2 py-1.5 px-3 text-sm text-primary bg-primary-light/20 mt-3 rounded-lg'><Star size={16} /> <span>Agency Account</span></div>
                     </div>
 
                     {/* Registration Card */}
                     <div className="bg-white rounded-2xl shadow-xl p-6 lg:p-8 border border-gray-100">
                         <form onSubmit={handleSubmit(registerationHandler)} className="space-y-6">
                             {/* Name Row */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                {/* First Name */}
+                            <div className="grid grid-cols-1 md:grid-cols-1 gap-6">
+                                {/* Agency Name */}
                                 <div>
-                                    <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-2">
-                                        First Name <span className="text-primary">*</span>
+                                    <label htmlFor="agencyName" className="block text-sm font-medium text-gray-700 mb-2">
+                                        Agency Name <span className="text-primary">*</span>
                                     </label>
                                     <div className="relative">
                                         <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                                         <input
-                                            id="firstName"
+                                            id="agencyName"
                                             type="text"
-                                            {...register('firstName', {
-                                                required: 'First name is required',
+                                            {...register('agencyName', {
+                                                required: 'Agency name is required',
                                                 minLength: {
                                                     value: 2,
-                                                    message: 'First name must be at least 2 characters',
+                                                    message: 'Agency name must be at least 2 characters',
                                                 },
                                             })}
-                                            className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-colors ${errors.firstName ? 'border-red-300' : 'border-gray-300'
+                                            className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-colors ${errors.agencyName ? 'border-red-300' : 'border-gray-300'
                                                 }`}
-                                            placeholder="Enter first name"
+                                            placeholder="Enter agency or company name"
                                         />
                                     </div>
-                                    {errors.firstName && (
+                                    {errors.agencyName && (
                                         <p className="mt-2 text-sm text-red-600 flex items-center gap-1">
                                             <AlertCircle size={14} />
-                                            {errors.firstName.message}
-                                        </p>
-                                    )}
-                                </div>
-
-                                {/* Last Name */}
-                                <div>
-                                    <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-2">
-                                        Last Name <span className="text-primary">*</span>
-                                    </label>
-                                    <div className="relative">
-                                        <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                                        <input
-                                            id="lastName"
-                                            type="text"
-                                            {...register('lastName', {
-                                                required: 'Last name is required',
-                                                minLength: {
-                                                    value: 2,
-                                                    message: 'Last name must be at least 2 characters',
-                                                },
-                                            })}
-                                            className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-colors ${errors.lastName ? 'border-red-300' : 'border-gray-300'
-                                                }`}
-                                            placeholder="Enter last name"
-                                        />
-                                    </div>
-                                    {errors.lastName && (
-                                        <p className="mt-2 text-sm text-red-600 flex items-center gap-1">
-                                            <AlertCircle size={14} />
-                                            {errors.lastName.message}
+                                            {errors.agencyName.message}
                                         </p>
                                     )}
                                 </div>
@@ -346,8 +332,8 @@ function Register() {
                                                 />
                                             </div>
                                             <span className={`text-xs font-medium ${passwordStrength.strength <= 2 ? 'text-red-600' :
-                                                    passwordStrength.strength <= 4 ? 'text-yellow-600' :
-                                                        'text-green-600'
+                                                passwordStrength.strength <= 4 ? 'text-yellow-600' :
+                                                    'text-green-600'
                                                 }`}>
                                                 {passwordStrength.label}
                                             </span>
@@ -396,6 +382,40 @@ function Register() {
                                 )}
                             </div>
 
+                            <div className={`${errors.confirmPassword && 'mb-3'}`}>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Confirm Password
+                                </label>
+                                <div className="relative">
+                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <Lock size={20} className="text-gray-400" />
+                                    </div>
+                                    <input
+                                        type={showConfirmPassword ? 'text' : 'password'}
+                                        {...register('confirmPassword', {
+                                            required: 'Please confirm your password',
+                                            validate: value => value === password || 'Passwords do not match'
+                                        })}
+                                        className="block w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                                        placeholder="Re-enter your password"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                        className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                                    >
+                                        {showConfirmPassword ? (
+                                            <EyeOff size={20} className="text-gray-400 hover:text-gray-600" />
+                                        ) : (
+                                            <Eye size={20} className="text-gray-400 hover:text-gray-600" />
+                                        )}
+                                    </button>
+                                    {errors.confirmPassword && (
+                                        <p className="text-red-500 text-sm mt-1 mb-3 absolute">{errors.confirmPassword.message}</p>
+                                    )}
+                                </div>
+                            </div>
+
                             {/* Country */}
                             <div>
                                 <label htmlFor="country" className="block text-sm font-medium text-gray-700 mb-2">
@@ -426,12 +446,11 @@ function Register() {
                             </div>
 
                             {/* User Type Selection */}
-                            <div>
+                            {/* <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-3">
                                     I want to join as <span className="text-primary">*</span>
                                 </label>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    {/* Freelancer Option */}
                                     <label
                                         className={`relative flex items-center gap-4 p-4 border-2 rounded-xl cursor-pointer transition-all duration-200 ${userType === 'freelancer'
                                                 ? 'border-primary bg-primary/5'
@@ -461,7 +480,6 @@ function Register() {
                                         </div>
                                     </label>
 
-                                    {/* Buyer Option */}
                                     <label
                                         className={`relative flex items-center gap-4 p-4 border-2 rounded-xl cursor-pointer transition-all duration-200 ${userType === 'buyer'
                                                 ? 'border-primary bg-primary/5'
@@ -491,7 +509,7 @@ function Register() {
                                         </div>
                                     </label>
                                 </div>
-                            </div>
+                            </div> */}
 
                             {/* Terms and Conditions */}
                             <div>
@@ -525,6 +543,14 @@ function Register() {
                                 </label>
                             </div>
 
+                            <div className='flex items-center gap-2 text-blue-600 bg-blue-100 py-1.5 px-3 rounded-lg text-sm'>
+                                <Info size={16} />
+                                <div>
+                                    <p className='font-medium'>Agency accounts get discounted service fees on all bookings.</p>
+                                    <p className='font-light text-xs'>This signup link is privately shared by the Partcer.</p>
+                                </div>
+                            </div>
+
                             {/* Submit Button */}
                             <button
                                 type="submit"
@@ -538,7 +564,7 @@ function Register() {
                                     </>
                                 ) : (
                                     <>
-                                        Join Partcer Now
+                                        Create Agency Account
                                         <ArrowRight size={18} />
                                     </>
                                 )}
@@ -577,4 +603,4 @@ function Register() {
     );
 }
 
-export default Register;
+export default AgencyRegister;

@@ -52,7 +52,7 @@ const AppliedProjects = () => {
     // Helper functions
     const getPeriodLabel = (period) => {
         const map = {
-            one_time: 'One-time',
+            // one_time: 'One-time',
             per_day: 'Per day',
             weekly: 'Weekly',
             monthly: 'Monthly'
@@ -61,7 +61,7 @@ const AppliedProjects = () => {
     };
 
     const getDurationLabel = (duration, period) => {
-        if (period === 'one_time') return 'Single session';
+        // if (period === 'one_time') return 'Single session';
         if (duration === 'standard') return 'Standard (2-3 hrs)';
         return 'Full day (6-8 hrs)';
     };

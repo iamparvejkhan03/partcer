@@ -49,7 +49,7 @@ function Header() {
                 {/* User profile */}
                 <div className="flex items-center space-x-3 pl-3 border-l border-gray-200">
                     <div className="text-right hidden md:block">
-                        <Link to={`/buyer/profile`} className="text-sm font-medium text-black">{user?.firstName + ' ' + user?.lastName}</Link>
+                        <Link to={`/buyer/profile`} className="text-sm font-medium text-black">{user?.displayName}</Link>
                         <p className="text-xs text-secondary">{user?.username}</p>
                         <p className="text-xs capitalize text-gray-500">{user?.userType === 'freelancer' ? 'Mentor' : 'Student'}</p>
                     </div>
@@ -59,7 +59,7 @@ function Header() {
                             <Link to={`/buyer/profile`}><img src={user?.profileImage} alt="userImage" className="h-10 w-10 rounded-full object-cover" /></Link>
                             :
                             <Link to={`/buyer/profile`} className="h-10 w-10 rounded-full bg-gradient-to-r from-gray-800 to-gray-950 flex items-center justify-center text-white font-semibold">
-                                {`${user?.firstName[0]} ${user?.lastName[0]}`}
+                                {`${user?.displayName[0]}`}
                             </Link>
                     }
                 </div>

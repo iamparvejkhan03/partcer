@@ -22,7 +22,8 @@ import {
     Mail,
     Phone,
     MapPin,
-    Award
+    Award,
+    ArrowRight
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { useAuth } from "../../contexts/AuthContext";
@@ -372,6 +373,7 @@ const SkillsSelect = ({ selectedSkills, onChange }) => {
     const dropdownRef = useRef(null);
     const [skills, setSkills] = useState([]);
     const [loadingSkills, setLoadingSkills] = useState(false);
+    const [isAddingSkill, setIsAddingSkill] = useState(false);
 
     // Fetch skills
     useEffect(() => {
@@ -394,6 +396,11 @@ const SkillsSelect = ({ selectedSkills, onChange }) => {
 
     const allSkills = skills.map(skill => skill.name);
 
+    // Check if search term exists in skills list (case insensitive)
+    const isSkillInList = allSkills.some(skill =>
+        skill.toLowerCase() === search.toLowerCase()
+    );
+
     const filteredSkills = allSkills.filter(skill =>
         skill.toLowerCase().includes(search.toLowerCase())
     );
@@ -408,6 +415,63 @@ const SkillsSelect = ({ selectedSkills, onChange }) => {
                 return;
             }
             onChange([...selectedSkills, skill]);
+        }
+    };
+
+    const handleAddNewSkill = async () => {
+        const trimmedSkill = search.trim();
+
+        // Validate skill name
+        if (!trimmedSkill) {
+            toast.error("Please enter a skill name");
+            return;
+        }
+
+        if (trimmedSkill.length < 2) {
+            toast.error("Skill name must be at least 2 characters");
+            return;
+        }
+
+        if (selectedSkills.length >= 10) {
+            toast.error("You can select a maximum of 10 skills");
+            return;
+        }
+
+        // Check if skill already exists in the list (case insensitive)
+        if (isSkillInList) {
+            toast.error("This skill already exists in the list");
+            return;
+        }
+
+        // Check if already selected
+        if (selectedSkills.some(s => s.toLowerCase() === trimmedSkill.toLowerCase())) {
+            toast.error("This skill is already selected");
+            return;
+        }
+
+        try {
+            setIsAddingSkill(true);
+            // Add the new skill to the database
+            const response = await axiosInstance.post('/api/v1/skills', {
+                name: trimmedSkill,
+                isActive: true
+            });
+
+            if (response.data?.success) {
+                // Add the new skill to the local skills list
+                setSkills(prev => [...prev, { name: trimmedSkill }]);
+                // Add the skill to selected skills
+                onChange([...selectedSkills, trimmedSkill]);
+                // Clear search and close dropdown
+                setSearch("");
+                setIsOpen(false);
+                toast.success(`"${trimmedSkill}" added successfully`);
+            }
+        } catch (error) {
+            console.error('Error adding skill:', error);
+            toast.error(error.response?.data?.message || 'Failed to add skill');
+        } finally {
+            setIsAddingSkill(false);
         }
     };
 
@@ -449,7 +513,7 @@ const SkillsSelect = ({ selectedSkills, onChange }) => {
                     onClick={() => setIsOpen(!isOpen)}
                     className="w-full px-3 py-2 text-left border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-primary focus:border-transparent flex justify-between items-center"
                 >
-                    <span className="text-gray-500">Select skills</span>
+                    <span className="text-gray-500">Select or add skills</span>
                     <ChevronDown size={16} className={`transform transition-transform ${isOpen ? 'rotate-180' : ''}`} />
                 </button>
 
@@ -458,14 +522,43 @@ const SkillsSelect = ({ selectedSkills, onChange }) => {
                         <div className="p-2 border-b sticky top-0 bg-white z-10">
                             <input
                                 type="text"
-                                placeholder="Search skills..."
+                                placeholder="Search or type new skill..."
                                 className="w-full px-3 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-primary focus:border-transparent"
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
                                 onClick={(e) => e.stopPropagation()}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter' && search.trim() && !isSkillInList) {
+                                        e.preventDefault();
+                                        handleAddNewSkill();
+                                    }
+                                }}
                             />
                         </div>
                         <div className="py-1">
+                            {search.trim() && !isSkillInList && selectedSkills.length < 10 ? (
+                                // Show "Add new skill" option when search doesn't match any existing skill
+                                <div
+                                    className="px-3 py-2 hover:bg-green-50 cursor-pointer flex items-center justify-between border-b border-dashed border-gray-200"
+                                    onClick={handleAddNewSkill}
+                                >
+                                    <div className="flex items-center">
+                                        <Plus size={16} className="text-green-600 mr-2" />
+                                        <span className="text-gray-700">Add new skill: <strong>"{search.trim()}"</strong></span>
+                                    </div>
+                                    {isAddingSkill ? (
+                                        <span className="text-sm text-gray-500">Adding...</span>
+                                    ) : (
+                                        <span className="text-xs text-green-600">Press Enter or click to add</span>
+                                    )}
+                                </div>
+                            ) : search.trim() && isSkillInList && (
+                                // Show message that skill already exists
+                                <div className="px-3 py-2 text-gray-500 text-sm border-b border-gray-100">
+                                    <span>Skill already exists in the list</span>
+                                </div>
+                            )}
+
                             {filteredSkills.length > 0 ? (
                                 filteredSkills.map((skill, index) => (
                                     <div
@@ -480,8 +573,16 @@ const SkillsSelect = ({ selectedSkills, onChange }) => {
                                     </div>
                                 ))
                             ) : (
-                                <div className="px-3 py-2 text-gray-500 text-center">
-                                    No skills found
+                                !search.trim() && (
+                                    <div className="px-3 py-2 text-gray-500 text-center">
+                                        Type to search or add new skills
+                                    </div>
+                                )
+                            )}
+
+                            {selectedSkills.length >= 10 && search.trim() && !isSkillInList && (
+                                <div className="px-3 py-2 text-red-500 text-sm text-center border-t border-red-100">
+                                    Maximum 10 skills reached
                                 </div>
                             )}
                         </div>
@@ -852,6 +953,7 @@ function Profile() {
     const [profileImage, setProfileImage] = useState("");
     const [imageFile, setImageFile] = useState(null);
     const [initialFetchDone, setInitialFetchDone] = useState(false);
+    const [currentStep, setCurrentStep] = useState(1);
 
     const [experienceModalOpen, setExperienceModalOpen] = useState(false);
     const [educationModalOpen, setEducationModalOpen] = useState(false);
@@ -868,7 +970,7 @@ function Profile() {
     const [countries, setCountries] = useState([]);
     const [countriesList, setCountriesList] = useState([]);
 
-    const { register, handleSubmit, control, setValue, watch, formState: { errors }, reset } = useForm({
+    const { register, handleSubmit, control, setValue, watch, formState: { errors }, reset, trigger } = useForm({
         defaultValues: {
             firstName: "",
             lastName: "",
@@ -881,6 +983,8 @@ function Profile() {
             freelancerType: "",
             englishLevel: "",
             hourlyRate: "",
+            yearsOfExperience: "",
+            experienceLevel: "",
             skills: [],
             categories: [],
             services: [],
@@ -901,20 +1005,24 @@ function Profile() {
         { value: "native", label: "Native/Bilingual" }
     ];
 
+    const experienceLevels = [
+        { value: "junior", label: "Junior (0-2 yrs)" },
+        { value: "mid", label: "Mid (2-5 yrs)" },
+        { value: "senior", label: "Senior (5+ yrs)" },
+    ];
+
     const freelancerTypes = [
         { value: "independent", label: "Independent Mentor" },
         { value: "agency", label: "Agency" }
     ];
 
-    // Fetch countries on mount
-    // useEffect(() => {
-    //     const fetchCountries = async () => {
-    //         const countriesData = await countriesAPI();
-    //         setCountries(countriesData);
-    //         setCountriesList(countriesData.map(c => c.name));
-    //     };
-    //     fetchCountries();
-    // }, []);
+    // Step configuration
+    const steps = [
+        { id: 1, name: "Basic Information", icon: User },
+        { id: 2, name: "Professional Details", icon: Briefcase },
+        { id: 3, name: "Experience", icon: Briefcase },
+        { id: 4, name: "Education", icon: GraduationCap },
+    ];
 
     // Fetch fresh user data on mount
     useEffect(() => {
@@ -962,6 +1070,14 @@ function Profile() {
             setValue("gender", userData.gender);
         }
 
+        if (userData?.experienceLevel) {
+            setValue("experienceLevel", userData?.experienceLevel);
+        }
+
+        if (userData?.yearsOfExperience) {
+            setValue("yearsOfExperience", userData?.yearsOfExperience);
+        }
+
         setValue("hourlyRate", userData.hourlyRate || "");
 
         // Arrays
@@ -1005,15 +1121,12 @@ function Profile() {
         try {
             let response;
             if (editingExperience) {
-                // Update existing experience
                 response = await axiosInstance.patch(`/api/v1/users/experience/${editingExperience._id}`, data);
             } else {
-                // Add new experience
                 response = await axiosInstance.post('/api/v1/users/experience', data);
             }
 
             if (response.data.success) {
-                // Refresh user data
                 const freshUser = await fetchCurrentUser();
                 if (freshUser) {
                     setExperiences(freshUser.experience || []);
@@ -1030,15 +1143,12 @@ function Profile() {
         try {
             let response;
             if (editingEducation) {
-                // Update existing education
                 response = await axiosInstance.patch(`/api/v1/users/education/${editingEducation._id}`, data);
             } else {
-                // Add new education
                 response = await axiosInstance.post('/api/v1/users/education', data);
             }
 
             if (response.data.success) {
-                // Refresh user data
                 const freshUser = await fetchCurrentUser();
                 if (freshUser) {
                     setEducations(freshUser.education || []);
@@ -1097,6 +1207,29 @@ function Profile() {
         setEducationModalOpen(true);
     };
 
+    const nextStep = async () => {
+        let fieldsToValidate = [];
+
+        if (currentStep === 1) {
+            fieldsToValidate = ['firstName', 'lastName', 'tagline'];
+        } else if (currentStep === 2) {
+            fieldsToValidate = ['englishLevel', 'yearsOfExperience', 'experienceLevel'];
+        }
+
+        const isValid = await trigger(fieldsToValidate);
+        if (isValid && currentStep < steps.length) {
+            setCurrentStep(currentStep + 1);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    };
+
+    const prevStep = () => {
+        if (currentStep > 1) {
+            setCurrentStep(currentStep - 1);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    };
+
     const onSubmit = async (data) => {
         setLoading(true);
         try {
@@ -1115,6 +1248,8 @@ function Profile() {
             formData.append('freelancerType', data.freelancerType);
             formData.append('englishLevel', data.englishLevel);
             formData.append('hourlyRate', data.hourlyRate);
+            formData.append('experienceLevel', data.experienceLevel);
+            formData.append('yearsOfExperience', data.yearsOfExperience);
 
             // Append arrays as JSON strings
             formData.append('skills', JSON.stringify(selectedSkills));
@@ -1135,16 +1270,10 @@ function Profile() {
 
             if (response.data.success) {
                 const updatedUser = response.data.data;
-
-                // Update user in context
                 updateUserData(updatedUser);
-
-                // Refresh form with updated data
                 populateFormFields(updatedUser);
-
                 toast.success('Profile updated successfully!');
 
-                // Clear image file after successful upload
                 if (imageFile) {
                     setImageFile(null);
                 }
@@ -1156,6 +1285,451 @@ function Profile() {
             setLoading(false);
         }
     };
+
+    const renderStepContent = () => {
+        switch (currentStep) {
+            case 1:
+                return renderBasicInformation();
+            case 2:
+                return renderProfessionalDetails();
+            case 3:
+                return renderExperienceSection();
+            case 4:
+                return renderEducationSection();
+            default:
+                return null;
+        }
+    };
+
+    const renderBasicInformation = () => (
+        <div className="bg-gray-50 px-6 mb-8 rounded-xl">
+            <h2 className="text-xl font-semibold text-gray-900 mb-6 flex items-center gap-2">
+                <User size={20} />
+                Basic Information
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                        First Name *
+                    </label>
+                    <input
+                        type="text"
+                        {...register("firstName", { required: "First name is required" })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                    />
+                    {errors.firstName && (
+                        <p className="mt-1 text-sm text-red-600">{errors.firstName.message}</p>
+                    )}
+                </div>
+
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Last Name *
+                    </label>
+                    <input
+                        type="text"
+                        {...register("lastName", { required: "Last name is required" })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                    />
+                    {errors.lastName && (
+                        <p className="mt-1 text-sm text-red-600">{errors.lastName.message}</p>
+                    )}
+                </div>
+
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Email Address
+                    </label>
+                    <div className="relative">
+                        <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+                        <input
+                            type="email"
+                            {...register("email")}
+                            disabled
+                            className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600 cursor-not-allowed"
+                        />
+                    </div>
+                </div>
+
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Phone Number
+                    </label>
+                    <div className="relative">
+                        <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+                        <input
+                            type="tel"
+                            {...register("phoneNumber")}
+                            placeholder="+1 (555) 123-4567"
+                            className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                        />
+                    </div>
+                </div>
+
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Gender
+                    </label>
+                    <select
+                        {...register("gender")}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent capitalize"
+                    >
+                        <option value="">Select Gender</option>
+                        {genderOptions.map(option => (
+                            <option key={option.value} value={option.value} className="capitalize">
+                                {option.label}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Tagline * <span className="text-xs">(mandatory - shown on your public profile)</span>
+                    </label>
+                    <input
+                        type="text"
+                        {...register("tagline", { required: "Tagline is required" })}
+                        placeholder="e.g. Experienced Azure Data Engineer"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                    />
+                    {errors.tagline && (
+                        <p className="mt-1 text-sm text-red-600">{errors.tagline.message}</p>
+                    )}
+                </div>
+
+                <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Bio
+                    </label>
+                    <div>
+                        <textarea
+                            {...register("bio", {
+                                maxLength: {
+                                    value: 1000,
+                                    message: "Bio cannot exceed 1000 characters"
+                                }
+                            })}
+                            rows={4}
+                            placeholder="Tell us about yourself..."
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent resize-none"
+                            maxLength={1000}
+                        />
+                        <div className="flex items-center justify-between mt-1">
+                            <div className="flex-1 h-1 bg-gray-200 rounded-full mr-3">
+                                <div
+                                    className={`h-1 rounded-full transition-all duration-300 ${(watch('bio')?.length || 0) >= 900
+                                            ? (watch('bio')?.length || 0) >= 1000
+                                                ? 'bg-red-500'
+                                                : 'bg-orange-500'
+                                            : 'bg-primary'
+                                        }`}
+                                    style={{
+                                        width: `${Math.min(((watch('bio')?.length || 0) / 1000) * 100, 100)}%`
+                                    }}
+                                />
+                            </div>
+                            <span className={`text-xs whitespace-nowrap ${(watch('bio')?.length || 0) > 900
+                                    ? (watch('bio')?.length || 0) >= 1000
+                                        ? 'text-red-500 font-medium'
+                                        : 'text-orange-500'
+                                    : 'text-gray-400'
+                                }`}>
+                                {watch('bio')?.length || 0}/1000
+                            </span>
+                        </div>
+                        {errors.bio && (
+                            <p className="mt-1 text-sm text-red-600">{errors.bio.message}</p>
+                        )}
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+
+    const renderProfessionalDetails = () => (
+        <div className="bg-gray-50 px-6 mb-8 rounded-xl">
+            <h2 className="text-xl font-semibold text-gray-900 mb-6 flex items-center gap-2">
+                <Briefcase size={20} />
+                Professional Details
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                        English Level *
+                    </label>
+                    <select
+                        {...register("englishLevel", { required: "English level is required" })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                    >
+                        <option value="">Select English Level</option>
+                        {englishLevels.map(level => (
+                            <option key={level.value} value={level.value}>{level.label}</option>
+                        ))}
+                    </select>
+                    {errors.englishLevel && (
+                        <p className="mt-1 text-sm text-red-600">{errors.englishLevel.message}</p>
+                    )}
+                </div>
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Years of Experience *
+                    </label>
+                    <div className="flex items-center gap-3">
+                        <input
+                            type="number"
+                            {...register("yearsOfExperience", { required: "Years of experience is required" })}
+                            placeholder="e.g. 6"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                        />
+                        <p className="text-gray-500">years</p>
+                    </div>
+                    {errors.yearsOfExperience && (
+                        <p className="mt-1 text-sm text-red-600">{errors.yearsOfExperience.message}</p>
+                    )}
+                </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-1 mt-3">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Experience Level *
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <label className={`flex items-center px-4 py-3 border rounded-lg cursor-pointer ${watch('experienceLevel') === 'junior'
+                        ? 'border-primary bg-primary/5'
+                        : 'border-gray-300 hover:border-gray-400'
+                        }`}>
+                        <input
+                            type="radio"
+                            value="junior"
+                            {...register('experienceLevel', { required: 'Experience level is required' })}
+                            className="w-4 h-4 text-primary focus:ring-primary"
+                        />
+                        <span className="ml-3 text-gray-700">Junior (0-2 yrs)</span>
+                    </label>
+
+                    <label className={`flex items-center px-4 py-3 border rounded-lg cursor-pointer ${watch('experienceLevel') === 'mid'
+                        ? 'border-primary bg-primary/5'
+                        : 'border-gray-300 hover:border-gray-400'
+                        }`}>
+                        <input
+                            type="radio"
+                            value="mid"
+                            {...register('experienceLevel', { required: 'Experience level is required' })}
+                            className="w-4 h-4 text-primary focus:ring-primary"
+                        />
+                        <span className="ml-3 text-gray-700">Mid (2-5 yrs)</span>
+                    </label>
+
+                    <label className={`flex items-center px-4 py-3 border rounded-lg cursor-pointer ${watch('experienceLevel') === 'senior'
+                        ? 'border-primary bg-primary/5'
+                        : 'border-gray-300 hover:border-gray-400'
+                        }`}>
+                        <input
+                            type="radio"
+                            value="senior"
+                            {...register('experienceLevel', { required: 'Experience level is required' })}
+                            className="w-4 h-4 text-primary focus:ring-primary"
+                        />
+                        <span className="ml-3 text-gray-700">Senior (5+ yrs)</span>
+                    </label>
+                </div>
+                {errors.experienceLevel && (
+                    <p className="mt-1 text-sm text-red-600">{errors.experienceLevel.message}</p>
+                )}
+            </div>
+
+            {/* Categories */}
+            <div className="mt-6">
+                <Controller
+                    name="categories"
+                    control={control}
+                    render={({ field }) => (
+                        <CategoriesSelect
+                            selectedCategories={selectedCategories}
+                            onChange={(categories) => {
+                                setSelectedCategories(categories);
+                                field.onChange(categories);
+                            }}
+                        />
+                    )}
+                />
+            </div>
+
+            {/* Skills */}
+            <div className="mt-6">
+                <Controller
+                    name="skills"
+                    control={control}
+                    render={({ field }) => (
+                        <SkillsSelect
+                            selectedSkills={selectedSkills}
+                            onChange={(skills) => {
+                                setSelectedSkills(skills);
+                                field.onChange(skills);
+                            }}
+                        />
+                    )}
+                />
+            </div>
+
+            {/* Services */}
+            <div className="mt-6">
+                <Controller
+                    name="services"
+                    control={control}
+                    render={({ field }) => (
+                        <ServiceSelect
+                            selectedServices={selectedServices}
+                            onChange={(services) => {
+                                setSelectedServices(services);
+                                field.onChange(services);
+                            }}
+                        />
+                    )}
+                />
+            </div>
+
+            {/* Languages */}
+            <div className="mt-6">
+                <Controller
+                    name="languages"
+                    control={control}
+                    render={({ field }) => (
+                        <LanguagesSelect
+                            selectedLanguages={selectedLanguages}
+                            onChange={(languages) => {
+                                setSelectedLanguages(languages);
+                                field.onChange(languages);
+                            }}
+                        />
+                    )}
+                />
+            </div>
+        </div>
+    );
+
+    const renderExperienceSection = () => (
+        <div className="bg-gray-50 px-6 mb-8 rounded-xl">
+            <div className="flex justify-between items-center mb-6">
+                <h2 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
+                    <Briefcase size={20} />
+                    Experience Details
+                </h2>
+                <button
+                    type="button"
+                    onClick={() => {
+                        setEditingExperience(null);
+                        setExperienceModalOpen(true);
+                    }}
+                    className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90"
+                >
+                    <Plus size={18} />
+                    Add New
+                </button>
+            </div>
+
+            {experiences.length === 0 ? (
+                <p className="text-gray-500 text-center py-4">No experience added yet</p>
+            ) : (
+                <div className="space-y-4">
+                    {experiences.map((exp) => (
+                        <div key={exp._id} className="bg-white p-4 rounded-lg border border-gray-200">
+                            <div className="flex justify-between items-start">
+                                <div>
+                                    <h3 className="font-semibold text-gray-900">{exp.jobTitle}</h3>
+                                    <p className="text-gray-600">{exp.companyName} {exp.location && `• ${exp.location}`}</p>
+                                    <p className="text-sm text-gray-500">
+                                        {new Date(exp.startDate).toLocaleDateString()} - {exp.current ? 'Present' : exp.endDate ? new Date(exp.endDate).toLocaleDateString() : ''}
+                                    </p>
+                                    {exp.description && (
+                                        <p className="mt-2 text-gray-600 text-sm">{exp.description}</p>
+                                    )}
+                                </div>
+                                <div className="flex gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => handleEditExperience(exp)}
+                                        className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                                    >
+                                        Edit
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => handleDeleteExperience(exp._id)}
+                                        className="text-red-600 hover:text-red-800"
+                                    >
+                                        <Trash2 size={18} />
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+
+    const renderEducationSection = () => (
+        <div className="bg-gray-50 px-6 mb-8 rounded-xl">
+            <div className="flex justify-between items-center mb-6">
+                <h2 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
+                    <GraduationCap size={20} />
+                    Educational Details
+                </h2>
+                <button
+                    type="button"
+                    onClick={() => {
+                        setEditingEducation(null);
+                        setEducationModalOpen(true);
+                    }}
+                    className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90"
+                >
+                    <Plus size={18} />
+                    Add New
+                </button>
+            </div>
+
+            {educations.length === 0 ? (
+                <p className="text-gray-500 text-center py-4">No education added yet</p>
+            ) : (
+                <div className="space-y-4">
+                    {educations.map((edu) => (
+                        <div key={edu._id} className="bg-white p-4 rounded-lg border border-gray-200">
+                            <div className="flex justify-between items-start">
+                                <div>
+                                    <h3 className="font-semibold text-gray-900">{edu.degreeTitle}</h3>
+                                    <p className="text-gray-600">{edu.instituteName}</p>
+                                    <p className="text-sm text-gray-500">
+                                        {new Date(edu.startDate).toLocaleDateString()} - {edu.current ? 'Present' : edu.endDate ? new Date(edu.endDate).toLocaleDateString() : ''}
+                                    </p>
+                                    {edu.description && (
+                                        <p className="mt-2 text-gray-600 text-sm">{edu.description}</p>
+                                    )}
+                                </div>
+                                <div className="flex gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => handleEditEducation(edu)}
+                                        className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                                    >
+                                        Edit
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => handleDeleteEducation(edu._id)}
+                                        className="text-red-600 hover:text-red-800"
+                                    >
+                                        <Trash2 size={18} />
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
+        </div>
+    );
 
     return (
         <section className="flex min-h-screen bg-gray-50">
@@ -1212,287 +1786,106 @@ function Profile() {
                                             </p>
                                         </div>
                                     </div>
-
-                                    {/* Action Buttons */}
-                                    <div className="flex flex-col sm:flex-row items-center gap-3">
-                                        <button
-                                            type="submit"
-                                            form="profile-form"
-                                            disabled={loading}
-                                            className="flex items-center gap-2 px-5 py-2.5 bg-primary hover:bg-primary-dark text-white rounded-lg font-medium shadow-sm hover:shadow transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                                        >
-                                            {loading ? (
-                                                <>
-                                                    <Loader2 size={18} className="animate-spin" />
-                                                    Saving...
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <Save size={18} />
-                                                    Save Changes
-                                                </>
-                                            )}
-                                        </button>
-                                    </div>
                                 </div>
                             </div>
                         </div>
 
+                        {/* Progress Steps */}
+                        <div className="px-6 pt-6 pb-4 border-b border-gray-200">
+                            <nav aria-label="Progress">
+                                <ol className="flex items-center">
+                                    {steps.map((step, index) => {
+                                        const isCompleted = currentStep > step.id;
+                                        const isCurrent = currentStep === step.id;
+                                        const Icon = step.icon;
+
+                                        return (
+                                            <li key={step.id} className={`relative ${index !== steps.length - 1 ? 'flex-1' : ''}`}>
+                                                <div className="flex items-center">
+                                                    <div className="flex items-center">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setCurrentStep(step.id)}
+                                                            className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200 ${isCompleted
+                                                                ? 'text-primary hover:bg-primary/5'
+                                                                : isCurrent
+                                                                    ? 'bg-primary text-white shadow-md'
+                                                                    : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'
+                                                                }`}
+                                                        >
+                                                            <div className={`flex items-center justify-center w-6 h-6 rounded-full ${isCompleted
+                                                                ? 'bg-primary/10'
+                                                                : isCurrent
+                                                                    ? 'bg-white/20'
+                                                                    : 'bg-gray-100'
+                                                                }`}>
+                                                                {isCompleted ? (
+                                                                    <Check size={14} className="text-primary" />
+                                                                ) : (
+                                                                    <Icon size={14} className={isCurrent ? 'text-white' : 'text-gray-400'} />
+                                                                )}
+                                                            </div>
+                                                            <span className={`text-sm font-medium ${isCurrent ? 'text-white' : isCompleted ? 'text-primary' : 'text-gray-500'}`}>
+                                                                {step.name}
+                                                            </span>
+                                                            {isCurrent && (
+                                                                <span className="text-xs bg-white/20 px-2 py-0.5 rounded-full text-white">
+                                                                    {currentStep}/{steps.length}
+                                                                </span>
+                                                            )}
+                                                        </button>
+                                                    </div>
+                                                    {index !== steps.length - 1 && (
+                                                        <div className={`flex-1 h-0.5 mx-2 ${isCompleted ? 'bg-primary' : 'bg-gray-200'
+                                                            }`} />
+                                                    )}
+                                                </div>
+                                            </li>
+                                        );
+                                    })}
+                                </ol>
+                            </nav>
+
+                            {/* Progress Bar */}
+                            <div className="mt-4 w-full bg-gray-200 rounded-full h-2">
+                                <div
+                                    className="bg-primary h-2 rounded-full transition-all duration-500 ease-in-out"
+                                    style={{ width: `${(currentStep / steps.length) * 100}%` }}
+                                />
+                            </div>
+                            <div className="mt-1 text-right">
+                                <span className="text-xs text-gray-500">
+                                    Step {currentStep} of {steps.length}
+                                </span>
+                            </div>
+                        </div>
+
                         {/* Main Form */}
-                        <div className="py-4 md:p-8">
-                            <form id="profile-form" onSubmit={handleSubmit(onSubmit)}>
-                                {/* Basic Information Section */}
-                                <div className="bg-gray-50 px-6 mb-8 rounded-xl">
-                                    <h2 className="text-xl font-semibold text-gray-900 mb-6 flex items-center gap-2">
-                                        <User size={20} />
-                                        Basic Information
-                                    </h2>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                First Name *
-                                            </label>
-                                            <input
-                                                type="text"
-                                                {...register("firstName", { required: "First name is required" })}
-                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-                                            />
-                                            {errors.firstName && (
-                                                <p className="mt-1 text-sm text-red-600">{errors.firstName.message}</p>
-                                            )}
-                                        </div>
+                        <form id="profile-form" onSubmit={handleSubmit(onSubmit)}>
+                            <div className="py-4 md:p-8">
+                                {renderStepContent()}
+                            </div>
 
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                Last Name *
-                                            </label>
-                                            <input
-                                                type="text"
-                                                {...register("lastName", { required: "Last name is required" })}
-                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-                                            />
-                                            {errors.lastName && (
-                                                <p className="mt-1 text-sm text-red-600">{errors.lastName.message}</p>
-                                            )}
-                                        </div>
+                            {/* Navigation Buttons */}
+                            <div className="px-6 pb-8 flex justify-between items-center border-t border-gray-200 pt-6">
+                                <button
+                                    type="button"
+                                    onClick={prevStep}
+                                    className={`px-6 py-2.5 rounded-lg font-medium transition-all duration-200 ${currentStep === 1
+                                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                                        }`}
+                                    disabled={currentStep === 1}
+                                >
+                                    Previous
+                                </button>
 
-                                        {/* Email Field - Disabled */}
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                Email Address
-                                            </label>
-                                            <div className="relative">
-                                                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
-                                                <input
-                                                    type="email"
-                                                    {...register("email")}
-                                                    disabled
-                                                    className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600 cursor-not-allowed"
-                                                />
-                                            </div>
-                                        </div>
-
-                                        {/* Phone Number Field */}
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                Phone Number
-                                            </label>
-                                            <div className="relative">
-                                                <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
-                                                <input
-                                                    type="tel"
-                                                    {...register("phoneNumber")}
-                                                    placeholder="+1 (555) 123-4567"
-                                                    className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-                                                />
-                                            </div>
-                                        </div>
-
-                                        {/* Gender Field */}
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                Gender
-                                            </label>
-                                            <select
-                                                {...register("gender")}
-                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent capitalize"
-                                            >
-                                                <option value="">Select Gender</option>
-                                                {genderOptions.map(option => (
-                                                    <option key={option.value} value={option.value} className="capitalize">
-                                                        {option.label}
-                                                    </option>
-                                                ))}
-                                            </select>
-                                        </div>
-
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                Your Tagline
-                                            </label>
-                                            <input
-                                                type="text"
-                                                {...register("tagline")}
-                                                placeholder="Add your professional tagline"
-                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-                                            />
-                                        </div>
-
-                                        {/* Bio - Textarea */}
-                                        <div className="md:col-span-2">
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                Bio
-                                            </label>
-                                            <textarea
-                                                {...register("bio")}
-                                                rows={4}
-                                                placeholder="Tell us about yourself..."
-                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent resize-none"
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Professional Details Section */}
-                                <div className="bg-gray-50 px-6 mb-8 rounded-xl">
-                                    <h2 className="text-xl font-semibold text-gray-900 mb-6 flex items-center gap-2">
-                                        <Briefcase size={20} />
-                                        Professional Details
-                                    </h2>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        {/* <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                Country
-                                            </label>
-                                            <select
-                                                {...register("country")}
-                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-                                            >
-                                                <option value="">Select Country</option>
-                                                {countriesList.map(country => (
-                                                    <option key={country} value={country}>{country}</option>
-                                                ))}
-                                            </select>
-                                        </div> */}
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                Freelancer Type
-                                            </label>
-                                            <select
-                                                {...register("freelancerType")}
-                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-                                            >
-                                                <option value="">Select Mentor Type</option>
-                                                {freelancerTypes.map(type => (
-                                                    <option key={type.value} value={type.value}>{type.label}</option>
-                                                ))}
-                                            </select>
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                English Level
-                                            </label>
-                                            <select
-                                                {...register("englishLevel")}
-                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-                                            >
-                                                <option value="">Select English Level</option>
-                                                {englishLevels.map(level => (
-                                                    <option key={level.value} value={level.value}>{level.label}</option>
-                                                ))}
-                                            </select>
-                                        </div>
-                                        {/* <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                Hourly Rate ($)
-                                            </label>
-                                            <div className="relative">
-                                                <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
-                                                <input
-                                                    type="number"
-                                                    {...register("hourlyRate", { min: 0 })}
-                                                    placeholder="Enter hourly rate"
-                                                    className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-                                                />
-                                            </div>
-                                        </div> */}
-                                    </div>
-
-                                    {/* Categories */}
-                                    <div className="mt-6">
-                                        <Controller
-                                            name="categories"
-                                            control={control}
-                                            render={({ field }) => (
-                                                <CategoriesSelect
-                                                    selectedCategories={selectedCategories}
-                                                    onChange={(categories) => {
-                                                        setSelectedCategories(categories);
-                                                        field.onChange(categories);
-                                                    }}
-                                                />
-                                            )}
-                                        />
-                                    </div>
-
-                                    {/* Skills */}
-                                    <div className="mt-6">
-                                        <Controller
-                                            name="skills"
-                                            control={control}
-                                            render={({ field }) => (
-                                                <SkillsSelect
-                                                    selectedSkills={selectedSkills}
-                                                    onChange={(skills) => {
-                                                        setSelectedSkills(skills);
-                                                        field.onChange(skills);
-                                                    }}
-                                                />
-                                            )}
-                                        />
-                                    </div>
-
-                                    {/* Services */}
-                                    <div className="mt-6">
-                                        <Controller
-                                            name="services"
-                                            control={control}
-                                            render={({ field }) => (
-                                                <ServiceSelect
-                                                    selectedServices={selectedServices}
-                                                    onChange={(services) => {
-                                                        setSelectedServices(services);
-                                                        field.onChange(services);
-                                                    }}
-                                                />
-                                            )}
-                                        />
-                                    </div>
-
-                                    {/* Languages */}
-                                    <div className="mt-6">
-                                        <Controller
-                                            name="languages"
-                                            control={control}
-                                            render={({ field }) => (
-                                                <LanguagesSelect
-                                                    selectedLanguages={selectedLanguages}
-                                                    onChange={(languages) => {
-                                                        setSelectedLanguages(languages);
-                                                        field.onChange(languages);
-                                                    }}
-                                                />
-                                            )}
-                                        />
-                                    </div>
-
-                                    {/* Action Buttons */}
-                                    <div className="flex flex-col sm:flex-row items-center justify-end mt-5 gap-3">
+                                <div className="flex items-center gap-3">
+                                    {currentStep === steps.length ? (
                                         <button
-                                            type="submit"
-                                            form="profile-form"
+                                            type="button" onClick={handleSubmit(onSubmit)}
                                             disabled={loading}
-                                            className="flex items-center gap-2 px-5 py-2.5 bg-primary hover:bg-primary-dark text-white rounded-lg font-medium shadow-sm hover:shadow transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                                            className="flex items-center gap-2 px-6 py-2.5 bg-primary hover:bg-primary-dark text-white rounded-lg font-medium shadow-sm hover:shadow transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                                         >
                                             {loading ? (
                                                 <>
@@ -1502,134 +1895,23 @@ function Profile() {
                                             ) : (
                                                 <>
                                                     <Save size={18} />
-                                                    Save Changes
+                                                    Save Profile
                                                 </>
                                             )}
                                         </button>
-                                    </div>
-                                </div>
-
-                                {/* Experience Section */}
-                                <div className="bg-gray-50 px-6 mb-8 rounded-xl">
-                                    <div className="flex justify-between items-center mb-6">
-                                        <h2 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
-                                            <Briefcase size={20} />
-                                            Experience Details
-                                        </h2>
+                                    ) : (
                                         <button
                                             type="button"
-                                            onClick={() => {
-                                                setEditingExperience(null);
-                                                setExperienceModalOpen(true);
-                                            }}
-                                            className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90"
+                                            onClick={nextStep}
+                                            className="flex items-center gap-2 px-6 py-2.5 bg-primary hover:bg-primary-dark text-white rounded-lg font-medium shadow-sm hover:shadow transition-all duration-200"
                                         >
-                                            <Plus size={18} />
-                                            Add New
+                                            Next Step
+                                            <ArrowRight size={18} />
                                         </button>
-                                    </div>
-
-                                    {experiences.length === 0 ? (
-                                        <p className="text-gray-500 text-center py-4">No experience added yet</p>
-                                    ) : (
-                                        <div className="space-y-4">
-                                            {experiences.map((exp) => (
-                                                <div key={exp._id} className="bg-white p-4 rounded-lg border border-gray-200">
-                                                    <div className="flex justify-between items-start">
-                                                        <div>
-                                                            <h3 className="font-semibold text-gray-900">{exp.jobTitle}</h3>
-                                                            <p className="text-gray-600">{exp.companyName} {exp.location && `• ${exp.location}`}</p>
-                                                            <p className="text-sm text-gray-500">
-                                                                {new Date(exp.startDate).toLocaleDateString()} - {exp.current ? 'Present' : exp.endDate ? new Date(exp.endDate).toLocaleDateString() : ''}
-                                                            </p>
-                                                            {exp.description && (
-                                                                <p className="mt-2 text-gray-600 text-sm">{exp.description}</p>
-                                                            )}
-                                                        </div>
-                                                        <div className="flex gap-2">
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => handleEditExperience(exp)}
-                                                                className="text-blue-600 hover:text-blue-800 text-sm font-medium"
-                                                            >
-                                                                Edit
-                                                            </button>
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => handleDeleteExperience(exp._id)}
-                                                                className="text-red-600 hover:text-red-800"
-                                                            >
-                                                                <Trash2 size={18} />
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
                                     )}
                                 </div>
-
-                                {/* Education Section */}
-                                <div className="bg-gray-50 px-6 mb-8 rounded-xl">
-                                    <div className="flex justify-between items-center mb-6">
-                                        <h2 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
-                                            <GraduationCap size={20} />
-                                            Educational Details
-                                        </h2>
-                                        <button
-                                            type="button"
-                                            onClick={() => {
-                                                setEditingEducation(null);
-                                                setEducationModalOpen(true);
-                                            }}
-                                            className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90"
-                                        >
-                                            <Plus size={18} />
-                                            Add New
-                                        </button>
-                                    </div>
-
-                                    {educations.length === 0 ? (
-                                        <p className="text-gray-500 text-center py-4">No education added yet</p>
-                                    ) : (
-                                        <div className="space-y-4">
-                                            {educations.map((edu) => (
-                                                <div key={edu._id} className="bg-white p-4 rounded-lg border border-gray-200">
-                                                    <div className="flex justify-between items-start">
-                                                        <div>
-                                                            <h3 className="font-semibold text-gray-900">{edu.degreeTitle}</h3>
-                                                            <p className="text-gray-600">{edu.instituteName}</p>
-                                                            <p className="text-sm text-gray-500">
-                                                                {new Date(edu.startDate).toLocaleDateString()} - {edu.current ? 'Present' : edu.endDate ? new Date(edu.endDate).toLocaleDateString() : ''}
-                                                            </p>
-                                                            {edu.description && (
-                                                                <p className="mt-2 text-gray-600 text-sm">{edu.description}</p>
-                                                            )}
-                                                        </div>
-                                                        <div className="flex gap-2">
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => handleEditEducation(edu)}
-                                                                className="text-blue-600 hover:text-blue-800 text-sm font-medium"
-                                                            >
-                                                                Edit
-                                                            </button>
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => handleDeleteEducation(edu._id)}
-                                                                className="text-red-600 hover:text-red-800"
-                                                            >
-                                                                <Trash2 size={18} />
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-                            </form>
-                        </div>
+                            </div>
+                        </form>
                     </div>
                 </FreelancerContainer>
             </div>

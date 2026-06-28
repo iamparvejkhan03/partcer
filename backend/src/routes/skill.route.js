@@ -26,10 +26,10 @@ skillRouter.get("/public/by-category/:categoryId", getSkillsByCategory);
 // =============================================
 // ADMIN ROUTES (Authentication required)
 // =============================================
+skillRouter.post("/", createSkill);
 skillRouter.use(auth, authAdmin);
 
 // Skill CRUD
-skillRouter.post("/", createSkill);
 skillRouter.post("/bulk", bulkCreateSkills);
 skillRouter.get("/", getAllSkills);
 skillRouter.get("/by-category/:categoryId", getSkillsByCategory);

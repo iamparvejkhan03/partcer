@@ -13,6 +13,7 @@ import {
   welcomeEmail,
 } from "../utils/emailTemplates.js";
 import transporter from "../utils/nodemailer.js";
+import NewOrder from "../models/newOrder.model.js";
 // import { sendEmail } from "../utils/sendEmail.js";
 
 // ==================== HELPER FUNCTIONS ====================
@@ -51,10 +52,13 @@ const registerUser = asyncHandler(async (req, res) => {
     phone,
     country,
     agreeTerms,
+    isAgency,
+    agencyName,
+    displayName,
   } = req.body;
 
   // Validation
-  if (!firstName || !lastName || !email || !password || !userType) {
+  if (!email || !password || !userType) {
     throw new ApiError(400, "All required fields must be provided");
   }
 
@@ -63,7 +67,7 @@ const registerUser = asyncHandler(async (req, res) => {
     throw new ApiError(400, "You must agree to terms & conditions to register");
   }
 
-  if (!["freelancer", "buyer", "admin"].includes(userType)) {
+  if (!["freelancer", "buyer", "agency", "admin"].includes(userType)) {
     throw new ApiError(400, "Invalid user type");
   }
 
@@ -72,7 +76,7 @@ const registerUser = asyncHandler(async (req, res) => {
   if (existingUser) {
     throw new ApiError(409, "User with this email already exists");
   }
-  
+
   // Create user
   const user = await User.create({
     firstName,
@@ -85,6 +89,9 @@ const registerUser = asyncHandler(async (req, res) => {
     country: country || "",
     isVerified: false,
     isActive: true,
+    isAgency: isAgency,
+    displayName: displayName,
+    agencyName: agencyName,
     currencyPreference: country === "United States" ? "USD" : "INR", // Default to USD for USA students, INR for others
     notificationPreferences: {
       email: true,
@@ -448,11 +455,13 @@ const updateProfile = asyncHandler(async (req, res) => {
     bio,
     hourlyRate,
     englishLevel,
+    experienceLevel,
+    yearsOfExperience,
     skills,
     categories,
     services,
     languages,
-    companyName,
+    agencyName,
     notificationPreferences,
   } = req.body;
 
@@ -504,6 +513,8 @@ const updateProfile = asyncHandler(async (req, res) => {
   if (tagline !== undefined) user.tagline = tagline;
   if (bio !== undefined) user.bio = bio;
   if (englishLevel !== undefined) user.englishLevel = englishLevel;
+  if (experienceLevel !== undefined) user.experienceLevel = experienceLevel;
+  if (yearsOfExperience !== undefined) user.yearsOfExperience = yearsOfExperience;
 
   if (languages) {
     try {
@@ -628,8 +639,8 @@ const updateProfile = asyncHandler(async (req, res) => {
   }
 
   // Update company fields
-  if (companyName !== undefined) {
-    user.companyName = companyName;
+  if (agencyName !== undefined) {
+    user.agencyName = agencyName;
   }
 
   // Update notification preferences (if provided as JSON string)
@@ -1147,19 +1158,31 @@ const getFreelancerPublicProfile = asyncHandler(async (req, res) => {
     userType: "freelancer",
     isActive: true,
   }).select(
-    "firstName lastName displayName companyName profileImage tagline bio hourlyRate englishLevel skills categories languages completedProjects rating reviewCount experience education country city",
+    "firstName lastName displayName companyName profileImage tagline bio hourlyRate englishLevel skills categories languages experienceLevel yearsOfExperience completedProjects rating reviewCount experience education country city",
   );
 
   if (!freelancer) {
     throw new ApiError(404, "Freelancer not found");
   }
 
+  // Get order count for this freelancer
+  const orderCount = await NewOrder.countDocuments({
+    mentorId: freelancerId,
+    orderStatus: { $in: ['completed'] }
+  });
+
+  // Convert to plain object so we can add the orderCount
+  const freelancerObject = freelancer.toObject();
+  
+  // Add orderCount to the response
+  freelancerObject.orderCount = orderCount;
+
   return res
     .status(200)
     .json(
       new ApiResponse(
         200,
-        freelancer,
+        freelancerObject,
         "Freelancer profile fetched successfully",
       ),
     );

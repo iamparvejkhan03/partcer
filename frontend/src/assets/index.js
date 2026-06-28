@@ -24,6 +24,7 @@ const otherData = {
 const userTypes = {
     buyer: 'Student',
     freelancer: 'Mentor',
+    agency: 'agency'
 }
 
 export {

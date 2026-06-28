@@ -39,7 +39,7 @@ import axiosInstance from '../../utils/axiosInstance';
 
 // Period options
 const PERIODS = [
-    { id: "one_time", label: "One-time", description: "Single session" },
+    // { id: "one_time", label: "One-time", description: "Single session" },
     { id: "per_day", label: "Per day", description: "Daily sessions" },
     { id: "weekly", label: "Weekly", description: "Weekly commitment" },
     { id: "monthly", label: "Monthly", description: "Monthly commitment" },
@@ -47,7 +47,7 @@ const PERIODS = [
 
 // Duration options
 const DURATION_OPTIONS = {
-    one_time: [{ id: "standard", label: "Single session" }],
+    // one_time: [{ id: "standard", label: "Single session" }],
     per_day: [
         { id: "standard", label: "Standard (2-3 hrs)" },
         { id: "full_day", label: "Full day (6-8 hrs)" },
@@ -282,7 +282,7 @@ const EditProject = () => {
     };
 
     const getDurationLabel = (period, duration) => {
-        if (period === 'one_time') return 'Single session';
+        // if (period === 'one_time') return 'Single session';
         if (duration === 'standard') return 'Standard (2-3 hrs)';
         return 'Full day (6-8 hrs)';
     };

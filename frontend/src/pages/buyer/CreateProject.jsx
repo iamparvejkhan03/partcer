@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import {
     FileText,
     Tag,
@@ -14,6 +14,7 @@ import {
     Calendar,
     Clock,
     AlertCircle,
+    Plus,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import axiosInstance from "../../utils/axiosInstance";
@@ -22,7 +23,7 @@ import { BuyerSidebar, BuyerHeader, BuyerContainer } from "../../components";
 
 // Period options
 const PERIODS = [
-    { id: "one_time", label: "One-time", icon: Calendar, description: "Single session" },
+    // { id: "one_time", label: "One-time", icon: Calendar, description: "Single session" },
     { id: "per_day", label: "Per day", icon: Clock, description: "Daily sessions" },
     { id: "weekly", label: "Weekly", icon: Briefcase, description: "Weekly commitment" },
     { id: "monthly", label: "Monthly", icon: Calendar, description: "Monthly commitment" },
@@ -30,7 +31,7 @@ const PERIODS = [
 
 // Duration options (dynamic based on period)
 const DURATION_OPTIONS = {
-    one_time: [{ id: "standard", label: "Single session", description: "One-time session" }],
+    // one_time: [{ id: "standard", label: "Single session", description: "One-time session" }],
     per_day: [
         { id: "standard", label: "Standard", description: "2-3 hours per day" },
         { id: "full_day", label: "Full day", description: "6-8 hours per day" },
@@ -53,10 +54,16 @@ const SERVICES = [
 ];
 
 // Skills Multi-select Component
-const SkillsSelect = ({ selectedSkills, onChange, skillsList, isLoading }) => {
+const SkillsSelect = ({ selectedSkills, onChange, skillsList, isLoading, onAddSkill }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [search, setSearch] = useState("");
+    const [isAddingSkill, setIsAddingSkill] = useState(false);
     const dropdownRef = useRef(null);
+
+    // Check if search term exists in skills list (case insensitive)
+    const isSkillInList = skillsList.some(
+        (skill) => skill.name.toLowerCase() === search.toLowerCase()
+    );
 
     const filteredSkills = skillsList.filter(
         (skill) =>
@@ -73,6 +80,57 @@ const SkillsSelect = ({ selectedSkills, onChange, skillsList, isLoading }) => {
                 return;
             }
             onChange([...selectedSkills, skillName]);
+        }
+    };
+
+    const handleAddNewSkill = async () => {
+        const trimmedSkill = search.trim();
+
+        // Validate skill name
+        if (!trimmedSkill) {
+            toast.error("Please enter a skill name");
+            return;
+        }
+
+        if (trimmedSkill.length < 2) {
+            toast.error("Skill name must be at least 2 characters");
+            return;
+        }
+
+        if (selectedSkills.length >= 10) {
+            toast.error("Maximum 10 skills allowed");
+            return;
+        }
+
+        // Check if skill already exists in the list (case insensitive)
+        if (isSkillInList) {
+            toast.error("This skill already exists in the list");
+            return;
+        }
+
+        // Check if already selected
+        if (selectedSkills.some(s => s.toLowerCase() === trimmedSkill.toLowerCase())) {
+            toast.error("This skill is already selected");
+            return;
+        }
+
+        try {
+            setIsAddingSkill(true);
+            // Call the parent function to add the skill
+            if (onAddSkill) {
+                await onAddSkill(trimmedSkill);
+                // Add the skill to selected skills
+                onChange([...selectedSkills, trimmedSkill]);
+                // Clear search and close dropdown
+                setSearch("");
+                setIsOpen(false);
+                toast.success(`"${trimmedSkill}" added successfully`);
+            }
+        } catch (error) {
+            console.error('Error adding skill:', error);
+            toast.error(error?.response?.data?.message || 'Failed to add skill');
+        } finally {
+            setIsAddingSkill(false);
         }
     };
 
@@ -132,15 +190,49 @@ const SkillsSelect = ({ selectedSkills, onChange, skillsList, isLoading }) => {
                             <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                             <input
                                 type="text"
-                                placeholder="Search skills..."
+                                placeholder="Search or type new skill..."
                                 className="w-full pl-9 pr-3 py-1.5 border border-gray-300 rounded-lg focus:ring-1 focus:ring-primary focus:border-primary"
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
                                 onClick={(e) => e.stopPropagation()}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter' && search.trim() && !isSkillInList) {
+                                        e.preventDefault();
+                                        handleAddNewSkill();
+                                    }
+                                }}
                             />
                         </div>
                     </div>
                     <div className="py-1">
+                        {/* Add new skill option */}
+                        {search.trim() && !isSkillInList && selectedSkills.length < 10 && (
+                            <button
+                                type="button"
+                                onClick={handleAddNewSkill}
+                                disabled={isAddingSkill}
+                                className="w-full px-4 py-2 text-left hover:bg-green-50 flex items-center justify-between border-b border-dashed border-gray-200"
+                            >
+                                <div className="flex items-center">
+                                    <Plus size={16} className="text-green-600 mr-2" />
+                                    <span className="text-gray-700">
+                                        Add new skill: <strong>"{search.trim()}"</strong>
+                                    </span>
+                                </div>
+                                {isAddingSkill ? (
+                                    <span className="text-sm text-gray-500">Adding...</span>
+                                ) : (
+                                    <span className="text-xs text-green-600">Press Enter or click to add</span>
+                                )}
+                            </button>
+                        )}
+
+                        {search.trim() && isSkillInList && (
+                            <div className="px-4 py-2 text-sm text-gray-500 border-b border-gray-100">
+                                Skill already exists in the list
+                            </div>
+                        )}
+
                         {filteredSkills.length > 0 ? (
                             filteredSkills.map((skill) => (
                                 <button
@@ -154,7 +246,15 @@ const SkillsSelect = ({ selectedSkills, onChange, skillsList, isLoading }) => {
                                 </button>
                             ))
                         ) : (
-                            <div className="px-4 py-2 text-sm text-gray-500">No skills found</div>
+                            !search.trim() && (
+                                <div className="px-4 py-2 text-sm text-gray-500">Type to search or add new skills</div>
+                            )
+                        )}
+
+                        {selectedSkills.length >= 10 && search.trim() && !isSkillInList && (
+                            <div className="px-4 py-2 text-red-500 text-sm text-center border-t border-red-100">
+                                Maximum 10 skills reached
+                            </div>
                         )}
                     </div>
                 </div>
@@ -247,6 +347,7 @@ const CreateProject = () => {
         setValue,
         trigger,
         getValues,
+        control,
         formState: { errors },
     } = useForm({
         mode: "onChange",
@@ -509,11 +610,31 @@ const CreateProject = () => {
                             <label className="block text-sm font-medium text-gray-700 mb-2">
                                 Skills Required *
                             </label>
-                            <SkillsSelect
-                                selectedSkills={selectedSkills}
-                                onChange={setSelectedSkills}
-                                skillsList={skills}
-                                isLoading={loadingSkills}
+                            <Controller
+                                name="skills"
+                                control={control}
+                                render={({ field }) => (
+                                    <SkillsSelect
+                                        selectedSkills={selectedSkills}
+                                        onChange={(skills) => {
+                                            setSelectedSkills(skills);
+                                            field.onChange(skills);
+                                        }}
+                                        skillsList={skills}
+                                        isLoading={loadingSkills}
+                                        onAddSkill={async (skillName) => {
+                                            // API call to add skill to database
+                                            const response = await axiosInstance.post('/api/v1/skills', {
+                                                name: skillName,
+                                                isActive: true
+                                            });
+                                            if (response.data?.success) {
+                                                return response.data.data;
+                                            }
+                                            throw new Error('Failed to add skill');
+                                        }}
+                                    />
+                                )}
                             />
                             <p className="text-xs text-gray-500 mt-2">
                                 Select skills that match your project requirements (max 10)

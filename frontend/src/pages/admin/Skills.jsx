@@ -40,7 +40,6 @@ const Skills = () => {
             name: '',
             categories: [],
             isActive: true,
-            order: 0
         }
     });
 
@@ -309,13 +308,6 @@ const Skills = () => {
                         </div>
                         <div className="flex items-center gap-2 mt-4 md:mt-0">
                             <button
-                                onClick={() => fetchSkills()}
-                                className="p-2 border border-gray-300 bg-white rounded-lg hover:bg-gray-50 transition-colors"
-                                title="Refresh"
-                            >
-                                <RefreshCw size={18} className="text-gray-600" />
-                            </button>
-                            <button
                                 onClick={() => setShowForm(true)}
                                 className="flex items-center gap-2 bg-primary hover:bg-primary-dark text-white px-4 py-2 rounded-lg transition-colors"
                             >
@@ -329,7 +321,7 @@ const Skills = () => {
                     <div className="bg-white rounded-xl border border-gray-200 p-4 mb-6">
                         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                             {/* Search */}
-                            <div className="md:col-span-2">
+                            <div className="md:col-span-3">
                                 <div className="relative">
                                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
                                     <input
@@ -343,7 +335,7 @@ const Skills = () => {
                             </div>
 
                             {/* Status Filter */}
-                            <div>
+                            <div className='col-span-1'>
                                 <select
                                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
                                     value={filters.status}
@@ -356,7 +348,7 @@ const Skills = () => {
                             </div>
 
                             {/* Category Filter */}
-                            <div>
+                            {/* <div>
                                 <select
                                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
                                     value={filters.category}
@@ -367,7 +359,7 @@ const Skills = () => {
                                         <option key={cat._id} value={cat._id}>{cat.name}</option>
                                     ))}
                                 </select>
-                            </div>
+                            </div> */}
                         </div>
 
                         <div className="flex justify-between items-center mt-4">
@@ -395,15 +387,15 @@ const Skills = () => {
                                         <th className="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                             Skill Name
                                         </th>
-                                        <th className="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        {/* <th className="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                             Categories
-                                        </th>
-                                        <th className="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        </th> */}
+                                        {/* <th className="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                             Order
-                                        </th>
-                                        <th className="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        </th> */}
+                                        {/* <th className="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                             Services
-                                        </th>
+                                        </th> */}
                                         <th className="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                             Status
                                         </th>
@@ -433,7 +425,7 @@ const Skills = () => {
                                                     Slug: {skill.slug}
                                                 </div>
                                             </td>
-                                            <td className="py-4 px-6">
+                                            {/* <td className="py-4 px-6">
                                                 <div className="flex flex-wrap gap-1">
                                                     {skill.categories?.map((cat, index) => (
                                                         <span
@@ -447,17 +439,17 @@ const Skills = () => {
                                                         <span className="text-xs text-gray-400">No categories</span>
                                                     )}
                                                 </div>
-                                            </td>
-                                            <td className="py-4 px-6">
+                                            </td> */}
+                                            {/* <td className="py-4 px-6">
                                                 <div className="text-sm text-gray-600">
                                                     {skill.order || 0}
                                                 </div>
-                                            </td>
-                                            <td className="py-4 px-6">
+                                            </td> */}
+                                            {/* <td className="py-4 px-6">
                                                 <div className="text-sm text-gray-600">
                                                     {skill.serviceCount || 0}
                                                 </div>
-                                            </td>
+                                            </td> */}
                                             <td className="py-4 px-6">
                                                 <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${skill.isActive
                                                     ? 'bg-green-100 text-green-800'
@@ -620,7 +612,7 @@ const SkillFormModal = ({
                     </div>
 
                     {/* Categories */}
-                    <div>
+                    {/* <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                             Categories
                         </label>
@@ -648,10 +640,10 @@ const SkillFormModal = ({
                         <p className="text-xs text-gray-500 mt-1">
                             Hold Ctrl (Windows) or Cmd (Mac) to select multiple categories
                         </p>
-                    </div>
+                    </div> */}
 
                     {/* Display Order */}
-                    <div>
+                    {/* <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                             Display Order
                         </label>
@@ -671,7 +663,7 @@ const SkillFormModal = ({
                         {errors.order && (
                             <p className="mt-1 text-sm text-red-600">{errors.order.message}</p>
                         )}
-                    </div>
+                    </div> */}
 
                     {/* Status */}
                     <div className="flex items-center">
