@@ -24,7 +24,10 @@ import {
     TrendingUp,
     Users,
     DollarSign,
-    AlertTriangle
+    AlertTriangle,
+    FileText,
+    ExternalLink,
+    Image as ImageIcon
 } from "lucide-react";
 import { AdminSidebar, AdminHeader, AdminContainer } from '../../components';
 import toast from 'react-hot-toast';
@@ -607,6 +610,51 @@ const ResolutionCenter = () => {
                                 </div>
                             </div>
 
+                            {/* Attachments Section */}
+                            {selectedResolution.attachments && selectedResolution.attachments.length > 0 && (
+                                <div className="bg-gray-50 p-4 rounded-lg">
+                                    <h4 className="font-medium mb-3 flex items-center gap-2">
+                                        <FileText size={16} />
+                                        Attachments ({selectedResolution.attachments.length})
+                                    </h4>
+                                    <div className="space-y-2">
+                                        {selectedResolution.attachments.map((attachment, index) => (
+                                            <a
+                                                key={index}
+                                                href={attachment.url}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="flex items-center justify-between bg-white p-3 rounded-lg border border-gray-200 hover:border-primary transition-colors group"
+                                            >
+                                                <div className="flex items-center gap-3">
+                                                    {attachment.fileType === 'image' ? (
+                                                        <ImageIcon size={18} className="text-blue-500" />
+                                                    ) : attachment.fileType === 'pdf' ? (
+                                                        <FileText size={18} className="text-red-500" />
+                                                    ) : (
+                                                        <FileText size={18} className="text-gray-500" />
+                                                    )}
+                                                    <div>
+                                                        <p className="text-sm font-medium text-gray-900 group-hover:text-primary transition-colors">
+                                                            {attachment.fileName}
+                                                        </p>
+                                                        <p className="text-xs text-gray-400">
+                                                            {attachment.fileType} • {new Date(attachment.uploadedAt).toLocaleDateString()}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-xs text-primary opacity-0 group-hover:opacity-100 transition-opacity">
+                                                        View
+                                                    </span>
+                                                    <ExternalLink size={14} className="text-gray-400 group-hover:text-primary transition-colors" />
+                                                </div>
+                                            </a>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
                             {/* Admin Response (if any) */}
                             {(selectedResolution.adminNotes || selectedResolution.resolution) && (
                                 <div className="bg-blue-50 p-4 rounded-lg">
@@ -627,12 +675,6 @@ const ResolutionCenter = () => {
                                                 <p className="text-sm text-gray-700">{selectedResolution.resolution}</p>
                                             </div>
                                         )}
-                                        {/* {selectedResolution.refundAmount > 0 && (
-                                            <div>
-                                                <p className="text-xs text-gray-500 mb-1">Refund Amount</p>
-                                                <p className="text-sm font-medium text-green-600">₹{selectedResolution.refundAmount}</p>
-                                            </div>
-                                        )} */}
                                     </div>
                                 </div>
                             )}

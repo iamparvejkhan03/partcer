@@ -68,6 +68,31 @@ const resolutionSchema = new mongoose.Schema(
     emailSentAt: {
       type: Date,
     },
+    attachments: [
+      {
+        url: {
+          type: String,
+          required: true,
+        },
+        publicId: {
+          type: String,
+          required: true,
+        },
+        fileName: {
+          type: String,
+          required: true,
+        },
+        fileType: {
+          type: String,
+          enum: ['image', 'pdf', 'document'],
+          required: true,
+        },
+        uploadedAt: {
+          type: Date,
+          default: Date.now,
+        }
+      }
+    ],
   },
   { timestamps: true }
 );

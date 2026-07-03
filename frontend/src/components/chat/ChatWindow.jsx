@@ -2,7 +2,10 @@ import { useState, useRef, useEffect } from 'react';
 import { Avatar } from '../../components';
 import MessageBubble from './MessageBubble';
 import MessageInput from './MessageInput';
-import { ArrowLeft, Phone, Video, Info, ArrowRight } from 'lucide-react';
+import MeetingTab from './MeetingTab';
+import ResourcesTab from './ResourcesTab';
+import SavedTab from './SavedTab';
+import { ArrowLeft, ArrowRight, Package, MessageCircle, Video, FolderOpen, Bookmark } from 'lucide-react';
 import { format } from 'date-fns';
 
 const ChatWindow = ({
@@ -12,9 +15,11 @@ const ChatWindow = ({
     onSendMessage,
     onTyping,
     onlineUsers,
-    onBack
+    onBack,
+    onShowOrderDetails
 }) => {
     const [typingUsers, setTypingUsers] = useState({});
+    const [activeTab, setActiveTab] = useState('chat');
     const messagesEndRef = useRef(null);
     const messagesContainerRef = useRef(null);
     const [showScrollButton, setShowScrollButton] = useState(false);
@@ -25,6 +30,13 @@ const ChatWindow = ({
     );
 
     const isOnline = onlineUsers.includes(otherParticipant?._id);
+
+    const tabs = [
+        { id: 'chat', label: 'Chat', icon: MessageCircle },
+        { id: 'meeting', label: 'Meeting', icon: Video },
+        { id: 'resources', label: 'Resources', icon: FolderOpen },
+        { id: 'saved', label: 'Saved', icon: Bookmark },
+    ];
 
     // Handle typing indicators from socket
     useEffect(() => {
@@ -100,16 +112,15 @@ const ChatWindow = ({
     // Scroll to bottom on initial load
     useEffect(() => {
         if (messagesContainerRef.current && messages.length > 0) {
-            // Scroll to bottom immediately when messages load
             setTimeout(() => {
                 messagesContainerRef.current.scrollTo({
                     top: messagesContainerRef.current.scrollHeight,
-                    behavior: 'instant' // Use 'instant' for initial load, no animation
+                    behavior: 'instant'
                 });
                 setShowScrollButton(false);
             }, 100);
         }
-    }, [messages]); // Run when messages change (initial load)
+    }, [messages]);
 
     const scrollToBottom = () => {
         if (messagesContainerRef.current) {
@@ -140,7 +151,7 @@ const ChatWindow = ({
     }, {});
 
     return (
-        <div className="flex flex-col h-full">
+        <div className="flex flex-col h-full relative">
             {/* Chat Header */}
             <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
                 <div className="flex items-center space-x-5">
@@ -177,74 +188,121 @@ const ChatWindow = ({
                     </div>
                 </div>
 
-                {/* <div className="flex items-center space-x-2">
-                    <button className="p-2 hover:bg-gray-100 rounded-full transition-colors">
-                        <Phone size={18} className="text-gray-600" />
-                    </button>
-                    <button className="p-2 hover:bg-gray-100 rounded-full transition-colors">
-                        <Video size={18} className="text-gray-600" />
-                    </button>
-                    <button className="p-2 hover:bg-gray-100 rounded-full transition-colors">
-                        <Info size={18} className="text-gray-600" />
-                    </button>
-                </div> */}
+                <button
+                    onClick={onShowOrderDetails}
+                    className="lg:hidden p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                    <Package size={18} className="text-gray-600" />
+                </button>
             </div>
 
-            {/* Messages Container */}
-            <div
-                ref={messagesContainerRef}
-                onScroll={handleScroll}
-                className="flex-1 overflow-y-auto p-4 space-y-6"
-                style={{ scrollBehavior: 'smooth' }}
-            >
-                {messages.length === 0 && (
-                    <div className="text-center py-8 text-gray-500">
-                        No messages yet. Start the conversation!
+            {/* Tab Navigation */}
+            <div className="border-b border-gray-200 bg-white">
+                <div className="flex px-4 space-x-1">
+                    {tabs.map((tab) => {
+                        const Icon = tab.icon;
+                        const isActive = activeTab === tab.id;
+                        return (
+                            <button
+                                key={tab.id}
+                                onClick={() => setActiveTab(tab.id)}
+                                className={`
+                                    flex items-center gap-2 px-4 py-3 text-sm font-medium
+                                    transition-all duration-200 relative
+                                    ${isActive
+                                        ? 'text-primary border-b-2 border-primary'
+                                        : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                                    }
+                                `}
+                            >
+                                <Icon size={18} />
+                                <span className="hidden sm:inline">{tab.label}</span>
+                            </button>
+                        );
+                    })}
+                </div>
+            </div>
+
+            {/* Tab Content */}
+            <div className="flex-1 overflow-hidden">
+                {activeTab === 'chat' && (
+                    <div className="flex flex-col h-full">
+                        {/* Messages Container */}
+                        <div
+                            ref={messagesContainerRef}
+                            onScroll={handleScroll}
+                            className="flex-1 overflow-y-auto p-4 space-y-6 bg-gray-50"
+                            style={{ scrollBehavior: 'smooth' }}
+                        >
+                            {messages.length === 0 && (
+                                <div className="text-center py-8 text-gray-500">
+                                    No messages yet. Start the conversation!
+                                </div>
+                            )}
+
+                            {Object.entries(groupedMessages).map(([date, dateMessages]) => (
+                                <div key={date} className="space-y-4">
+                                    <div className="flex justify-center">
+                                        <span className="text-xs bg-gray-200 text-gray-600 px-3 py-1 rounded-full">
+                                            {date}
+                                        </span>
+                                    </div>
+
+                                    {dateMessages.map((message, index) => {
+                                        const showAvatar = index === 0 ||
+                                            dateMessages[index - 1].sender?._id !== message.sender?._id;
+
+                                        return (
+                                            <MessageBubble
+                                                key={message._id}
+                                                message={message}
+                                                isOwn={message.sender?._id === currentUser._id}
+                                                showAvatar={showAvatar}
+                                                sender={message.sender}
+                                            />
+                                        );
+                                    })}
+                                </div>
+                            ))}
+                            <div ref={messagesEndRef} />
+                        </div>
+
+                        {/* Scroll to bottom button */}
+                        {showScrollButton && (
+                            <button
+                                onClick={scrollToBottom}
+                                className="absolute bottom-28 right-8 bg-primary text-white p-2 rounded-full shadow-lg hover:bg-primary/90 transition-colors"
+                            >
+                                <ArrowRight size={18} className="rotate-90" />
+                            </button>
+                        )}
+
+                        {/* Message Input */}
+                        <MessageInput
+                            onSendMessage={onSendMessage}
+                            onTyping={onTyping}
+                        />
                     </div>
                 )}
 
-                {Object.entries(groupedMessages).map(([date, dateMessages]) => (
-                    <div key={date} className="space-y-4">
-                        <div className="flex justify-center">
-                            <span className="text-xs bg-gray-200 text-gray-600 px-3 py-1 rounded-full">
-                                {date}
-                            </span>
-                        </div>
+                {activeTab === 'meeting' && (
+                    <MeetingTab 
+                        conversationId={conversation?._id} 
+                        userType={currentUser?.userType} 
+                    />
+                )}
 
-                        {dateMessages.map((message, index) => {
-                            const showAvatar = index === 0 ||
-                                dateMessages[index - 1].sender?._id !== message.sender?._id;
+                {activeTab === 'resources' && (
+                    <ResourcesTab conversationId={conversation?._id} />
+                )}
 
-                            return (
-                                <MessageBubble
-                                    key={message._id}
-                                    message={message}
-                                    isOwn={message.sender?._id === currentUser._id}
-                                    showAvatar={showAvatar}
-                                    sender={message.sender}
-                                />
-                            );
-                        })}
-                    </div>
-                ))}
-                <div ref={messagesEndRef} />
+                {activeTab === 'saved' && (
+                    <SavedTab 
+                        conversationId={conversation?._id} 
+                        currentUser={currentUser} 
+                    />
+                )}
             </div>
-
-            {/* Scroll to bottom button */}
-            {showScrollButton && (
-                <button
-                    onClick={scrollToBottom}
-                    className="absolute bottom-28 right-8 bg-primary text-white p-2 rounded-full shadow-lg hover:bg-primary/90 transition-colors"
-                >
-                    <ArrowRight size={18} className="rotate-90" />
-                </button>
-            )}
-
-            {/* Message Input */}
-            <MessageInput
-                onSendMessage={onSendMessage}
-                onTyping={onTyping}
-            />
         </div>
     );
 };

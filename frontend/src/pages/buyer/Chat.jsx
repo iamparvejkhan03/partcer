@@ -1,66 +1,52 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useSocket } from '../../contexts/SocketContext';
 import { useAuth } from '../../contexts/AuthContext';
-import { BuyerContainer, BuyerHeader, BuyerSidebar } from '../../components';
+import { useNotifications } from '../../contexts/NotificationContext';
+import { BuyerContainer, BuyerHeader, BuyerSidebar, BuyerOrderSummaryCard, ResolutionPanel } from '../../components';
 import ConversationList from '../../components/chat/ConversationList';
 import ChatWindow from '../../components/chat/ChatWindow';
-import { Menu, MessageSquare } from 'lucide-react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { MessageSquare, Package, ChevronLeft, X } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { useNotifications } from '../../contexts/NotificationContext';
+import axiosInstance from '../../utils/axiosInstance';
+import { formatOrderPrice } from '../../utils/currencyHelpers';
 
-const Chat = () => {
+const BuyerChat = () => {
     const [searchParams] = useSearchParams();
     const receiverId = searchParams.get('user');
     const { socket, isConnected, onlineUsers } = useSocket();
     const { user } = useAuth();
+    const { markMessagesAsRead } = useNotifications();
+
+    // State for conversations
     const [conversations, setConversations] = useState([]);
     const [selectedConversation, setSelectedConversation] = useState(null);
     const [messages, setMessages] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [showMobileList, setShowMobileList] = useState(false);
-    const navigate = useNavigate();
-    const { markMessagesAsRead } = useNotifications();
 
-    // useEffect to mark as read when page loads
+    // State for right panel - Orders
+    const [orders, setOrders] = useState([]);
+    const [selectedOrder, setSelectedOrder] = useState(null);
+    const [ordersLoading, setOrdersLoading] = useState(false);
+    const [showOrderSummary, setShowOrderSummary] = useState(false);
+    const [currentOrderDetails, setCurrentOrderDetails] = useState(null);
+    const [orderDetailsLoading, setOrderDetailsLoading] = useState(false);
+
+    // Mobile states
+    const [showMobileList, setShowMobileList] = useState(false);
+    const [showMobileRightPanel, setShowMobileRightPanel] = useState(false);
+
+    // Add these states with your other states
+    const [showResolution, setShowResolution] = useState(false);
+    const [showOrderHistory, setShowOrderHistory] = useState(false);
+
+    // Refs
+    const isInitialLoad = useRef(true);
+
+    // Mark messages as read when page loads
     useEffect(() => {
         markMessagesAsRead();
     }, []);
-
-    // Auto-start conversation with user from URL
-    useEffect(() => {
-        if (receiverId && socket && isConnected && conversations.length > 0) {
-            const existingConv = conversations.find(conv =>
-                conv.participants.some(p => p._id === receiverId)
-            );
-
-            if (existingConv) {
-                setSelectedConversation(existingConv);
-                setShowMobileList(false);
-            }
-            // Don't send any message - just wait for user to send first message
-        }
-    }, [receiverId, socket, isConnected, conversations]);
-
-    useEffect(() => {
-        const initializeChat = async () => {
-            const urlUserId = searchParams.get('user');
-
-            if (urlUserId && conversations.length > 0 && !selectedConversation) {
-                // Find conversation with this user
-                const conversation = conversations.find(conv =>
-                    conv.participants.some(p => p._id === urlUserId)
-                );
-
-                if (conversation) {
-                    setSelectedConversation(conversation);
-                    setShowMobileList(false);
-                }
-            }
-        };
-
-        initializeChat();
-    }, [searchParams, conversations, selectedConversation]);
 
     // Load conversations
     useEffect(() => {
@@ -71,6 +57,37 @@ const Chat = () => {
             socket.on('conversations:list', (convs) => {
                 setConversations(convs);
                 setLoading(false);
+
+                // Auto-select conversation from URL or first one
+                if (isInitialLoad.current && convs.length > 0) {
+                    isInitialLoad.current = false;
+                    const urlUserId = searchParams.get('user');
+
+                    if (urlUserId) {
+                        const conv = convs.find(c =>
+                            c.participants.some(p => p._id === urlUserId)
+                        );
+                        if (conv) {
+                            setSelectedConversation(conv);
+                            setShowMobileList(false);
+                            const otherUser = conv.participants.find(
+                                p => p._id !== user._id
+                            );
+                            if (otherUser) {
+                                fetchUserOrders(otherUser._id);
+                            }
+                        }
+                    } else {
+                        // Select first conversation
+                        setSelectedConversation(convs[0]);
+                        const otherUser = convs[0].participants.find(
+                            p => p._id !== user._id
+                        );
+                        if (otherUser) {
+                            fetchUserOrders(otherUser._id);
+                        }
+                    }
+                }
             });
 
             socket.on('conversation:updated', (updatedConv) => {
@@ -79,14 +96,12 @@ const Chat = () => {
                     return [updatedConv, ...filtered];
                 });
             });
-        }
 
-        return () => {
-            if (socket) {
+            return () => {
                 socket.off('conversations:list');
                 socket.off('conversation:updated');
-            }
-        };
+            };
+        }
     }, [socket, isConnected]);
 
     // Load messages when conversation selected
@@ -94,36 +109,50 @@ const Chat = () => {
         if (socket && isConnected && selectedConversation) {
             setMessages([]);
 
+            // Get other participant
+            const otherParticipant = selectedConversation.participants.find(
+                p => p._id !== user._id
+            );
+
+            // Fetch orders for this user
+            if (otherParticipant) {
+                fetchUserOrders(otherParticipant._id);
+            }
+
             socket.emit('messages:get', {
                 conversationId: selectedConversation._id
             });
 
-            socket.on('messages:list', ({ conversationId, messages: msgs }) => {
+            const handleMessagesList = ({ conversationId, messages: msgs }) => {
                 if (conversationId === selectedConversation._id) {
                     setMessages(msgs);
+                    // Mark messages as read
+                    socket.emit('messages:read', { conversationId });
                 }
-            });
+            };
 
-            socket.on('message:sent', (newMessage) => {
+            const handleMessageSent = (newMessage) => {
                 if (newMessage.conversation === selectedConversation._id) {
                     setMessages(prev => {
                         if (prev.some(m => m._id === newMessage._id)) return prev;
                         return [...prev, newMessage];
                     });
                 }
-            });
+            };
 
-            socket.on('message:received', (newMessage) => {
+            const handleMessageReceived = (newMessage) => {
                 if (newMessage.conversation === selectedConversation._id) {
                     setMessages(prev => {
                         if (prev.some(m => m._id === newMessage._id)) return prev;
                         return [...prev, newMessage];
                     });
-                    socket.emit('messages:read', { conversationId: selectedConversation._id });
+                    socket.emit('messages:read', {
+                        conversationId: selectedConversation._id
+                    });
                 }
-            });
+            };
 
-            socket.on('messages:read', ({ conversationId, readerId }) => {
+            const handleMessagesRead = ({ conversationId, readerId }) => {
                 if (conversationId === selectedConversation._id) {
                     setMessages(prev => prev.map(msg =>
                         msg.receiver?._id === readerId
@@ -131,17 +160,50 @@ const Chat = () => {
                             : msg
                     ));
                 }
-            });
+            };
+
+            socket.on('messages:list', handleMessagesList);
+            socket.on('message:sent', handleMessageSent);
+            socket.on('message:received', handleMessageReceived);
+            socket.on('messages:read', handleMessagesRead);
 
             return () => {
-                socket.off('messages:list');
-                socket.off('message:sent');
-                socket.off('message:received');
-                socket.off('messages:read');
+                socket.off('messages:list', handleMessagesList);
+                socket.off('message:sent', handleMessageSent);
+                socket.off('message:received', handleMessageReceived);
+                socket.off('messages:read', handleMessagesRead);
             };
         }
     }, [socket, isConnected, selectedConversation]);
 
+    // Fetch orders for a specific user
+    const fetchUserOrders = async (userId) => {
+        if (!userId) return;
+
+        try {
+            setOrdersLoading(true);
+            const response = await axiosInstance.get(
+                `/api/v1/payments/history/${user._id}/${userId}`
+            );
+
+            if (response.data?.success) {
+                setOrders(response.data.data.orders || []);
+                // Auto-select first order if available
+                if (response.data.data?.length > 0) {
+                    handleSelectOrder(response.data.data.orders[0]);
+                } else {
+                    setSelectedOrder(null);
+                    setShowOrderSummary(false);
+                }
+            }
+        } catch (error) {
+            console.error('Error fetching orders:', error);
+        } finally {
+            setOrdersLoading(false);
+        }
+    };
+
+    // Handle selecting a conversation
     const handleSelectConversation = (conversation) => {
         setSelectedConversation(conversation);
         setShowMobileList(false);
@@ -151,25 +213,43 @@ const Chat = () => {
         );
 
         if (otherParticipant) {
-            navigate(`/${user?.userType}/chat?user=${otherParticipant._id}`, { replace: true });
+            // Update URL without reload
+            const newUrl = `/${user?.userType}/chat?user=${otherParticipant._id}`;
+            window.history.pushState({}, '', newUrl);
+
+            // Fetch orders for this user
+            fetchUserOrders(otherParticipant._id);
         }
     };
 
-    useEffect(() => {
-        const urlUserId = searchParams.get('user');
+    // Handle selecting an order from the list
+    const handleSelectOrder = (order) => {
+        setSelectedOrder(order);
+        setShowOrderSummary(true);
+        setShowMobileRightPanel(true);
+        fetchOrderDetails(order._id);
+    };
 
-        if (urlUserId && conversations.length > 0 && !selectedConversation) {
-            const conversation = conversations.find(conv =>
-                conv.participants.some(p => p._id === urlUserId)
+    // Fetch detailed order info
+    const fetchOrderDetails = async (orderId) => {
+        try {
+            setOrderDetailsLoading(true);
+            const response = await axiosInstance.get(
+                `/api/v1/payments/status/${orderId}`
             );
 
-            if (conversation) {
-                setSelectedConversation(conversation);
-                setShowMobileList(false);
+            if (response.data?.success) {
+                setCurrentOrderDetails(response.data.data.order);
             }
+        } catch (error) {
+            console.error('Error fetching order details:', error);
+            toast.error('Failed to load order details');
+        } finally {
+            setOrderDetailsLoading(false);
         }
-    }, [searchParams, conversations, selectedConversation]);
+    };
 
+    // Handle sending message
     const handleSendMessage = (content, attachments = []) => {
         if (!selectedConversation) return;
 
@@ -177,13 +257,16 @@ const Chat = () => {
             p => p._id !== user._id
         )?._id;
 
-        socket.emit('message:send', {
-            receiverId,
-            content,
-            attachments: attachments
-        });
+        if (receiverId) {
+            socket.emit('message:send', {
+                receiverId,
+                content,
+                attachments
+            });
+        }
     };
 
+    // Handle typing
     const handleTyping = (isTyping) => {
         if (!selectedConversation) return;
 
@@ -191,11 +274,59 @@ const Chat = () => {
             p => p._id !== user._id
         )?._id;
 
-        if (isTyping) {
-            socket.emit('typing:start', { receiverId });
-        } else {
-            socket.emit('typing:stop', { receiverId });
+        if (receiverId) {
+            if (isTyping) {
+                socket.emit('typing:start', { receiverId });
+            } else {
+                socket.emit('typing:stop', { receiverId });
+            }
         }
+    };
+
+    const handleBackToOrdersList = () => {
+        setShowOrderSummary(false);
+        setSelectedOrder(null);
+        setCurrentOrderDetails(null);
+        setShowMobileRightPanel(false);
+        setShowResolution(false);  // Add this
+        setShowOrderHistory(false); // Add this
+
+        const otherParticipant = selectedConversation?.participants.find(
+            p => p._id !== user._id
+        );
+        if (otherParticipant) {
+            fetchUserOrders(otherParticipant._id);
+        }
+    };
+
+    // Handle order action (complete, review, etc.)
+    const handleOrderAction = () => {
+        // Refresh order details after action
+        if (selectedOrder) {
+            fetchOrderDetails(selectedOrder._id);
+        }
+        // Also refresh orders list
+        const otherParticipant = selectedConversation?.participants.find(
+            p => p._id !== user._id
+        );
+        if (otherParticipant) {
+            fetchUserOrders(otherParticipant._id);
+        }
+    };
+
+    // Get other participant from conversation
+    const getOtherParticipant = () => {
+        if (!selectedConversation) return null;
+        return selectedConversation.participants.find(
+            p => p._id !== user._id
+        );
+    };
+
+    const otherUser = getOtherParticipant();
+
+    // Show order details button on mobile
+    const handleShowOrderDetails = () => {
+        setShowMobileRightPanel(true);
     };
 
     return (
@@ -204,21 +335,12 @@ const Chat = () => {
             <div className="flex-1">
                 <BuyerHeader />
                 <BuyerContainer>
-                    <div className="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-200 h-[calc(100vh-150px)] mt-20 md:mt-5 relative">
+                    <div className="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-200 h-[calc(100vh-150px)] mt-20 md:mt-5">
+                        {/* Three Column Layout */}
                         <div className="flex h-full">
-                            {/* Mobile Toggle Button - Only shows when list is hidden */}
-                            {!showMobileList && (
-                                <button
-                                    onClick={() => setShowMobileList(true)}
-                                    className="md:hidden absolute top-4 left-4 z-20 bg-primary text-white p-2 rounded-lg shadow-lg"
-                                >
-                                    <Menu size={20} />
-                                </button>
-                            )}
-
-                            {/* Conversation List */}
+                            {/* Left Column - Conversation List (25%) */}
                             <div className={`${showMobileList ? 'block' : 'hidden'
-                                } md:block w-full md:w-80 lg:w-96 border-r border-gray-200 bg-white absolute md:relative z-10 h-full`}>
+                                } md:block max-w-full md:max-w-56 lg:max-w-64 border-r border-gray-200 bg-white absolute md:relative z-20 max-h-full overflow-auto`}>
                                 <ConversationList
                                     conversations={conversations}
                                     selectedConversation={selectedConversation}
@@ -230,9 +352,9 @@ const Chat = () => {
                                 />
                             </div>
 
-                            {/* Chat Window */}
+                            {/* Middle Column - Chat Window (50%) */}
                             <div className={`flex-1 flex flex-col bg-gray-50 ${showMobileList ? 'hidden md:flex' : 'flex'
-                                }`}>
+                                } ${showMobileRightPanel ? 'md:flex-1' : 'flex-1'}`}>
                                 {selectedConversation ? (
                                     <ChatWindow
                                         conversation={selectedConversation}
@@ -241,7 +363,11 @@ const Chat = () => {
                                         onSendMessage={handleSendMessage}
                                         onTyping={handleTyping}
                                         onlineUsers={onlineUsers}
-                                        onBack={() => setShowMobileList(true)}
+                                        onBack={() => {
+                                            setShowMobileList(true);
+                                            setShowMobileRightPanel(false);
+                                        }}
+                                        onShowOrderDetails={handleShowOrderDetails}
                                     />
                                 ) : (
                                     <div className="flex-1 flex items-center justify-center p-4">
@@ -252,15 +378,155 @@ const Chat = () => {
                                             <h3 className="text-lg font-semibold text-gray-900 mb-2">
                                                 No conversation selected
                                             </h3>
-                                            <p className="text-gray-500 mb-4">
-                                                Tap the message icon to select a conversation
+                                            <p className="text-gray-500">
+                                                Select a conversation to start chatting
                                             </p>
-                                            <button
-                                                onClick={() => setShowMobileList(true)}
-                                                className="md:hidden bg-primary text-white px-4 py-2 rounded-lg"
-                                            >
-                                                View Conversations
-                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Right Column - Orders (25%) */}
+                            <div className={`${showMobileRightPanel ? 'block' : 'hidden'
+                                } lg:block max-w-full md:max-w-64 lg:max-w-80 border-l border-gray-200 bg-white absolute md:relative z-20 max-h-full overflow-y-auto`}>
+                                {/* Mobile Close Button */}
+                                <div className="lg:hidden sticky top-0 bg-white z-10 p-3 border-b border-gray-200 flex justify-between items-center">
+                                    <h3 className="font-semibold text-gray-900">Order Details</h3>
+                                    <button
+                                        onClick={() => setShowMobileRightPanel(false)}
+                                        className="p-2 hover:bg-gray-100 rounded-lg"
+                                    >
+                                        <X size={20} />
+                                    </button>
+                                </div>
+
+                                {!selectedConversation ? (
+                                    <div className="p-6 text-center">
+                                        <Package size={48} className="mx-auto text-gray-300 mb-3" />
+                                        <p className="text-gray-500">Select a conversation to view orders</p>
+                                    </div>
+                                ) : ordersLoading ? (
+                                    <div className="flex justify-center items-center h-32">
+                                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                                    </div>
+                                ) : orders.length === 0 ? (
+                                    <div className="p-6 text-center">
+                                        <Package size={48} className="mx-auto text-gray-300 mb-3" />
+                                        <p className='text-gray-600 font-medium'>No orders yet</p>
+                                        <p className="text-gray-500 text-sm">Book a mentor to see your order details here.</p>
+                                    </div>
+                                ) : showResolution ? (
+                                    // Resolution Center View
+                                    <div className="py-4 px-2">
+                                        <button
+                                            onClick={() => {
+                                                setShowResolution(false);
+                                                // Refresh orders list
+                                                const otherParticipant = selectedConversation?.participants.find(
+                                                    p => p._id !== user._id
+                                                );
+                                                if (otherParticipant) {
+                                                    fetchUserOrders(otherParticipant._id);
+                                                }
+                                            }}
+                                            className="flex items-center gap-2 text-primary hover:text-primary-dark mb-4 transition-colors"
+                                        >
+                                            <ChevronLeft size={18} />
+                                            <span className="text-sm font-medium">Back to Orders</span>
+                                        </button>
+                                        <ResolutionPanel
+                                            order={currentOrderDetails || selectedOrder}
+                                            onBack={() => {
+                                                setShowResolution(false);
+                                                // Refresh orders list
+                                                const otherParticipant = selectedConversation?.participants.find(
+                                                    p => p._id !== user._id
+                                                );
+                                                if (otherParticipant) {
+                                                    fetchUserOrders(otherParticipant._id);
+                                                }
+                                            }}
+                                        />
+                                    </div>
+                                ) : showOrderSummary && selectedOrder ? (
+                                    // Order Summary View
+                                    <div className="py-4 px-2">
+                                        <button
+                                            onClick={handleBackToOrdersList}
+                                            className="flex items-center gap-2 text-primary hover:text-primary-dark mb-4 transition-colors"
+                                        >
+                                            <ChevronLeft size={18} />
+                                            <span className="text-sm font-medium">Back to Orders</span>
+                                        </button>
+
+                                        {orderDetailsLoading ? (
+                                            <div className="flex justify-center items-center h-32">
+                                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                                            </div>
+                                        ) : currentOrderDetails ? (
+                                            <BuyerOrderSummaryCard
+                                                order={currentOrderDetails}
+                                                user={user}
+                                                onAction={handleOrderAction}
+                                                onRefresh={() => fetchOrderDetails(selectedOrder._id)}
+                                                onShowResolution={() => {
+                                                    setShowResolution(true);
+                                                    setShowOrderSummary(false);
+                                                }}
+                                            />
+                                        ) : (
+                                            <p className="text-gray-500 text-center">Unable to load order details</p>
+                                        )}
+                                    </div>
+                                ) : (
+                                    // Orders List View
+                                    <div className="p-4">
+                                        <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                                            <Package size={18} />
+                                            Orders with {otherUser?.firstName}
+                                        </h3>
+                                        <div className="space-y-2">
+                                            {orders?.map((order) => (
+                                                <button
+                                                    key={order._id}
+                                                    onClick={() => handleSelectOrder(order)}
+                                                    className="w-full text-left p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                                                >
+                                                    <div className="flex justify-between items-start">
+                                                        <div>
+                                                            <p className="text-sm font-medium text-gray-900">
+                                                                {order.serviceType}
+                                                            </p>
+                                                            <p className="text-xs text-gray-500">
+                                                                {order.orderId?.slice(-8)}
+                                                            </p>
+                                                        </div>
+                                                        <div className="text-right">
+                                                            <p className="text-sm font-semibold text-primary">
+                                                                {formatOrderPrice(order).formatted}
+                                                            </p>
+                                                            {/* <span className={`text-xs px-2 py-0.5 rounded-full ${order.deliveryStatus === 'completed'
+                                                                ? 'bg-green-100 text-green-700'
+                                                                : order.deliveryStatus === 'delivered'
+                                                                    ? 'bg-blue-100 text-blue-700'
+                                                                    : 'bg-yellow-100 text-yellow-700'
+                                                                }`}>
+                                                                {order.deliveryStatus || 'Pending'}
+                                                            </span> */}
+                                                        </div>
+                                                    </div>
+                                                    <div className="mt-1">
+                                                        <span className={`text-xs px-2 py-0.5 rounded-full ${order.orderStatus === 'confirmed'
+                                                            ? 'bg-green-100 text-green-700'
+                                                            : order.orderStatus === 'completed'
+                                                                ? 'bg-blue-100 text-blue-700'
+                                                                : 'bg-gray-100 text-gray-600'
+                                                            }`}>
+                                                            {order.orderStatus || 'Pending'}
+                                                        </span>
+                                                    </div>
+                                                </button>
+                                            ))}
                                         </div>
                                     </div>
                                 )}
@@ -273,4 +539,4 @@ const Chat = () => {
     );
 };
 
-export default Chat;
+export default BuyerChat;

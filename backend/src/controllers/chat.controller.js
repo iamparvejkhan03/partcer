@@ -229,11 +229,12 @@ export const getOrCreateMeeting = asyncHandler(async (req, res) => {
 // Update meeting details
 export const updateMeeting = asyncHandler(async (req, res) => {
   const { meetingId } = req.params;
-  const { meetingLink, meetingId: meetId, passcode, platform, isPermanent } = req.body;
+  const { meetingLink, meetingId: meetId, passcode, platform, isPermanent, meetingName } = req.body;
 
   const meeting = await Meeting.findByIdAndUpdate(
     meetingId,
     {
+      meetingName,
       meetingLink,
       meetingId: meetId,
       passcode,
@@ -287,17 +288,21 @@ function generatePasscode() {
 // Create a new meeting (mentor only)
 export const createMeeting = asyncHandler(async (req, res) => {
   const { conversationId } = req.params;
-  const { meetingLink, meetingId, passcode, platform, isPermanent } = req.body;
+  const { meetingLink, meetingId, passcode, platform, isPermanent, meetingName } = req.body;
 
   if (!meetingLink) {
     throw new ApiError(400, "Meeting link is required");
   }
 
-  // Check if meeting already exists
-  const existingMeeting = await Meeting.findOne({ conversation: conversationId });
-  if (existingMeeting) {
-    throw new ApiError(400, "Meeting already exists for this conversation");
+  if (!meetingName) {
+    throw new ApiError(400, "Meeting name is required");
   }
+
+  // Check if meeting already exists
+  // const existingMeeting = await Meeting.findOne({ conversation: conversationId });
+  // if (existingMeeting) {
+  //   throw new ApiError(400, "Meeting already exists for this conversation");
+  // }
 
   // Get conversation to find participants
   const conversation = await Conversation.findById(conversationId);
@@ -324,6 +329,7 @@ export const createMeeting = asyncHandler(async (req, res) => {
     conversation: conversationId,
     mentorId,
     learnerId,
+    meetingName,
     meetingLink,
     meetingId: meetingId || "",
     passcode: passcode || "",
@@ -347,6 +353,39 @@ export const createMeeting = asyncHandler(async (req, res) => {
   return res
     .status(201)
     .json(new ApiResponse(201, meeting, "Meeting created successfully"));
+});
+
+// Get all meetings for a conversation
+export const getAllMeetings = asyncHandler(async (req, res) => {
+  const { conversationId } = req.params;
+
+  const meetings = await Meeting.find({ conversation: conversationId })
+    .sort({ createdAt: -1 });
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, meetings, "Meetings retrieved successfully"));
+});
+
+// Delete a meeting
+export const deleteMeeting = asyncHandler(async (req, res) => {
+  const { meetingId } = req.params;
+
+  const meeting = await Meeting.findById(meetingId);
+  if (!meeting) {
+    throw new ApiError(404, "Meeting not found");
+  }
+
+  // Check if user is the mentor who created it
+  if (meeting.mentorId.toString() !== req.user._id.toString()) {
+    throw new ApiError(403, "You are not authorized to delete this meeting");
+  }
+
+  await meeting.deleteOne();
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, null, "Meeting deleted successfully"));
 });
 
 export const getUnreadMessages = asyncHandler(async (req, res) => {

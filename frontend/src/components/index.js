@@ -44,6 +44,8 @@ import ExpressInterestModal from "./freelancer/ExpressInterestModal";
 import ResolutionPanel from "./ResolutionPanel";
 import OrderHistoryPanel from "./OrdersHistoryPanel";
 import TextTruncate from "./TextTruncate";
+import FreelancerOrderSummaryCard from "./freelancer/OrderSummaryCard";
+import BuyerOrderSummaryCard from "./buyer/OrderSummaryCard";
 
 export {
     Header,
@@ -90,4 +92,6 @@ export {
     ResolutionPanel,
     OrderHistoryPanel,
     TextTruncate,
+    FreelancerOrderSummaryCard,
+    BuyerOrderSummaryCard,
 }

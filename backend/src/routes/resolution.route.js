@@ -8,11 +8,17 @@ import {
     adminGetResolutionStats,
 } from "../controllers/resolution.controller.js";
 import { validateRefundableOrder } from "../middlewares/transaction.middleware.js";
+import upload from "../middlewares/multer.middleware.js";
 
 const resolutionRouter = Router();
 
 // User routes
-resolutionRouter.post("/orders/:orderId/complaint", auth, submitComplaint);
+resolutionRouter.post(
+    "/orders/:orderId/complaint", 
+    auth, 
+    upload.array("attachments", 10),
+    submitComplaint
+);
 resolutionRouter.get("/orders/:orderId/status", auth, getResolutionStatus);
 
 // Admin routes

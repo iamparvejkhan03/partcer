@@ -17,6 +17,10 @@ const meetingSchema = new mongoose.Schema(
             ref: "User",
             required: true,
         },
+        meetingName: {
+            type: String,
+            required: true,
+        },
         meetingLink: {
             type: String,
             required: true,
@@ -42,4 +46,5 @@ const meetingSchema = new mongoose.Schema(
 );
 
 const Meeting = mongoose.model("Meeting", meetingSchema);
+
 export default Meeting;

@@ -1,58 +1,65 @@
 // components/chat/MeetingTab.jsx
 import { useState, useEffect } from 'react';
-import { Copy, Check, ExternalLink, Video, Edit2, Save, X, Plus } from 'lucide-react';
+import { Copy, Check, ExternalLink, Video, Edit2, Save, X, Plus, Trash2, ChevronDown } from 'lucide-react';
 import toast from 'react-hot-toast';
 import axiosInstance from '../../utils/axiosInstanceOld';
 
 const videoApps = [
-    { name: 'Google Meet', icon: '🎥', color: 'bg-blue-50 text-blue-600', placeholder: 'meet.google.com/xxx-xxxx-xxx' },
-    { name: 'Zoom', icon: '📹', color: 'bg-indigo-50 text-indigo-600', placeholder: 'zoom.us/j/123456789' },
-    { name: 'Microsoft Teams', icon: '💼', color: 'bg-purple-50 text-purple-600', placeholder: 'teams.microsoft.com/l/meetup-join/...' },
-    { name: 'Jitsi Meet', icon: '🔓', color: 'bg-green-50 text-green-600', placeholder: 'meet.jit.si/your-room-name' },
-    { name: 'Whereby', icon: '🌐', color: 'bg-orange-50 text-orange-600', placeholder: 'whereby.com/your-room-name' },
-    { name: 'Zoho Meeting', icon: '📊', color: 'bg-red-50 text-red-600', placeholder: 'meetings.zoho.com/...' },
-    { name: 'Other', icon: '🔗', color: 'bg-gray-50 text-gray-600', placeholder: 'Enter your meeting link...' },
+    { name: 'Google Meet', icon: '🎥', color: 'bg-blue-50 text-blue-600' },
+    { name: 'Zoom', icon: '📹', color: 'bg-indigo-50 text-indigo-600' },
+    { name: 'Microsoft Teams', icon: '💼', color: 'bg-purple-50 text-purple-600' },
+    { name: 'Jitsi Meet', icon: '🔓', color: 'bg-green-50 text-green-600' },
+    { name: 'Whereby', icon: '🌐', color: 'bg-orange-50 text-orange-600' },
+    { name: 'Zoho Meeting', icon: '📊', color: 'bg-red-50 text-red-600' },
 ];
 
 const MeetingTab = ({ conversationId, userType }) => {
-    const [meeting, setMeeting] = useState(null);
+    const [meetings, setMeetings] = useState([]);
+    const [selectedMeetingId, setSelectedMeetingId] = useState(null);
     const [loading, setLoading] = useState(true);
     const [isEditing, setIsEditing] = useState(false);
     const [copiedField, setCopiedField] = useState(null);
+    const [isCreating, setIsCreating] = useState(false);
     const [editData, setEditData] = useState({
+        meetingName: '',
         meetingLink: '',
         meetingId: '',
         passcode: '',
         platform: 'Google Meet',
         isPermanent: false
     });
-    const [isCreating, setIsCreating] = useState(false);
+
+    // Check if user is a mentor/freelancer
+    const isMentor = userType === 'freelancer' || userType === 'mentor';
 
     useEffect(() => {
-        fetchMeetingDetails();
+        fetchAllMeetings();
     }, [conversationId]);
 
-    const fetchMeetingDetails = async () => {
+    const fetchAllMeetings = async () => {
         try {
-            const response = await axiosInstance.get(`/api/v1/chat/conversations/${conversationId}/meeting`);
-            if (response.data?.success && response.data.data) {
-                setMeeting(response.data.data);
-                setEditData(response.data.data);
-            } else {
-                // No meeting exists yet
-                setMeeting(null);
+            setLoading(true);
+            const response = await axiosInstance.get(`/api/v1/chat/conversations/${conversationId}/meetings`);
+            if (response.data?.success) {
+                setMeetings(response.data.data || []);
+                if (response.data.data?.length > 0) {
+                    setSelectedMeetingId(response.data.data[0]._id);
+                }
             }
         } catch (error) {
-            console.error('Error fetching meeting:', error);
-            // If 404 or no meeting found, just set meeting to null
+            console.error('Error fetching meetings:', error);
             if (error.response?.status === 404) {
-                setMeeting(null);
+                setMeetings([]);
             } else {
-                toast.error('Failed to load meeting details');
+                toast.error('Failed to load meetings');
             }
         } finally {
             setLoading(false);
         }
+    };
+
+    const getSelectedMeeting = () => {
+        return meetings.find(m => m._id === selectedMeetingId);
     };
 
     const handleCreateMeeting = async () => {
@@ -60,10 +67,15 @@ const MeetingTab = ({ conversationId, userType }) => {
             toast.error('Please enter a meeting link');
             return;
         }
+        if (!editData.meetingName.trim()) {
+            toast.error('Please enter a meeting name');
+            return;
+        }
 
         setIsCreating(true);
         try {
             const response = await axiosInstance.post(`/api/v1/chat/conversations/${conversationId}/meeting`, {
+                meetingName: editData.meetingName,
                 meetingLink: editData.meetingLink,
                 meetingId: editData.meetingId,
                 passcode: editData.passcode,
@@ -72,14 +84,22 @@ const MeetingTab = ({ conversationId, userType }) => {
             });
 
             if (response.data?.success) {
-                setMeeting(response.data.data);
+                await fetchAllMeetings();
                 setIsEditing(false);
-                setIsCreating(false);
-                toast.success('Meeting details saved successfully!');
+                setEditData({
+                    meetingName: '',
+                    meetingLink: '',
+                    meetingId: '',
+                    passcode: '',
+                    platform: 'Google Meet',
+                    isPermanent: false
+                });
+                toast.success('Meeting saved successfully!');
             }
         } catch (error) {
             console.error('Error creating meeting:', error);
-            toast.error(error.response?.data?.message || 'Failed to save meeting details');
+            toast.error(error.response?.data?.message || 'Failed to save meeting');
+        } finally {
             setIsCreating(false);
         }
     };
@@ -89,10 +109,15 @@ const MeetingTab = ({ conversationId, userType }) => {
             toast.error('Please enter a meeting link');
             return;
         }
+        if (!editData.meetingName.trim()) {
+            toast.error('Please enter a meeting name');
+            return;
+        }
 
-        setIsCreating(true);
+        setIsEditing(true);
         try {
-            const response = await axiosInstance.put(`/api/v1/chat/meetings/${meeting._id}`, {
+            const response = await axiosInstance.put(`/api/v1/chat/meetings/${editData._id}`, {
+                meetingName: editData.meetingName,
                 meetingLink: editData.meetingLink,
                 meetingId: editData.meetingId,
                 passcode: editData.passcode,
@@ -101,15 +126,28 @@ const MeetingTab = ({ conversationId, userType }) => {
             });
 
             if (response.data?.success) {
-                setMeeting(response.data.data);
+                await fetchAllMeetings();
                 setIsEditing(false);
-                toast.success('Meeting details updated successfully!');
+                toast.success('Meeting updated successfully!');
             }
         } catch (error) {
             console.error('Error updating meeting:', error);
-            toast.error(error.response?.data?.message || 'Failed to update meeting details');
+            toast.error(error.response?.data?.message || 'Failed to update meeting');
         } finally {
-            setIsCreating(false);
+            setIsEditing(false);
+        }
+    };
+
+    const handleDeleteMeeting = async (meetingId) => {
+        if (!confirm('Are you sure you want to delete this meeting?')) return;
+
+        try {
+            await axiosInstance.delete(`/api/v1/chat/meetings/${meetingId}`);
+            await fetchAllMeetings();
+            toast.success('Meeting deleted successfully!');
+        } catch (error) {
+            console.error('Error deleting meeting:', error);
+            toast.error('Failed to delete meeting');
         }
     };
 
@@ -121,14 +159,35 @@ const MeetingTab = ({ conversationId, userType }) => {
         setTimeout(() => setCopiedField(null), 2000);
     };
 
+    const handleCopyMeetingDetails = () => {
+        const meeting = getSelectedMeeting();
+        if (!meeting) return;
+
+        let copyText = `Hi! Here are my meeting details for our session:\n\n`;
+        copyText += `**Meeting Name:** ${meeting.meetingName || 'Not set'}\n`;
+        copyText += `**Meeting Link:** ${meeting.meetingLink || 'Not set'}\n`;
+        if (meeting.meetingId) copyText += `**Meeting ID:** ${meeting.meetingId}\n`;
+        if (meeting.passcode) copyText += `**Passcode:** ${meeting.passcode}\n`;
+        copyText += `\nSee you at the session! 🎯`;
+
+        navigator.clipboard.writeText(copyText);
+        toast.success('Meeting details copied to clipboard!');
+    };
+
     const handleJoinMeeting = () => {
+        const meeting = getSelectedMeeting();
         if (meeting?.meetingLink) {
             let link = meeting.meetingLink;
-            if (!link.startsWith('http') && !link.startsWith('https')) {
+            if (!link.startsWith('http://') && !link.startsWith('https://')) {
                 link = `https://${link}`;
             }
             window.open(link, '_blank');
         }
+    };
+
+    const handleEditMeeting = (meeting) => {
+        setEditData(meeting);
+        setIsEditing(true);
     };
 
     if (loading) {
@@ -139,259 +198,327 @@ const MeetingTab = ({ conversationId, userType }) => {
         );
     }
 
-    // Show create meeting form if no meeting exists
-    if (!meeting && !isEditing) {
-        return (
-            <div className="h-full overflow-y-auto p-6">
-                <div className="text-center py-12">
-                    <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <Video size={32} className="text-primary" />
-                    </div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                        No Meeting Setup Yet
-                    </h3>
-                    <p className="text-gray-500 mb-6">
-                        {userType === 'freelancer'
-                            ? "Add your meeting details so students can join your sessions"
-                            : "The mentor hasn't set up a meeting link yet"}
-                    </p>
-                    {userType === 'freelancer' && (
-                        <button
-                            onClick={() => setIsEditing(true)}
-                            className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 inline-flex items-center gap-2"
-                        >
-                            <Plus size={16} />
-                            Add Meeting Details
-                        </button>
-                    )}
-                </div>
-            </div>
-        );
-    }
-
     return (
         <div className="h-full overflow-y-auto p-4 space-y-6">
-            {/* Suggested Video Apps */}
+            {/* Recommended Video Apps - Just for display */}
             <div>
-                <div className='flex justify-between items-center mb-3'>
-                    <h3 className="text-sm font-medium text-gray-700 mb-3 flex items-center gap-2">
-                        <Video size={16} />
-                        Select Video App
-                    </h3>
-
-                    {userType === 'freelancer' && !isEditing && (
-                        <button
-                            onClick={() => {
-                                setIsEditing(true);
-                                setEditData(meeting);
-                            }}
-                            className="bg-green-600 hover:bg-green-600/90 text-white py-1.5 px-3 rounded-md flex items-center text-sm gap-2"
-                        >
-                            <Edit2 size={16} className="text-white" />
-                            <span>Edit</span>
-                        </button>
-                    )}
-                    {isEditing && (
-                        <div className="flex gap-2">
-                            <button
-                                onClick={() => {
-                                    setIsEditing(false);
-                                    if (meeting) {
-                                        setEditData(meeting);
-                                    } else {
-                                        setEditData({
-                                            meetingLink: '',
-                                            meetingId: '',
-                                            passcode: '',
-                                            platform: 'Google Meet',
-                                            isPermanent: false
-                                        });
-                                    }
-                                }}
-                                className="bg-red-500 hover:bg-red-500/90 text-white py-1.5 px-3 rounded-md flex items-center text-sm gap-2"
-                                disabled={isCreating}
-                            >
-                                <X size={16} className="text-white" />
-                                <span>Discard</span>
-                            </button>
-                            <button
-                                onClick={meeting ? handleUpdateMeeting : handleCreateMeeting}
-                                className="bg-primary hover:bg-primary/90 text-white py-1.5 px-3 rounded-md flex items-center text-sm gap-2"
-                                disabled={isCreating}
-                            >
-                                <Save size={16} className="text-white" />
-                                <span>Save</span>
-                            </button>
-                        </div>
-                    )}
-                </div>
-
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                <h3 className="text-sm font-medium text-gray-700 mb-3">Recommended Video Apps</h3>
+                <div className="grid grid-cols-3 sm:grid-cols-3 gap-2">
                     {videoApps.map((app) => (
-                        <button
+                        <div
                             key={app.name}
-                            onClick={() => {
-                                if (isEditing) {
-                                    setEditData({ ...editData, platform: app.name });
-                                }
-                            }}
-                            className={`flex items-center gap-2 p-2 rounded-lg transition-all ${editData.platform === app.name && isEditing
-                                ? 'bg-primary text-white'
-                                : editData.platform === app.name
-                                    ? 'bg-primary/10 text-primary border border-primary/20'
-                                    : 'bg-gray-50 hover:bg-gray-100 text-gray-700'
-                                } ${!isEditing && 'cursor-default'}`}
-                            disabled={!isEditing}
+                            className={`flex items-center gap-2 p-2 rounded-lg ${app.color} border border-transparent`}
                         >
                             <span className="text-xl">{app.icon}</span>
-                            <span className="text-sm">{app.name}</span>
-                        </button>
+                            <span className="text-xs font-medium">{app.name}</span>
+                        </div>
                     ))}
                 </div>
             </div>
 
-            {/* Meeting Details Form */}
-            <div className="bg-gray-50 rounded-xl p-4 space-y-4">
+            {/* Save a Meeting Section - Always visible for mentor */}
+            <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-4">
                 <div className="flex justify-between items-center">
-                    <h3 className="text-sm font-medium text-gray-700">Meeting Details</h3>
+                    <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+                        <Video size={16} />
+                        Save a Meeting
+                    </h3>
+                    {isMentor && !isEditing && (
+                        <button
+                            onClick={() => {
+                                setIsEditing(true);
+                                setEditData({
+                                    meetingName: '',
+                                    meetingLink: '',
+                                    meetingId: '',
+                                    passcode: '',
+                                    platform: 'Google Meet',
+                                    isPermanent: false
+                                });
+                            }}
+                            className="bg-primary hover:bg-primary/90 text-white py-1.5 px-3 rounded-md flex items-center text-sm gap-2"
+                        >
+                            <Plus size={16} />
+                            <span>New Meeting</span>
+                        </button>
+                    )}
                 </div>
 
-                {meeting && !isEditing && (
-                    <p className="text-xs text-yellow-600">
-                        Last updated: {new Date(meeting.lastUpdated).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} at {new Date(meeting.lastUpdated).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
-                    </p>
-                )}
+                {/* Show form when isEditing is true */}
+                {isEditing ? (
+                    <div className="space-y-4">
+                        {/* Meeting App Dropdown */}
+                        <div>
+                            <label className="text-xs font-medium text-gray-500 block mb-1">
+                                Meeting App
+                            </label>
+                            <select
+                                value={editData.platform}
+                                onChange={(e) => setEditData({ ...editData, platform: e.target.value })}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
+                            >
+                                {videoApps.map((app) => (
+                                    <option key={app.name} value={app.name}>{app.name}</option>
+                                ))}
+                            </select>
+                        </div>
 
-                {/* Meeting Link */}
-                <div className="space-y-2">
-                    <label className="text-xs font-medium text-gray-500">
-                        MEETING LINK {!isEditing && meeting?.meetingLink && '· Tap to copy'}
-                    </label>
-                    <div className="flex items-center justify-between bg-white p-3 rounded-lg border border-gray-200">
-                        {isEditing ? (
+                        {/* Meeting Name */}
+                        <div>
+                            <label className="text-xs font-medium text-gray-500 block mb-1">
+                                Meeting Name *
+                            </label>
+                            <input
+                                type="text"
+                                value={editData.meetingName || ''}
+                                onChange={(e) => setEditData({ ...editData, meetingName: e.target.value })}
+                                placeholder="e.g., Weekly Student Session"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
+                            />
+                        </div>
+
+                        {/* Meeting Link */}
+                        <div>
+                            <label className="text-xs font-medium text-gray-500 block mb-1">
+                                Meeting Link *
+                            </label>
                             <input
                                 type="text"
                                 value={editData.meetingLink || ''}
                                 onChange={(e) => setEditData({ ...editData, meetingLink: e.target.value })}
-                                placeholder={videoApps.find(app => app.name === editData.platform)?.placeholder || "Enter meeting link"}
-                                className="flex-1 text-sm text-primary bg-transparent outline-none"
-                                autoFocus
+                                placeholder={`${editData.platform} link`}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
                             />
-                        ) : (
-                            <code
-                                className="text-sm text-primary break-all cursor-pointer hover:underline"
-                                onClick={() => handleCopy(meeting?.meetingLink, 'Link')}
-                            >
-                                {meeting?.meetingLink || 'Not set'}
-                            </code>
-                        )}
-                        {!isEditing && meeting?.meetingLink && (
-                            <button
-                                onClick={() => handleCopy(meeting?.meetingLink, 'Link')}
-                                className="ml-2 p-1 hover:bg-gray-100 rounded flex-shrink-0"
-                            >
-                                {copiedField === 'Link' ? <Check size={16} className="text-green-500" /> : <Copy size={16} className="text-gray-400" />}
-                            </button>
-                        )}
-                    </div>
-                </div>
+                        </div>
 
-                {/* Meeting ID */}
-                <div className="space-y-2">
-                    <label className="text-xs font-medium text-gray-500">
-                        MEETING ID (optional)
-                    </label>
-                    <div className="flex items-center justify-between bg-white p-3 rounded-lg border border-gray-200">
-                        {isEditing ? (
+                        {/* Meeting ID (optional) */}
+                        <div>
+                            <label className="text-xs font-medium text-gray-500 block mb-1">
+                                Meeting ID <span className="text-gray-400">(optional)</span>
+                            </label>
                             <input
                                 type="text"
                                 value={editData.meetingId || ''}
                                 onChange={(e) => setEditData({ ...editData, meetingId: e.target.value })}
                                 placeholder="e.g., 123 456 7890"
-                                className="flex-1 text-sm text-gray-700 bg-transparent outline-none"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
                             />
-                        ) : (
-                            <code className="text-sm text-gray-700">{meeting?.meetingId || 'Not set'}</code>
-                        )}
-                        {!isEditing && meeting?.meetingId && (
-                            <button
-                                onClick={() => handleCopy(meeting?.meetingId, 'ID')}
-                                className="ml-2 p-1 hover:bg-gray-100 rounded flex-shrink-0"
-                            >
-                                {copiedField === 'ID' ? <Check size={16} className="text-green-500" /> : <Copy size={16} className="text-gray-400" />}
-                            </button>
-                        )}
-                    </div>
-                </div>
+                        </div>
 
-                {/* Passcode */}
-                <div className="space-y-2">
-                    <label className="text-xs font-medium text-gray-500">
-                        PASSCODE (optional)
-                    </label>
-                    <div className="flex items-center justify-between bg-white p-3 rounded-lg border border-gray-200">
-                        {isEditing ? (
+                        {/* Passcode (optional) */}
+                        <div>
+                            <label className="text-xs font-medium text-gray-500 block mb-1">
+                                Passcode <span className="text-gray-400">(optional)</span>
+                            </label>
                             <input
                                 type="text"
                                 value={editData.passcode || ''}
                                 onChange={(e) => setEditData({ ...editData, passcode: e.target.value })}
-                                placeholder="e.g., 123456 or abc123"
-                                className="flex-1 text-sm text-gray-700 bg-transparent outline-none"
+                                placeholder="e.g., abc123"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
                             />
-                        ) : (
-                            <code className="text-sm text-gray-700">{meeting?.passcode || 'Not set'}</code>
-                        )}
-                        {!isEditing && meeting?.passcode && (
+                        </div>
+
+                        {/* Permanent Link Option */}
+                        {/* <label className="flex items-center gap-2 cursor-pointer">
+                            <input
+                                type="checkbox"
+                                checked={editData.isPermanent}
+                                onChange={(e) => setEditData({ ...editData, isPermanent: e.target.checked })}
+                                className="rounded border-gray-300 text-primary focus:ring-primary"
+                            />
+                            <span className="text-sm text-gray-600">Permanent link — same every session</span>
+                        </label> */}
+
+                        {/* Action Buttons */}
+                        <div className="flex gap-2 pt-2">
                             <button
-                                onClick={() => handleCopy(meeting?.passcode, 'Passcode')}
-                                className="ml-2 p-1 hover:bg-gray-100 rounded flex-shrink-0"
+                                onClick={() => {
+                                    setIsEditing(false);
+                                    setEditData({
+                                        meetingName: '',
+                                        meetingLink: '',
+                                        meetingId: '',
+                                        passcode: '',
+                                        platform: 'Google Meet',
+                                        isPermanent: false
+                                    });
+                                }}
+                                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 text-sm"
+                                disabled={isCreating}
                             >
-                                {copiedField === 'Passcode' ? <Check size={16} className="text-green-500" /> : <Copy size={16} className="text-gray-400" />}
+                                Cancel
                             </button>
-                        )}
+                            <button
+                                onClick={editData._id ? handleUpdateMeeting : handleCreateMeeting}
+                                className="flex-1 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 text-sm flex items-center justify-center gap-2"
+                                disabled={isCreating}
+                            >
+                                {isCreating ? (
+                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                                ) : (
+                                    <Save size={16} />
+                                )}
+                                {editData._id ? 'Update Meeting' : 'Save Meeting'}
+                            </button>
+                        </div>
                     </div>
-                </div>
-
-                {/* Permanent Link Option */}
-                {isEditing && (
-                    <label className="flex items-center gap-2 mt-2 cursor-pointer">
-                        <input
-                            type="checkbox"
-                            checked={editData.isPermanent}
-                            onChange={(e) => setEditData({ ...editData, isPermanent: e.target.checked })}
-                            className="rounded border-gray-300 text-primary focus:ring-primary"
-                        />
-                        <span className="text-sm text-gray-600">Permanent link — same every session. No resharing needed.</span>
-                    </label>
+                ) : (
+                    // Show message when not editing and no meetings exist
+                    meetings.length === 0 && isMentor && (
+                        <div className="text-center py-6 text-gray-500">
+                            <p className="text-sm">No meetings saved yet.</p>
+                            <p className="text-xs">Click "New Meeting" to add one.</p>
+                        </div>
+                    )
                 )}
 
-                {meeting?.isPermanent && !isEditing && (
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-2 text-center">
-                        <p className="text-xs text-blue-700">✓ This is a permanent meeting link (same for all sessions)</p>
+                {/* Show existing meetings summary when not editing */}
+                {!isEditing && meetings.length > 0 && (
+                    <div className="text-sm text-gray-500">
+                        {meetings.length} meeting{meetings.length > 1 ? 's' : ''} saved
                     </div>
                 )}
 
-                {/* Join Button */}
-                {meeting?.meetingLink && !isEditing && (
-                    <button
-                        onClick={handleJoinMeeting}
-                        className="w-full mt-4 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 font-medium flex items-center justify-center gap-2"
-                    >
-                        <ExternalLink size={16} />
-                        Join Meeting
-                    </button>
-                )}
-
-                {/* Help Text for Mentor */}
-                {userType === 'freelancer' && isEditing && (
-                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mt-2">
-                        <p className="text-xs text-yellow-800">
-                            💡 Tip: You can add any meeting link from Google Meet, Zoom, Teams, or any other platform you prefer.
-                            Your students will see this link and can join directly.
-                        </p>
+                {/* For learners/students - show message if no meetings */}
+                {!isMentor && meetings.length === 0 && (
+                    <div className="text-center py-6 text-gray-500">
+                        <p className="text-sm">No meeting details have been set up yet.</p>
+                        <p className="text-xs">The mentor will add meeting details soon.</p>
                     </div>
                 )}
             </div>
+
+            {/* Saved Meetings Section */}
+            {meetings.length > 0 && (
+                <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-4">
+                    <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+                        <Video size={16} />
+                        Saved Meetings
+                    </h3>
+
+                    {/* Meeting Selector Dropdown */}
+                    <div>
+                        <label className="text-xs font-medium text-gray-500 block mb-1">
+                            Select Saved Meeting
+                        </label>
+                        <div className="relative">
+                            <select
+                                value={selectedMeetingId || ''}
+                                onChange={(e) => setSelectedMeetingId(e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-sm appearance-none"
+                            >
+                                {meetings.map((meeting) => (
+                                    <option key={meeting._id} value={meeting._id}>
+                                        {meeting.meetingName || 'Unnamed Meeting'}
+                                    </option>
+                                ))}
+                            </select>
+                            <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                        </div>
+                    </div>
+
+                    {/* Selected Meeting Details */}
+                    {getSelectedMeeting() && (
+                        <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+                            <div className="flex justify-between items-start">
+                                <h4 className="font-medium text-gray-900">
+                                    {getSelectedMeeting().meetingName || 'Unnamed Meeting'}
+                                </h4>
+                                {isMentor && !isEditing && (
+                                    <div className="flex gap-1">
+                                        {/* <button
+                                            onClick={() => handleEditMeeting(getSelectedMeeting())}
+                                            className="p-1 hover:bg-gray-200 rounded"
+                                        >
+                                            <Edit2 size={14} className="text-gray-500" />
+                                        </button> */}
+                                        <button
+                                            onClick={() => handleDeleteMeeting(getSelectedMeeting()._id)}
+                                            className="p-1 hover:bg-red-100 rounded"
+                                        >
+                                            <Trash2 size={14} className="text-red-500" />
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Meeting Link */}
+                            <div className="space-y-1">
+                                <label className="text-xs font-medium text-gray-500">Meeting Link</label>
+                                <div className="flex items-center justify-between bg-white p-2 rounded border border-gray-200">
+                                    <code className="text-sm text-primary break-all cursor-pointer hover:underline flex-1">
+                                        {getSelectedMeeting().meetingLink || 'Not set'}
+                                    </code>
+                                    <button
+                                        onClick={() => handleCopy(getSelectedMeeting().meetingLink, 'Link')}
+                                        className="ml-2 p-1 hover:bg-gray-100 rounded flex-shrink-0"
+                                    >
+                                        {copiedField === 'Link' ? <Check size={14} className="text-green-500" /> : <Copy size={14} className="text-gray-400" />}
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Meeting ID (if exists) */}
+                            {getSelectedMeeting().meetingId && (
+                                <div className="space-y-1">
+                                    <label className="text-xs font-medium text-gray-500">Meeting ID</label>
+                                    <div className="flex items-center justify-between bg-white p-2 rounded border border-gray-200">
+                                        <code className="text-sm text-gray-700 flex-1">{getSelectedMeeting().meetingId}</code>
+                                        <button
+                                            onClick={() => handleCopy(getSelectedMeeting().meetingId, 'ID')}
+                                            className="ml-2 p-1 hover:bg-gray-100 rounded flex-shrink-0"
+                                        >
+                                            {copiedField === 'ID' ? <Check size={14} className="text-green-500" /> : <Copy size={14} className="text-gray-400" />}
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Passcode (if exists) */}
+                            {getSelectedMeeting().passcode && (
+                                <div className="space-y-1">
+                                    <label className="text-xs font-medium text-gray-500">Passcode</label>
+                                    <div className="flex items-center justify-between bg-white p-2 rounded border border-gray-200">
+                                        <code className="text-sm text-gray-700 flex-1">{getSelectedMeeting().passcode}</code>
+                                        <button
+                                            onClick={() => handleCopy(getSelectedMeeting().passcode, 'Passcode')}
+                                            className="ml-2 p-1 hover:bg-gray-100 rounded flex-shrink-0"
+                                        >
+                                            {copiedField === 'Passcode' ? <Check size={14} className="text-green-500" /> : <Copy size={14} className="text-gray-400" />}
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Permanent badge */}
+                            {getSelectedMeeting().isPermanent && (
+                                <div className="bg-blue-50 border border-blue-200 rounded-lg p-2 text-center">
+                                    <p className="text-xs text-blue-700">✓ Permanent meeting link</p>
+                                </div>
+                            )}
+
+                            {/* Action Buttons */}
+                            <div className="flex flex-col gap-2 pt-2">
+                                <button
+                                    onClick={handleJoinMeeting}
+                                    className="flex-1 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 text-sm flex items-center justify-center gap-2"
+                                >
+                                    <ExternalLink size={16} />
+                                    Join Meeting
+                                </button>
+                                <button
+                                    onClick={handleCopyMeetingDetails}
+                                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 text-sm flex items-center justify-center gap-2"
+                                >
+                                    <Copy size={16} />
+                                    Copy Meeting Details
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            )}
         </div>
     );
 };

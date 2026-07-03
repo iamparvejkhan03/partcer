@@ -228,7 +228,7 @@ function Sidebar() {
 
             {/* Sidebar */}
             <aside className={`
-                fixed md:relative w-64 bg-gradient-to-b from-gray-900 to-gray-950 text-white h-screen md:h-auto md:min-h-screen overflow-y-auto p-4 flex flex-col z-50
+                fixed md:relative w-56 bg-gradient-to-b from-gray-900 to-gray-950 text-white h-screen md:h-auto md:min-h-screen overflow-y-auto p-4 flex flex-col z-50
                 transform transition-transform duration-300 ease-in-out
                 ${isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
             `}>

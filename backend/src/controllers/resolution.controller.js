@@ -7,9 +7,11 @@ import Transaction from "../models/transaction.model.js";
 import NewOrder from "../models/newOrder.model.js";
 import { complaintNotificationForAdmin, complaintNotificationForMentor, resolutionStatusUpdateEmail } from "../utils/emailTemplates.js";
 import transporter from "../utils/nodemailer.js";
+import { uploadFile } from "../utils/cloudinary.js";
 // import { sendEmail } from "../utils/email.js";
+import path from 'path';
 
-// Submit a resolution complaint
+// In resolution.controller.js - update submitComplaint function
 export const submitComplaint = asyncHandler(async (req, res) => {
     const { orderId } = req.params;
     const { issueType, complaint } = req.body;
@@ -38,7 +40,7 @@ export const submitComplaint = asyncHandler(async (req, res) => {
         throw new ApiError(403, "You can only submit complaints for your own orders");
     }
 
-    // Check if complaint already exists for this order
+    // Check if complaint already exists
     const existingComplaint = await Resolution.findOne({
         orderId,
         userId,
@@ -47,6 +49,29 @@ export const submitComplaint = asyncHandler(async (req, res) => {
 
     if (existingComplaint) {
         throw new ApiError(400, "You already have an active complaint for this order");
+    }
+
+    // Process attachments if any
+    let attachments = [];
+    if (req.files && req.files.length > 0) {
+        const uploadPromises = req.files.map(async (file) => {
+            const result = await uploadFile(file.buffer, file.originalname);
+            const fileExtension = path.extname(file.originalname).toLowerCase();
+            let fileType = 'document';
+            if (['.jpg', '.jpeg', '.png', '.gif', '.webp'].includes(fileExtension)) {
+                fileType = 'image';
+            } else if (fileExtension === '.pdf') {
+                fileType = 'pdf';
+            }
+            return {
+                url: result.secure_url,
+                publicId: result.public_id,
+                fileName: file.originalname,
+                fileType: fileType,
+                uploadedAt: new Date(),
+            };
+        });
+        attachments = await Promise.all(uploadPromises);
     }
 
     // Map issue type to display text
@@ -66,9 +91,11 @@ export const submitComplaint = asyncHandler(async (req, res) => {
         issueType: issueType,
         issueTypeDisplay: issueTypeMap[issueType],
         complaint: complaint,
+        attachments: attachments,
         status: "pending",
     });
 
+    // Send emails
     complaintNotificationForAdmin(transporter, resolution, order, order.studentId, order.mentorId)
         .catch(err => console.error('Admin complaint email failed:', err.message));
 

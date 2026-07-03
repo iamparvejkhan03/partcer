@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, AlertCircle, CheckCircle, Send, Mail } from 'lucide-react';
+import { ArrowLeft, AlertCircle, CheckCircle, Send, Mail, Upload, X, FileText } from 'lucide-react';
 import toast from 'react-hot-toast';
 import axiosInstance from '../utils/axiosInstanceOld';
 
@@ -10,6 +10,8 @@ const ResolutionPanel = ({ order, onBack }) => {
     const [submitted, setSubmitted] = useState(false);
     const [resolutionStatus, setResolutionStatus] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [attachments, setAttachments] = useState([]);
+    const [uploading, setUploading] = useState(false);
 
     const issueTypes = [
         {
@@ -56,6 +58,44 @@ const ResolutionPanel = ({ order, onBack }) => {
         }
     };
 
+    const handleFileUpload = (e) => {
+        const files = Array.from(e.target.files);
+        const maxSize = 5 * 1024 * 1024; // 5MB per file
+
+        const validFiles = files.filter(file => {
+            if (file.size > maxSize) {
+                toast.error(`${file.name} is too large (max 5MB)`);
+                return false;
+            }
+            return true;
+        });
+
+        if (validFiles.length + attachments.length > 5) {
+            toast.error('Maximum 5 files allowed');
+            return;
+        }
+
+        setAttachments(prev => [...prev, ...validFiles]);
+        e.target.value = ''; // Reset input
+    };
+
+    const removeAttachment = (index) => {
+        setAttachments(prev => prev.filter((_, i) => i !== index));
+    };
+
+    const getFileIcon = (file) => {
+        const type = file.type;
+        if (type.startsWith('image/')) return <FileText size={16} className="text-blue-500" />;
+        if (type === 'application/pdf') return <FileText size={16} className="text-red-500" />;
+        return <FileText size={16} className="text-gray-500" />;
+    };
+
+    const getFileSize = (bytes) => {
+        if (bytes < 1024) return bytes + ' B';
+        if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+        return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    };
+
     const handleSubmit = async () => {
         if (!selectedIssue) {
             toast.error('Please select an issue type');
@@ -69,15 +109,28 @@ const ResolutionPanel = ({ order, onBack }) => {
 
         setSubmitting(true);
         try {
-            const response = await axiosInstance.post(`/api/v1/resolution/orders/${order._id}/complaint`, {
-                issueType: selectedIssue,
-                complaint: complaint
+            const formData = new FormData();
+            formData.append('issueType', selectedIssue);
+            formData.append('complaint', complaint);
+
+            // Append attachments
+            attachments.forEach((file) => {
+                formData.append('attachments', file);
             });
+
+            const response = await axiosInstance.post(
+                `/api/v1/resolution/orders/${order._id}/complaint`,
+                formData,
+                {
+                    headers: {
+                        'Content-Type': 'multipart/form-data',
+                    },
+                }
+            );
 
             if (response.data?.success) {
                 setSubmitted(true);
                 toast.success('Complaint submitted successfully!');
-                // Send email notification to admin is handled by backend
             }
         } catch (error) {
             console.error('Error submitting complaint:', error);
@@ -136,6 +189,25 @@ const ResolutionPanel = ({ order, onBack }) => {
                         <p className="text-sm font-medium text-gray-900 mb-3">{resolutionStatus.issueTypeDisplay}</p>
                         <p className="text-sm text-gray-500 mb-2">Your Complaint:</p>
                         <p className="text-sm text-gray-700">{resolutionStatus.complaint}</p>
+                        {resolutionStatus.attachments && resolutionStatus.attachments.length > 0 && (
+                            <>
+                                <p className="text-sm text-gray-500 mt-3 mb-2">Attachments:</p>
+                                <div className="space-y-1">
+                                    {resolutionStatus.attachments.map((attachment, idx) => (
+                                        <a
+                                            key={idx}
+                                            href={attachment.url}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="flex items-center gap-2 text-sm text-primary hover:underline"
+                                        >
+                                            <FileText size={14} />
+                                            {attachment.fileName}
+                                        </a>
+                                    ))}
+                                </div>
+                            </>
+                        )}
                         {resolutionStatus.adminNotes && (
                             <>
                                 <p className="text-sm text-gray-500 mt-3 mb-2">Admin Response:</p>
@@ -210,7 +282,7 @@ const ResolutionPanel = ({ order, onBack }) => {
             <div className="p-6">
                 {/* Order Reference */}
                 <div className="mb-6 pb-4 border-b border-gray-100 flex items-center gap-2 justify-between flex-wrap">
-                    <p className="text-xs text-gray-500">Order #{order.orderId}</p>
+                    <p className="text-xs text-gray-500">Booking ID #{order.orderId}</p>
                     <p className="text-xs text-gray-700">{new Date(order.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
                 </div>
 
@@ -224,8 +296,8 @@ const ResolutionPanel = ({ order, onBack }) => {
                             <label
                                 key={issue.id}
                                 className={`flex items-start p-3 border rounded-lg cursor-pointer transition-all ${selectedIssue === issue.id
-                                        ? 'border-primary bg-primary/5'
-                                        : 'border-gray-200 hover:border-gray-300'
+                                    ? 'border-primary bg-primary/5'
+                                    : 'border-gray-200 hover:border-gray-300'
                                     } ${issue.isRed && selectedIssue === issue.id ? 'border-red-500 bg-red-50' : ''}`}
                             >
                                 <input
@@ -247,6 +319,63 @@ const ResolutionPanel = ({ order, onBack }) => {
                             </label>
                         ))}
                     </div>
+                </div>
+
+                {/* Attachment Section */}
+                <div className="mb-6">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Attach Session Report
+                    </label>
+                    <p className="text-xs text-gray-500 mb-3">
+                        Please download your sessions report from the sessions tab and attach it here for faster resolution.
+                    </p>
+
+                    {/* Upload Button */}
+                    <div className="flex items-center gap-3">
+                        <label className="cursor-pointer">
+                            <div className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                                <Upload size={16} className="text-gray-500" />
+                                <span className="text-sm text-gray-700">Attach PDF/Image</span>
+                            </div>
+                            <input
+                                type="file"
+                                accept=".pdf,.jpg,.jpeg,.png,.gif,.webp"
+                                multiple
+                                onChange={handleFileUpload}
+                                className="hidden"
+                                disabled={submitting}
+                            />
+                        </label>
+                        <span className="text-xs text-gray-400">
+                            Max 10 files • 5MB each
+                        </span>
+                    </div>
+
+                    {/* Attachments List */}
+                    {attachments.length > 0 && (
+                        <div className="mt-3 space-y-2">
+                            {attachments.map((file, index) => (
+                                <div key={index} className="flex items-center justify-between bg-gray-50 p-2 rounded-lg border border-gray-200">
+                                    <div className="flex items-center gap-2">
+                                        {getFileIcon(file)}
+                                        <span className="text-sm text-gray-700 truncate max-w-[150px]">
+                                            {file.name}
+                                        </span>
+                                        <span className="text-xs text-gray-400">
+                                            {getFileSize(file.size)}
+                                        </span>
+                                    </div>
+                                    <button
+                                        onClick={() => removeAttachment(index)}
+                                        className="p-1 hover:bg-gray-200 rounded"
+                                        disabled={submitting}
+                                    >
+                                        <X size={14} className="text-gray-500" />
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
 
                 {/* Complaint Textarea */}

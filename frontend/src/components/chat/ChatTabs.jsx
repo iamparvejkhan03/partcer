@@ -9,6 +9,11 @@ const ChatTabs = ({ activeTab, onTabChange, children }) => {
         { id: 'saved', label: 'Saved', icon: Bookmark },
     ];
 
+    // Find the active tab's content
+    const activeContent = Array.isArray(children) 
+        ? children.find(child => child?.props?.tabId === activeTab)
+        : children;
+
     return (
         <div className="h-full flex flex-col">
             <div className="border-b border-gray-200 bg-white">
@@ -37,7 +42,7 @@ const ChatTabs = ({ activeTab, onTabChange, children }) => {
                 </div>
             </div>
             <div className="flex-1 overflow-hidden">
-                {children}
+                {activeContent}
             </div>
         </div>
     );
