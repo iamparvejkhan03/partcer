@@ -123,6 +123,10 @@ const newOrderSchema = new Schema(
       deliveredAt: Date,
       completedAt: Date
     },
+    totalSessions: {
+      type: Number,
+      default: 0,
+    },
 
     studentReviewed: {
       type: Boolean,

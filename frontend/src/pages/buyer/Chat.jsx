@@ -30,10 +30,17 @@ const BuyerChat = () => {
     const [ordersLoading, setOrdersLoading] = useState(false);
     const [showOrderSummary, setShowOrderSummary] = useState(false);
     const [currentOrderDetails, setCurrentOrderDetails] = useState(null);
+    const [currentOrderSessionStats, setCurrentOrderSessionStats] = useState(null);
+    const [currentOrderSessions, setCurrentOrderSessions] = useState(null);
     const [orderDetailsLoading, setOrderDetailsLoading] = useState(false);
 
     // Mobile states
-    const [showMobileList, setShowMobileList] = useState(false);
+    // const [showMobileList, setShowMobileList] = useState(false);
+    const [showMobileList, setShowMobileList] = useState(() => {
+        // If there's a user in URL, show chat; otherwise show list
+        const urlUserId = new URLSearchParams(window.location.search).get('user');
+        return !urlUserId; // true if no user in URL
+    });
     const [showMobileRightPanel, setShowMobileRightPanel] = useState(false);
 
     // Add these states with your other states
@@ -76,15 +83,6 @@ const BuyerChat = () => {
                             if (otherUser) {
                                 fetchUserOrders(otherUser._id);
                             }
-                        }
-                    } else {
-                        // Select first conversation
-                        setSelectedConversation(convs[0]);
-                        const otherUser = convs[0].participants.find(
-                            p => p._id !== user._id
-                        );
-                        if (otherUser) {
-                            fetchUserOrders(otherUser._id);
                         }
                     }
                 }
@@ -189,12 +187,12 @@ const BuyerChat = () => {
             if (response.data?.success) {
                 setOrders(response.data.data.orders || []);
                 // Auto-select first order if available
-                if (response.data.data?.length > 0) {
-                    handleSelectOrder(response.data.data.orders[0]);
-                } else {
-                    setSelectedOrder(null);
-                    setShowOrderSummary(false);
-                }
+                // if (response.data.data?.orders?.length > 0) {
+                //     handleSelectOrder(response.data.data.orders[0]);
+                // } else {
+                //     setSelectedOrder(null);
+                //     setShowOrderSummary(false);
+                // }
             }
         } catch (error) {
             console.error('Error fetching orders:', error);
@@ -207,6 +205,10 @@ const BuyerChat = () => {
     const handleSelectConversation = (conversation) => {
         setSelectedConversation(conversation);
         setShowMobileList(false);
+
+        // Close the right panel on mobile when selecting a new conversation
+    setShowMobileRightPanel(false);
+    setShowOrderSummary(false);
 
         const otherParticipant = conversation.participants.find(
             p => p._id !== user._id
@@ -240,6 +242,8 @@ const BuyerChat = () => {
 
             if (response.data?.success) {
                 setCurrentOrderDetails(response.data.data.order);
+                setCurrentOrderSessionStats(response.data.data.sessionStats);
+                setCurrentOrderSessions(response.data.data.sessions);
             }
         } catch (error) {
             console.error('Error fetching order details:', error);
@@ -287,6 +291,8 @@ const BuyerChat = () => {
         setShowOrderSummary(false);
         setSelectedOrder(null);
         setCurrentOrderDetails(null);
+        setCurrentOrderSessionStats(null);
+        setCurrentOrderSessions(null);
         setShowMobileRightPanel(false);
         setShowResolution(false);  // Add this
         setShowOrderHistory(false); // Add this
@@ -294,9 +300,9 @@ const BuyerChat = () => {
         const otherParticipant = selectedConversation?.participants.find(
             p => p._id !== user._id
         );
-        if (otherParticipant) {
-            fetchUserOrders(otherParticipant._id);
-        }
+        // if (otherParticipant) {
+        //     fetchUserOrders(otherParticipant._id);
+        // }
     };
 
     // Handle order action (complete, review, etc.)
@@ -309,9 +315,9 @@ const BuyerChat = () => {
         const otherParticipant = selectedConversation?.participants.find(
             p => p._id !== user._id
         );
-        if (otherParticipant) {
-            fetchUserOrders(otherParticipant._id);
-        }
+        // if (otherParticipant) {
+        //     fetchUserOrders(otherParticipant._id);
+        // }
     };
 
     // Get other participant from conversation
@@ -368,6 +374,10 @@ const BuyerChat = () => {
                                             setShowMobileRightPanel(false);
                                         }}
                                         onShowOrderDetails={handleShowOrderDetails}
+                                        orderId={selectedOrder?._id}
+                                        orderDetails={currentOrderDetails}
+                                        sessionStats={currentOrderSessionStats}
+                                        sessions={currentOrderSessions}
                                     />
                                 ) : (
                                     <div className="flex-1 flex items-center justify-center p-4">
@@ -466,6 +476,8 @@ const BuyerChat = () => {
                                         ) : currentOrderDetails ? (
                                             <BuyerOrderSummaryCard
                                                 order={currentOrderDetails}
+                                                sessionStats={currentOrderSessionStats}
+                                                sessions={currentOrderSessions}
                                                 user={user}
                                                 onAction={handleOrderAction}
                                                 onRefresh={() => fetchOrderDetails(selectedOrder._id)}

@@ -11,6 +11,9 @@ import Resolution from "../models/resolution.model.js";
 import { orderCompletedEmail, orderConfirmationForMentor, orderConfirmationForStudent, orderDeliveredEmail } from "../utils/emailTemplates.js";
 import transporter from "../utils/nodemailer.js";
 import { getIO } from '../sockets/socket.js';
+import { checkAllSessionsApproved, initializeOrderSessions } from "./session.controller.js";
+import { ApiError } from "../utils/ApiError.js";
+import Session from "../models/session.model.js";
 
 // Initialize Razorpay
 const razorpay = new Razorpay({
@@ -180,6 +183,7 @@ const getPricing = (period, duration) => {
 //     );
 // });
 
+
 // 1. Create Razorpay Order (UPDATED for multi-currency)
 export const createOrder = asyncHandler(async (req, res) => {
     const {
@@ -228,22 +232,30 @@ export const createOrder = asyncHandler(async (req, res) => {
     // Create unique order ID
     const orderId = `ORD${Date.now()}${Math.floor(Math.random() * 1000)}`;
 
-    // Create Razorpay order
-    const razorpayOrder = await razorpay.orders.create({
-        amount: razorpayAmount,
-        currency: razorpayCurrency,
-        receipt: orderId,
-        notes: {
-            serviceType,
-            period,
-            duration,
-            mentorId,
-            studentId,
-            orderId,
-            studentCurrency,
-            exchangeRateUsed: exchangeRateUsed || "",
-        },
-    });
+    let razorpayOrder;
+    try {
+        // Create Razorpay order
+        razorpayOrder = await razorpay.orders.create({
+            amount: razorpayAmount,
+            currency: razorpayCurrency,
+            receipt: orderId,
+            notes: {
+                serviceType,
+                period,
+                duration,
+                mentorId,
+                studentId,
+                orderId,
+                studentCurrency,
+                exchangeRateUsed: exchangeRateUsed || "",
+            },
+        });
+    } catch (error) {
+        console.error("Error creating Razorpay order:", error);
+        return res.status(500).json(
+            new ApiResponse(500, null, "Error creating Razorpay order")
+        );
+    }
 
     // Calculate INR received (for your records)
     let amountReceivedInINR;
@@ -301,6 +313,19 @@ export const createOrder = asyncHandler(async (req, res) => {
         transactionAmountInCurrency: studentPaidAmount,
         inrEquivalent: amountReceivedInINR,
     });
+
+    // Initialize sessions for the order
+    try {
+        await initializeOrderSessions(
+            order._id,
+            order.period,
+            order.mentorId,
+            order.studentId
+        );
+    } catch (error) {
+        console.error("Error initializing sessions:", error);
+        // Don't fail the order creation if sessions fail
+    }
 
     if (order) {
         try {
@@ -544,8 +569,48 @@ export const getOrderStatus = asyncHandler(async (req, res) => {
         );
     }
 
+    // Fetch session data for this order
+    const sessions = await Session.find({ orderId: order._id })
+        .sort({ sessionNumber: 1 });
+
+    // Calculate session statistics
+    const sessionStats = {
+        total: sessions.length,
+        pending: sessions.filter(s => s.status === "pending").length,
+        submitted: sessions.filter(s => s.status === "submitted").length,
+        approved: sessions.filter(s => s.status === "approved").length,
+        rejected: sessions.filter(s => s.status === "rejected").length,
+        allApproved: sessions.length > 0 && sessions.every(s => s.status === "approved"),
+        progressPercentage: sessions.length > 0
+            ? Math.round((sessions.filter(s => s.status === "approved").length / sessions.length) * 100)
+            : 0,
+    };
+
+    // Get the next pending session number (for mentor to know which to submit next)
+    const nextPendingSession = await Session.findOne({
+        orderId: order._id,
+        status: "pending",
+    }).sort({ sessionNumber: 1 });
+
+    // Get any rejected session that needs resubmission
+    const rejectedSession = await Session.findOne({
+        orderId: order._id,
+        status: "rejected",
+    }).sort({ sessionNumber: 1 });
+
     return res.status(200).json(
-        new ApiResponse(200, { order }, "Order status fetched successfully")
+        new ApiResponse(200, {
+            order,
+            sessions,
+            sessionStats,
+            nextPendingSessionNumber: nextPendingSession ? nextPendingSession.sessionNumber : null,
+            rejectedSession: rejectedSession ? {
+                sessionNumber: rejectedSession.sessionNumber,
+                id: rejectedSession._id,
+                feedback: rejectedSession.studentFeedback,
+                description: rejectedSession.description,
+            } : null,
+        }, "Order status fetched successfully")
     );
 });
 
@@ -613,8 +678,8 @@ export const getUserOrders = asyncHandler(async (req, res) => {
         .skip(skip)
         .limit(parseInt(limit));
 
-    // Get review information for each order
-    const ordersWithReviews = await Promise.all(
+    // Get review information and session stats for each order
+    const ordersWithData = await Promise.all(
         orders.map(async (order) => {
             const orderObj = order.toObject();
 
@@ -630,16 +695,32 @@ export const getUserOrders = asyncHandler(async (req, res) => {
                 reviewerRole: "mentor"
             }).populate("reviewer", "firstName lastName");
 
+            // Get session stats for this order
+            const sessions = await Session.find({ orderId: order._id });
+
+            const sessionStats = {
+                total: sessions.length,
+                pending: sessions.filter(s => s.status === "pending").length,
+                submitted: sessions.filter(s => s.status === "submitted").length,
+                approved: sessions.filter(s => s.status === "approved").length,
+                rejected: sessions.filter(s => s.status === "rejected").length,
+                allApproved: sessions.length > 0 && sessions.every(s => s.status === "approved"),
+                progressPercentage: sessions.length > 0
+                    ? Math.round((sessions.filter(s => s.status === "approved").length / sessions.length) * 100)
+                    : 0,
+            };
+
             return {
                 ...orderObj,
-                // For the current user to know if they've reviewed
+                // Review data
                 currentUserReviewed: !!(studentReview?.reviewer?.toString() === userId ||
                     mentorReview?.reviewer?.toString() === userId),
                 studentReview: studentReview || null,
                 mentorReview: mentorReview || null,
-                // For quick checks
                 studentReviewed: !!studentReview,
-                mentorReviewed: !!mentorReview
+                mentorReviewed: !!mentorReview,
+                // Session stats
+                sessionStats,
             };
         })
     );
@@ -648,7 +729,7 @@ export const getUserOrders = asyncHandler(async (req, res) => {
 
     return res.status(200).json(
         new ApiResponse(200, {
-            orders: ordersWithReviews,
+            orders: ordersWithData,
             pagination: {
                 page: parseInt(page),
                 limit: parseInt(limit),
@@ -674,6 +755,12 @@ export const markOrderDelivered = asyncHandler(async (req, res) => {
 
     if (order.mentorId.toString() !== req.user.id) {
         return res.status(403).json(new ApiResponse(403, null, "Not authorized"));
+    }
+
+    // Check if all sessions are approved
+    const allApproved = await checkAllSessionsApproved(orderId);
+    if (!allApproved) {
+        throw new ApiError(400, "All sessions must be approved before marking order as delivered");
     }
 
     order.deliveryStatus = 'delivered';

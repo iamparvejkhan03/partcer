@@ -1,14 +1,16 @@
 import { useState, useEffect } from 'react';
 import {
     Package, User, DollarSign, Clock, CheckCircle, XCircle,
-    Truck, Star, ThumbsUp, Calendar, MessageCircle
+    Truck, Star, ThumbsUp, Calendar, MessageCircle,
+    Send
 } from 'lucide-react';
 import { format } from 'date-fns';
 import toast from 'react-hot-toast';
 import axiosInstance from '../../utils/axiosInstance';
 import { useCurrency } from '../../hooks/useCurrency';
+import ProgressBar from '../ProgressBar';
 
-const OrderSummaryCard = ({ order, user, onAction, onRefresh }) => {
+const OrderSummaryCard = ({ order, sessionStats, sessions, user, onAction, onRefresh }) => {
     const [showMarkDeliveredModal, setShowMarkDeliveredModal] = useState(false);
     const [deliveryNotes, setDeliveryNotes] = useState('');
     const [deliveryProof, setDeliveryProof] = useState([]);
@@ -240,9 +242,18 @@ const OrderSummaryCard = ({ order, user, onAction, onRefresh }) => {
                         <div className="flex justify-between border-t pt-2">
                             <span className="text-sm font-semibold text-gray-900">Amount</span>
                             <span className="text-lg font-bold text-primary">
-                                {getCurrencySymbol()}{convertPrice(order.amount).toFixed(0)} {currency == 'INR' ? <span className="text-xs">(~${(order.amount / 81.5).toFixed(0)})</span> : <span className="text-xs">(~₹{(order.amount).toFixed(0)})</span>}
+                                {getCurrencySymbol()}{convertPrice(order.amount).toFixed(0)} {currency == 'INR' ? <span className="text-xs">(~${(order.studentPaidAmount).toFixed(0)})</span> : <span className="text-xs">(~₹{(order.amount).toFixed(0)})</span>}
                             </span>
                         </div>
+                    </div>
+
+                    {/* Progress Overview */}
+                    <div className="bg-gray-50">
+                        <div className="flex items-center justify-between text-sm mb-2">
+                            <p className="font-medium text-gray-600">Session Progress</p>
+                        </div>
+
+                        <ProgressBar total={sessionStats?.total} approved={sessionStats?.approved} />
                     </div>
 
                     {/* Status Badges */}
@@ -254,12 +265,12 @@ const OrderSummaryCard = ({ order, user, onAction, onRefresh }) => {
 
                     {/* Action Buttons & Reviews for Mentor */}
                     <div className="space-y-2">
-                        {order.deliveryStatus === 'pending' && order.status == 'active' && (
+                        {order.deliveryStatus === 'pending' && order.orderStatus == 'confirmed' && (
                             <button
                                 onClick={() => setShowMarkDeliveredModal(true)}
                                 className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium flex items-center justify-center gap-2"
                             >
-                                <Truck size={16} />
+                                <Send size={16} />
                                 Mark as Delivered
                             </button>
                         )}
@@ -379,7 +390,7 @@ const OrderSummaryCard = ({ order, user, onAction, onRefresh }) => {
             </div>
 
             {/* Earnings Card (for mentors) */}
-            {user?.userType === 'freelancer' && (
+            {user?.userType === 'freelancer' && order?.orderStatus == 'completed' && (
                 <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-2xl shadow-sm border border-green-200 overflow-hidden">
                     <div className="p-4">
                         <h3 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
@@ -422,11 +433,11 @@ const OrderSummaryCard = ({ order, user, onAction, onRefresh }) => {
                                     value={deliveryNotes}
                                     onChange={(e) => setDeliveryNotes(e.target.value)}
                                     rows={4}
-                                    placeholder="Add any notes about the delivery (e.g., files shared, completed work, etc.)"
+                                    placeholder="Add any notes about the delivery"
                                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
                                 />
                             </div>
-                            <div>
+                            {/* <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-2">
                                     Delivery Proof (Optional)
                                 </label>
@@ -457,7 +468,7 @@ const OrderSummaryCard = ({ order, user, onAction, onRefresh }) => {
                                         </div>
                                     )}
                                 </div>
-                            </div>
+                            </div> */}
                         </div>
                         <div className="p-6 border-t border-gray-200 flex gap-3">
                             <button

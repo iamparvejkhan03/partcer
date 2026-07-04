@@ -10,8 +10,9 @@ import axiosInstance from '../../utils/axiosInstance';
 import { useCurrency } from '../../hooks/useCurrency';
 import { formatOrderPrice } from '../../utils/currencyHelpers';
 import { useNavigate } from 'react-router-dom';
+import ProgressBar from '../ProgressBar';
 
-const BuyerOrderSummaryCard = ({ order, user, onAction, onRefresh, onShowResolution }) => {
+const BuyerOrderSummaryCard = ({ order, sessionStats, sessions, user, onAction, onRefresh, onShowResolution }) => {
     const [showCompleteModal, setShowCompleteModal] = useState(false);
     const [showReviewModal, setShowReviewModal] = useState(false);
     const [reviewData, setReviewData] = useState({ rating: 5, comment: '' });
@@ -219,6 +220,15 @@ const BuyerOrderSummaryCard = ({ order, user, onAction, onRefresh, onShowResolut
                                 {formatOrderPrice(order).formatted}
                             </span>
                         </div>
+                    </div>
+
+                    {/* Progress Overview */}
+                    <div className="bg-gray-50">
+                        <div className="flex items-center justify-between text-sm mb-2">
+                            <p className="font-medium text-gray-600">Session Progress</p>
+                        </div>
+
+                        <ProgressBar total={sessionStats?.total} approved={sessionStats?.approved} />
                     </div>
 
                     {/* Status Badges */}

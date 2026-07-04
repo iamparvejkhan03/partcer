@@ -4,15 +4,11 @@ import { MessageCircle, Video, FolderOpen, Bookmark } from 'lucide-react';
 const ChatTabs = ({ activeTab, onTabChange, children }) => {
     const tabs = [
         { id: 'chat', label: 'Chat', icon: MessageCircle },
+        { id: 'sessions', label: 'Sessions', icon: MessageCircle },
         { id: 'meeting', label: 'Meeting', icon: Video },
         { id: 'resources', label: 'Resources', icon: FolderOpen },
         { id: 'saved', label: 'Saved', icon: Bookmark },
     ];
-
-    // Find the active tab's content
-    const activeContent = Array.isArray(children) 
-        ? children.find(child => child?.props?.tabId === activeTab)
-        : children;
 
     return (
         <div className="h-full flex flex-col">
@@ -42,7 +38,7 @@ const ChatTabs = ({ activeTab, onTabChange, children }) => {
                 </div>
             </div>
             <div className="flex-1 overflow-hidden">
-                {activeContent}
+                {children}
             </div>
         </div>
     );

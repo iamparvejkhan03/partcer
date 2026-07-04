@@ -1,12 +1,13 @@
 import { useState, useRef, useEffect } from 'react';
-import { Avatar } from '../../components';
+import { Avatar, ProgressBar } from '../../components';
 import MessageBubble from './MessageBubble';
 import MessageInput from './MessageInput';
 import MeetingTab from './MeetingTab';
 import ResourcesTab from './ResourcesTab';
 import SavedTab from './SavedTab';
-import { ArrowLeft, ArrowRight, Package, MessageCircle, Video, FolderOpen, Bookmark } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Package, MessageCircle, Video, FolderOpen, Bookmark, Info } from 'lucide-react';
 import { format } from 'date-fns';
+import SessionTab from './SessionTab';
 
 const ChatWindow = ({
     conversation,
@@ -16,7 +17,11 @@ const ChatWindow = ({
     onTyping,
     onlineUsers,
     onBack,
-    onShowOrderDetails
+    onShowOrderDetails,
+    orderId,
+    orderDetails,
+    sessionStats,
+    sessions
 }) => {
     const [typingUsers, setTypingUsers] = useState({});
     const [activeTab, setActiveTab] = useState('chat');
@@ -33,6 +38,7 @@ const ChatWindow = ({
 
     const tabs = [
         { id: 'chat', label: 'Chat', icon: MessageCircle },
+        { id: 'sessions', label: 'Sessions', icon: Package },
         { id: 'meeting', label: 'Meeting', icon: Video },
         { id: 'resources', label: 'Resources', icon: FolderOpen },
         { id: 'saved', label: 'Saved', icon: Bookmark },
@@ -166,7 +172,7 @@ const ChatWindow = ({
                         <Avatar
                             src={otherParticipant?.profileImage}
                             name={`${otherParticipant?.firstName} ${otherParticipant?.lastName}`}
-                            size="lg"
+                            size="md"
                         />
                         {isOnline && (
                             <span className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 border-2 border-white rounded-full" />
@@ -174,7 +180,7 @@ const ChatWindow = ({
                     </div>
 
                     <div>
-                        <h3 className="font-semibold text-gray-900">
+                        <h3 className="font-medium text-sm sm:text-base sm::font-semibold text-gray-900">
                             {otherParticipant?.firstName} {otherParticipant?.lastName}
                         </h3>
                         <p className="text-sm text-gray-500">
@@ -196,6 +202,8 @@ const ChatWindow = ({
                 </button>
             </div>
 
+            <p className="bg-orange-100 flex items-center gap-2 justify-center text-xs sm:text-sm text-orange-600 py-1 px-2 border-y-2 border-y-orange-500"><Info size={16} /> <span>Please mark each session once completed from Sessions tab.</span></p>
+
             {/* Tab Navigation */}
             <div className="border-b border-gray-200 bg-white">
                 <div className="flex px-4 space-x-1">
@@ -215,8 +223,8 @@ const ChatWindow = ({
                                     }
                                 `}
                             >
-                                <Icon size={18} />
-                                <span className="hidden sm:inline">{tab.label}</span>
+                                <Icon size={20} className='sm:hidden' />
+                                <span className="hidden text-xs sm:inline sm:text-sm">{tab.label}</span>
                             </button>
                         );
                     })}
@@ -285,10 +293,20 @@ const ChatWindow = ({
                     </div>
                 )}
 
+                {activeTab === 'sessions' && (
+                    <SessionTab
+                        orderId={orderId}
+                        userType={currentUser?.userType}
+                        order={orderDetails}
+                        sessionStats={sessionStats}
+                        sessions={sessions}
+                    />
+                )}
+
                 {activeTab === 'meeting' && (
-                    <MeetingTab 
-                        conversationId={conversation?._id} 
-                        userType={currentUser?.userType} 
+                    <MeetingTab
+                        conversationId={conversation?._id}
+                        userType={currentUser?.userType}
                     />
                 )}
 
@@ -297,9 +315,9 @@ const ChatWindow = ({
                 )}
 
                 {activeTab === 'saved' && (
-                    <SavedTab 
-                        conversationId={conversation?._id} 
-                        currentUser={currentUser} 
+                    <SavedTab
+                        conversationId={conversation?._id}
+                        currentUser={currentUser}
                     />
                 )}
             </div>

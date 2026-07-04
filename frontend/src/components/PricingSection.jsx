@@ -204,7 +204,7 @@ const PricingSection = ({ freelancerName, freelancerId, freelancerEmail }) => {
             return;
         }
 
-        if (user.userType !== 'buyer' || user.userType !== 'agency') {
+        if (user.userType != 'buyer' && user.userType != 'agency') {
             toast.error('Only students & agencies can book sessions');
             return;
         }

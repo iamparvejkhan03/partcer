@@ -40,12 +40,14 @@ import YouTubeEmbed from "./YouTubeEmbed";
 import PricingSection from "./PricingSection";
 import ChatTabs from "./chat/ChatTabs";
 import MeetingTab from "./chat/MeetingTab";
+import SessionTab from "./chat/SessionTab";
 import ExpressInterestModal from "./freelancer/ExpressInterestModal";
 import ResolutionPanel from "./ResolutionPanel";
 import OrderHistoryPanel from "./OrdersHistoryPanel";
 import TextTruncate from "./TextTruncate";
 import FreelancerOrderSummaryCard from "./freelancer/OrderSummaryCard";
 import BuyerOrderSummaryCard from "./buyer/OrderSummaryCard";
+import ProgressBar from "./ProgressBar";
 
 export {
     Header,
@@ -94,4 +96,5 @@ export {
     TextTruncate,
     FreelancerOrderSummaryCard,
     BuyerOrderSummaryCard,
+    ProgressBar,
 }

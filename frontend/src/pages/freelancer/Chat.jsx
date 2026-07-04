@@ -17,25 +17,32 @@ const Chat = () => {
     const { socket, isConnected, onlineUsers } = useSocket();
     const { user } = useAuth();
     const { markMessagesAsRead } = useNotifications();
-    
+
     // State for conversations
     const [conversations, setConversations] = useState([]);
     const [selectedConversation, setSelectedConversation] = useState(null);
     const [messages, setMessages] = useState([]);
     const [loading, setLoading] = useState(true);
-    
+
     // State for right panel - Orders
     const [orders, setOrders] = useState([]);
     const [selectedOrder, setSelectedOrder] = useState(null);
     const [ordersLoading, setOrdersLoading] = useState(false);
     const [showOrderSummary, setShowOrderSummary] = useState(false);
     const [currentOrderDetails, setCurrentOrderDetails] = useState(null);
+    const [currentOrderSessionStats, setCurrentOrderSessionStats] = useState(null);
+    const [currentOrderSessions, setCurrentOrderSessions] = useState(null);
     const [orderDetailsLoading, setOrderDetailsLoading] = useState(false);
-    
+
     // Mobile states
-    const [showMobileList, setShowMobileList] = useState(false);
+    // const [showMobileList, setShowMobileList] = useState(false);
+    const [showMobileList, setShowMobileList] = useState(() => {
+        // If there's a user in URL, show chat; otherwise show list
+        const urlUserId = new URLSearchParams(window.location.search).get('user');
+        return !urlUserId; // true if no user in URL
+    });
     const [showMobileRightPanel, setShowMobileRightPanel] = useState(false);
-    
+
     // Refs
     const isInitialLoad = useRef(true);
 
@@ -53,14 +60,14 @@ const Chat = () => {
             socket.on('conversations:list', (convs) => {
                 setConversations(convs);
                 setLoading(false);
-                
+
                 // Auto-select conversation from URL or first one
                 if (isInitialLoad.current && convs.length > 0) {
                     isInitialLoad.current = false;
                     const urlUserId = searchParams.get('user');
-                    
+
                     if (urlUserId) {
-                        const conv = convs.find(c => 
+                        const conv = convs.find(c =>
                             c.participants.some(p => p._id === urlUserId)
                         );
                         if (conv) {
@@ -72,15 +79,6 @@ const Chat = () => {
                             if (otherUser) {
                                 fetchUserOrders(otherUser._id);
                             }
-                        }
-                    } else {
-                        // Select first conversation
-                        setSelectedConversation(convs[0]);
-                        const otherUser = convs[0].participants.find(
-                            p => p._id !== user._id
-                        );
-                        if (otherUser) {
-                            fetchUserOrders(otherUser._id);
                         }
                     }
                 }
@@ -104,12 +102,12 @@ const Chat = () => {
     useEffect(() => {
         if (socket && isConnected && selectedConversation) {
             setMessages([]);
-            
+
             // Get other participant
             const otherParticipant = selectedConversation.participants.find(
                 p => p._id !== user._id
             );
-            
+
             // Fetch orders for this user
             if (otherParticipant) {
                 fetchUserOrders(otherParticipant._id);
@@ -142,8 +140,8 @@ const Chat = () => {
                         if (prev.some(m => m._id === newMessage._id)) return prev;
                         return [...prev, newMessage];
                     });
-                    socket.emit('messages:read', { 
-                        conversationId: selectedConversation._id 
+                    socket.emit('messages:read', {
+                        conversationId: selectedConversation._id
                     });
                 }
             };
@@ -175,22 +173,22 @@ const Chat = () => {
     // Fetch orders for a specific user
     const fetchUserOrders = async (userId) => {
         if (!userId) return;
-        
+
         try {
             setOrdersLoading(true);
             const response = await axiosInstance.get(
                 `/api/v1/payments/history/${user._id}/${userId}`
             );
-            
+
             if (response.data?.success) {
                 setOrders(response.data.data.orders || []);
                 // Auto-select first order if available
-                if (response.data.data.length > 0) {
-                    handleSelectOrder(response.data.data[0]);
-                } else {
-                    setSelectedOrder(null);
-                    setShowOrderSummary(false);
-                }
+                // if (response.data.data.orders.length > 0) {
+                //     handleSelectOrder(response.data.data.orders[0]);
+                // } else {
+                //     setSelectedOrder(null);
+                //     setShowOrderSummary(false);
+                // }
             }
         } catch (error) {
             console.error('Error fetching orders:', error);
@@ -204,16 +202,20 @@ const Chat = () => {
     const handleSelectConversation = (conversation) => {
         setSelectedConversation(conversation);
         setShowMobileList(false);
-        
+
+        // Close the right panel on mobile when selecting a new conversation
+        setShowMobileRightPanel(false);
+        setShowOrderSummary(false);
+
         const otherParticipant = conversation.participants.find(
             p => p._id !== user._id
         );
-        
+
         if (otherParticipant) {
             // Update URL without reload
             const newUrl = `/${user?.userType}/chat?user=${otherParticipant._id}`;
             window.history.pushState({}, '', newUrl);
-            
+
             // Fetch orders for this user
             fetchUserOrders(otherParticipant._id);
         }
@@ -234,9 +236,11 @@ const Chat = () => {
             const response = await axiosInstance.get(
                 `/api/v1/payments/status/${orderId}`
             );
-            
+
             if (response.data?.success) {
                 setCurrentOrderDetails(response.data.data.order);
+                setCurrentOrderSessionStats(response.data.data.sessionStats);
+                setCurrentOrderSessions(response.data.data.sessions);
             }
         } catch (error) {
             console.error('Error fetching order details:', error);
@@ -285,15 +289,17 @@ const Chat = () => {
         setShowOrderSummary(false);
         setSelectedOrder(null);
         setCurrentOrderDetails(null);
+        setCurrentOrderSessionStats(null);
+        setCurrentOrderSessions(null);
         setShowMobileRightPanel(false);
-        
+
         // Refresh orders list
         const otherParticipant = selectedConversation?.participants.find(
             p => p._id !== user._id
         );
-        if (otherParticipant) {
-            fetchUserOrders(otherParticipant._id);
-        }
+        // if (otherParticipant) {
+        //     fetchUserOrders(otherParticipant._id);
+        // }
     };
 
     // Handle order action (deliver, complete, review, etc.)
@@ -336,9 +342,8 @@ const Chat = () => {
                         {/* Three Column Layout */}
                         <div className="flex h-full">
                             {/* Left Column - Conversation List (25%) */}
-                            <div className={`${
-                                showMobileList ? 'block' : 'hidden'
-                            } md:block max-w-full md:max-w-56 lg:max-w-64 border-r border-gray-200 bg-white absolute md:relative z-20 max-h-full overflow-auto`}>
+                            <div className={`${showMobileList ? 'block' : 'hidden'
+                                } md:block max-w-full md:max-w-56 lg:max-w-64 border-r border-gray-200 bg-white absolute md:relative z-20 max-h-full overflow-auto`}>
                                 <ConversationList
                                     conversations={conversations}
                                     selectedConversation={selectedConversation}
@@ -351,9 +356,8 @@ const Chat = () => {
                             </div>
 
                             {/* Middle Column - Chat Window (50%) */}
-                            <div className={`flex-1 flex flex-col bg-gray-50 ${
-                                showMobileList ? 'hidden md:flex' : 'flex'
-                            } ${showMobileRightPanel ? 'md:flex-1' : 'flex-1'}`}>
+                            <div className={`flex-1 flex flex-col bg-gray-50 ${showMobileList ? 'hidden md:flex' : 'flex'
+                                } ${showMobileRightPanel ? 'md:flex-1' : 'flex-1'}`}>
                                 {selectedConversation ? (
                                     <ChatWindow
                                         conversation={selectedConversation}
@@ -367,6 +371,10 @@ const Chat = () => {
                                             setShowMobileRightPanel(false);
                                         }}
                                         onShowOrderDetails={handleShowOrderDetails}
+                                        orderId={selectedOrder?._id}
+                                        orderDetails={currentOrderDetails}
+                                        sessionStats={currentOrderSessionStats}
+                                        sessions={currentOrderSessions}
                                     />
                                 ) : (
                                     <div className="flex-1 flex items-center justify-center p-4">
@@ -386,9 +394,8 @@ const Chat = () => {
                             </div>
 
                             {/* Right Column - Orders (25%) */}
-                            <div className={`${
-                                showMobileRightPanel ? 'block' : 'hidden'
-                            } lg:block max-w-full md:max-w-64 lg:max-w-80 border-l border-gray-200 bg-white absolute md:relative z-20 max-h-full overflow-y-auto`}>
+                            <div className={`${showMobileRightPanel ? 'block' : 'hidden'
+                                } lg:block max-w-full md:max-w-64 lg:max-w-80 border-l border-gray-200 bg-white absolute md:relative z-20 max-h-full overflow-y-auto`}>
                                 {/* Mobile Close Button */}
                                 <div className="lg:hidden sticky top-0 bg-white z-10 p-3 border-b border-gray-200 flex justify-between items-center">
                                     <h3 className="font-semibold text-gray-900">Order Details</h3>
@@ -425,7 +432,7 @@ const Chat = () => {
                                             <ChevronLeft size={18} />
                                             <span className="text-sm font-medium">Back to Orders</span>
                                         </button>
-                                        
+
                                         {orderDetailsLoading ? (
                                             <div className="flex justify-center items-center h-32">
                                                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -433,6 +440,8 @@ const Chat = () => {
                                         ) : currentOrderDetails ? (
                                             <FreelancerOrderSummaryCard
                                                 order={currentOrderDetails}
+                                                sessionStats={currentOrderSessionStats}
+                                                sessions={currentOrderSessions}
                                                 user={user}
                                                 onAction={handleOrderAction}
                                                 onRefresh={() => fetchOrderDetails(selectedOrder._id)}
@@ -480,13 +489,12 @@ const Chat = () => {
                                                         </div>
                                                     </div>
                                                     <div className="mt-1">
-                                                        <span className={`text-xs px-2 py-0.5 rounded-full ${
-                                                            order.orderStatus === 'confirmed' 
-                                                                ? 'bg-green-100 text-green-700'
-                                                                : order.orderStatus === 'completed'
+                                                        <span className={`text-xs px-2 py-0.5 rounded-full ${order.orderStatus === 'confirmed'
+                                                            ? 'bg-green-100 text-green-700'
+                                                            : order.orderStatus === 'completed'
                                                                 ? 'bg-blue-100 text-blue-700'
                                                                 : 'bg-gray-100 text-gray-600'
-                                                        }`}>
+                                                            }`}>
                                                             {order.orderStatus || 'Pending'}
                                                         </span>
                                                     </div>

@@ -29,6 +29,7 @@ import withdrawalRouter from "./routes/withdrawal.route.js";
 import resolutionRouter from "./routes/resolution.route.js";
 import currencyRouter from "./routes/currency.route.js";
 import { submitContactQuery } from "./controllers/contact.controller.js";
+import sessionRouter from "./routes/session.route.js";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -82,6 +83,7 @@ app.use("/api/v1/withdrawals", withdrawalRouter);
 app.use("/api/v1/resolution", resolutionRouter);
 app.use('/api/v1/currency', currencyRouter);
 app.use('/api/v1/contact', submitContactQuery);
+app.use("/api/v1/sessions", sessionRouter);
 
 // 404 handler - SIMPLIFIED VERSION
 app.use((req, res, next) => {

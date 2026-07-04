@@ -21,7 +21,7 @@ import {
     Package,
     Info
 } from "lucide-react";
-import { BuyerSidebar, BuyerHeader, BuyerContainer } from '../../components';
+import { BuyerSidebar, BuyerHeader, BuyerContainer, ProgressBar } from '../../components';
 import toast from 'react-hot-toast';
 import axiosInstance from '../../utils/axiosInstance';
 import { useAuth } from '../../contexts/AuthContext';
@@ -86,6 +86,10 @@ const NewAllOrders = () => {
                 .reduce((sum, o) => sum + (o.amount || 0), 0)
         };
         setStats(stats);
+    };
+
+    const handleMessage = (order) => {
+        navigate(`/buyer/chat?user=${order?.mentorId?._id}`);
     };
 
     // Filter orders
@@ -407,13 +411,33 @@ const NewAllOrders = () => {
                                             </div>
                                         </div>
 
-                                        <button
+                                        <div className="mb-3">
+                                            <div className="relative flex items-center max-w-full w-full bg-gray-500/80 h-4 rounded-md">
+                                            <div className="bg-green-600 h-4 rounded-md" style={{ width: `${Math.ceil((order?.sessionStats?.approved / order?.sessionStats?.total) * 100)}%` }} />
+                                            <span className="absolute inset-0 flex items-center justify-center text-xs font-normal text-white">
+                                                {order.sessionStats?.approved} / {order.sessionStats?.total}
+                                            </span>
+                                        </div>
+                                        <span className="mt-1 flex items-center justify-center text-xs font-normal">
+                                            {order.sessionStats?.approved} of {order.sessionStats?.total} session completed
+                                        </span>
+                                        </div>
+
+                                        {/* <button
                                             onClick={() => handleViewOrder(order)}
                                             className="w-full flex items-center justify-center gap-2 px-3 py-2 text-primary border border-primary/20 rounded-lg hover:bg-primary/5"
                                         >
                                             <Eye size={16} />
                                             View Details
-                                        </button>
+                                        </button> */}
+
+                                        <button
+                                                onClick={() => handleMessage(order)}
+                                                className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 w-full"
+                                            >
+                                                <MessageCircle size={16} />
+                                                Message
+                                            </button>
                                     </div>
                                 ))
                             ) : (
@@ -435,12 +459,13 @@ const NewAllOrders = () => {
                                 <thead className="bg-gray-50 border-b border-gray-200">
                                     <tr>
                                         <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">Mentor</th>
-                                        <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">Service</th>
+                                        {/* <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">Service</th> */}
                                         {/* <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">Period</th> */}
                                         <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
-                                        <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">Payment Status</th>
-                                        <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">Delivery Status</th>
-                                        <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">Order Status</th>
+                                        <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">Payment</th>
+                                        <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">Progress</th>
+                                        {/* <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">Delivery</th> */}
+                                        <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">Order</th>
                                         {/* <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">Date</th> */}
                                         <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
                                     </tr>
@@ -469,10 +494,10 @@ const NewAllOrders = () => {
                                                         </div>
                                                     </div>
                                                 </td>
-                                                <td className="px-6 py-4">
+                                                {/* <td className="px-6 py-4">
                                                     <div className="text-sm text-gray-900">{order.serviceType}</div>
                                                     <div className="text-xs text-gray-500 mt-1 line-clamp-1">{order.duration}</div>
-                                                </td>
+                                                </td> */}
                                                 {/* <td className="px-6 py-4">
                                                     <div className="text-sm text-gray-900">{order.period}</div>
                                                 </td> */}
@@ -490,12 +515,20 @@ const NewAllOrders = () => {
                                                     )} */}
                                                 </td>
                                                 <td className="px-6 py-4">
+                                                    <div className="relative flex items-center max-w-full w-full bg-gray-500/80 h-4 rounded-md">
+                                                        <div className="bg-green-600 h-4 rounded-md" style={{ width: `${Math.ceil((order?.sessionStats?.approved / order?.sessionStats?.total) * 100)}%` }} />
+                                                        <span className="absolute inset-0 flex items-center justify-center text-xs font-normal text-white">
+                                                            {order.sessionStats?.approved} / {order.sessionStats?.total}
+                                                        </span>
+                                                    </div>
+                                                    <span className="mt-1 flex items-center justify-center text-xs font-normal">
+                                                        {order.sessionStats?.approved} of {order.sessionStats?.total} session completed
+                                                    </span>
+                                                </td>
+                                                {/* <td className="px-6 py-4">
                                                     {order.deliveryStatus === 'delivered' ? (
                                                         <div className="space-y-1">
                                                             {getDeliveryStatusBadge(order.deliveryStatus)}
-                                                            {/* {!order.completed && (
-                                                                <div className="text-xs text-gray-500 mt-1">Awaiting student confirmation</div>
-                                                            )} */}
                                                             <button
                                                                 onClick={() => {
                                                                     handleCompleteOrder(order._id);
@@ -508,32 +541,21 @@ const NewAllOrders = () => {
                                                     ) : (
                                                         getDeliveryStatusBadge(order.deliveryStatus || 'pending')
                                                     )}
-                                                    {/* {order.deliveryStatus === 'pending' && order.paymentStatus === 'paid' && (
-                                                        <button
-                                                            onClick={() => {
-                                                                setSelectedOrder(order);
-                                                                setShowDeliveryModal(true);
-                                                            }}
-                                                            className="mt-2 text-xs bg-primary text-white px-2 py-1 rounded"
-                                                        >
-                                                            Mark as Delivered
-                                                        </button>
-                                                    )} */}
-                                                </td>
+                                                </td> */}
                                                 <td className="px-6 py-4">
-                                                        {getOrderStatusBadge(order.orderStatus || 'pending')}
+                                                    {getOrderStatusBadge(order.orderStatus || 'pending')}
                                                 </td>
                                                 {/* <td className="px-6 py-4">
                                                     <div className="text-sm text-gray-900">{formatDate(order.createdAt)}</div>
                                                 </td> */}
                                                 <td className="px-6 py-4">
-                                                    <button
+                                                    {/* <button
                                                         onClick={() => navigate(`/buyer/orders/${order._id}`)}
                                                         className="p-2 text-gray-600 hover:text-primary hover:bg-gray-100 rounded-lg transition-colors"
                                                         title="View Details"
                                                     >
                                                         <Eye size={18} />
-                                                    </button>
+                                                    </button> */}
 
                                                     <button
                                                         onClick={() => handleViewOrder(order)}
@@ -832,7 +854,7 @@ const NewAllOrders = () => {
                             {/* Actions */}
                             <div className="flex gap-3 pt-4">
                                 <Link
-                                    to={`/buyer/orders/${selectedOrder?._id}`}
+                                    to={`/buyer/chat?user=${selectedOrder?.mentorId?._id}`}
                                     // to={`/buyer/chat?user=${selectedOrder.mentorId?._id}`}
                                     className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-center flex items-center justify-center gap-2"
                                 >

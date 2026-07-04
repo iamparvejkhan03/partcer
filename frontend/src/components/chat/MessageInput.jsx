@@ -166,9 +166,9 @@ const MessageInput = ({ onSendMessage, onTyping }) => {
                     <button
                         onClick={() => fileInputRef.current?.click()}
                         disabled={uploading}
-                        className="p-3 sm:p-2 hover:bg-gray-100 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="p-2 sm:p-3 hover:bg-gray-100 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        <Paperclip size={22} className="text-gray-500" />
+                        <Paperclip size={18} className="text-gray-500" />
                     </button>
 
                     {/* Voice Message Button (Future feature) */}
@@ -180,9 +180,9 @@ const MessageInput = ({ onSendMessage, onTyping }) => {
                     <button
                         onClick={handleSend}
                         disabled={(!message.trim() && attachments.length === 0) || uploading}
-                        className="p-3 sm:p-3 bg-primary hover:bg-primary/90 text-white rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="p-2 sm:p-3 bg-primary hover:bg-primary/90 text-white rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        <Send size={22} className="" />
+                        <Send size={18} className="" />
                     </button>
                 </div>
             </div>
