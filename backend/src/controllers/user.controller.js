@@ -473,8 +473,6 @@ const updateProfile = asyncHandler(async (req, res) => {
   // Handle profile image upload if present
   if (req.file) {
     try {
-      console.log("Processing profile image upload:", req.file.originalname);
-
       // Upload to Cloudinary
       const result = await uploadImage(req.file.buffer, req.file.originalname);
 
@@ -1158,7 +1156,7 @@ const getFreelancerPublicProfile = asyncHandler(async (req, res) => {
     userType: "freelancer",
     isActive: true,
   }).select(
-    "firstName lastName displayName companyName profileImage tagline bio hourlyRate englishLevel skills categories languages experienceLevel yearsOfExperience completedProjects rating reviewCount experience education country city",
+    "firstName lastName agencyName displayName companyName profileImage tagline bio hourlyRate englishLevel skills categories languages experienceLevel yearsOfExperience completedProjects rating reviewCount experience education country city",
   );
 
   if (!freelancer) {
@@ -1215,6 +1213,7 @@ const searchFreelancers = asyncHandler(async (req, res) => {
     query.$or = [
       { firstName: { $regex: search, $options: "i" } },
       { lastName: { $regex: search, $options: "i" } },
+      { agencyName: { $regex: search, $options: "i" } },
       { tagline: { $regex: search, $options: "i" } },
       { bio: { $regex: search, $options: "i" } },
     ];
@@ -1280,7 +1279,7 @@ const searchFreelancers = asyncHandler(async (req, res) => {
 
   const freelancers = await User.find(query)
     .select(
-      "firstName lastName displayName profileImage tagline bio hourlyRate englishLevel skills categories services languages freelancerType createdAt country city experience education rating reviewCount hired rejected",
+      "firstName lastName agencyName displayName profileImage tagline bio hourlyRate englishLevel skills categories services languages freelancerType createdAt country city experience education rating reviewCount hired rejected",
     )
     .sort(sort)
     .skip(skip)
@@ -1341,6 +1340,7 @@ const getAllUsers = asyncHandler(async (req, res) => {
     query.$or = [
       { firstName: { $regex: search, $options: "i" } },
       { lastName: { $regex: search, $options: "i" } },
+      { agencyName: { $regex: search, $options: "i" } },
       { email: { $regex: search, $options: "i" } },
     ];
   }

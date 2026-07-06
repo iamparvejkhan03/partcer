@@ -21,7 +21,7 @@ const SessionTab = ({ orderId, userType, order }) => {
     const reportRef = useRef(null);
 
     const isMentor = userType === 'freelancer';
-    const isStudent = userType === 'buyer';
+    const isStudent = userType === 'buyer' || userType === 'agency';
 
     useEffect(() => {
         fetchSessions();

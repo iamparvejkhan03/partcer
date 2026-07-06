@@ -83,11 +83,11 @@ const createProject = asyncHandler(async (req, res) => {
     });
 
     // Populate buyer info
-    await project.populate("buyer", "firstName lastName displayName profileImage");
+    await project.populate("buyer", "firstName lastName agencyName displayName profileImage");
     await project.populate("category", "name");
     await project.populate("subCategory", "name");
 
-    const student = await User.findById(req.user._id).select("firstName lastName email");
+    const student = await User.findById(req.user._id).select("firstName lastName userType agencyName email");
 
     // Send confirmation to student
     if (student) {
@@ -103,7 +103,7 @@ const createProject = asyncHandler(async (req, res) => {
             { skills: { $in: project.skills } },
             { categories: project.category }
         ]
-    }).select("firstName lastName email");
+    }).select("firstName lastName agencyName userType email");
 
     // Send to each mentor (fire-and-forget)
     for (const mentor of matchingMentors) {
@@ -168,10 +168,10 @@ const getProjectById = asyncHandler(async (req, res) => {
     const { projectId } = req.params;
 
     const project = await Project.findById(projectId)
-        .populate("buyer", "firstName lastName displayName profileImage email rating reviewCount country createdAt")
+        .populate("buyer", "firstName lastName agencyName displayName profileImage email rating reviewCount country createdAt")
         .populate("category", "name")
         .populate("subCategory", "name")
-        .populate("hiredFreelancer", "firstName lastName displayName profileImage rating reviewCount");
+        .populate("hiredFreelancer", "firstName lastName agencyName displayName profileImage rating reviewCount");
 
     if (!project) {
         throw new ApiError(404, "Project not found");
@@ -193,10 +193,10 @@ const getProjectBySlug = asyncHandler(async (req, res) => {
     const { slug } = req.params;
 
     const project = await Project.findOne({ slug })
-        .populate("buyer", "firstName lastName displayName profileImage email rating")
+        .populate("buyer", "firstName lastName agencyName displayName profileImage email rating")
         .populate("category", "name")
         .populate("subCategory", "name")
-        .populate("hiredFreelancer", "firstName lastName displayName profileImage rating");
+        .populate("hiredFreelancer", "firstName lastName agencyName displayName profileImage rating");
 
     if (!project) {
         throw new ApiError(404, "Project not found");
@@ -386,7 +386,7 @@ const applyToProject = asyncHandler(async (req, res) => {
         service || project.service
     );
 
-    const student = await User.findById(project.buyer).select("firstName lastName email");
+    const student = await User.findById(project.buyer).select("firstName lastName agencyName userType email");
 
     if (student) {
         newProposalNotification(transporter, student, project, freelancer, proposal)
@@ -415,7 +415,7 @@ const getProjectProposals = asyncHandler(async (req, res) => {
     }
 
     // Populate freelancer details for proposals
-    await project.populate("proposals.freelancer", "firstName lastName displayName profileImage rating reviewCount");
+    await project.populate("proposals.freelancer", "firstName lastName agencyName displayName profileImage rating reviewCount");
 
     return res.status(200).json(
         new ApiResponse(200, {
@@ -473,7 +473,7 @@ const updateProposalStatus = asyncHandler(async (req, res) => {
 
     await project.save();
 
-    const mentor = await User.findById(proposal.freelancer).select("firstName lastName email");
+    const mentor = await User.findById(proposal.freelancer).select("firstName lastName agencyName email");
     if (mentor) {
         proposalStatusUpdateEmail(transporter, mentor, project, proposal, status)
             .catch(err => console.error(`Proposal status email failed for ${mentor.email}:`, err.message));
@@ -492,7 +492,7 @@ const getFreelancerApplications = asyncHandler(async (req, res) => {
     const projects = await Project.find({
         "proposals.freelancer": freelancerId,
     })
-        .populate("buyer", "firstName lastName displayName profileImage email company rating reviewCount isVerified")
+        .populate("buyer", "firstName lastName agencyName displayName profileImage email company rating reviewCount isVerified")
         .populate("category", "name")
         .populate("subCategory", "name")
         .sort({ createdAt: -1 });
@@ -526,7 +526,7 @@ const getFreelancerApplications = asyncHandler(async (req, res) => {
             response: proposal?.response || null,
             client: project.buyer ? {
                 _id: project.buyer._id,
-                name: project.buyer.displayName || `${project.buyer.firstName || ''} ${project.buyer.lastName || ''}`.trim(),
+                name: project.buyer.displayName || project.buyer.agencyName || `${project.buyer.firstName || ''} ${project.buyer.lastName || ''}`.trim(),
                 avatar: project.buyer.profileImage,
                 rating: project.buyer.rating,
                 reviews: project.buyer.reviewCount,
@@ -556,7 +556,7 @@ const getApplicationById = asyncHandler(async (req, res) => {
     const freelancerId = req.user._id;
 
     const project = await Project.findById(projectId)
-        .populate("buyer", "firstName lastName displayName profileImage email company rating reviewCount isVerified")
+        .populate("buyer", "firstName lastName agencyName displayName profileImage email company rating reviewCount isVerified")
         .populate("category", "name")
         .populate("subCategory", "name");
 
@@ -602,7 +602,7 @@ const getApplicationById = asyncHandler(async (req, res) => {
         response: proposal.response || null,
         client: {
             _id: project.buyer._id,
-            name: project.buyer.displayName || `${project.buyer.firstName || ''} ${project.buyer.lastName || ''}`.trim(),
+            name: project.buyer.displayName || project.buyer.agencyName || `${project.buyer.firstName || ''} ${project.buyer.lastName || ''}`.trim(),
             avatar: project.buyer.profileImage,
             rating: project.buyer.rating || 0,
             reviews: project.buyer.reviewCount || 0,
@@ -713,7 +713,7 @@ const searchProjects = asyncHandler(async (req, res) => {
 
     const [projects, total] = await Promise.all([
         Project.find(query)
-            .populate("buyer", "firstName lastName displayName profileImage")
+            .populate("buyer", "firstName lastName agencyName displayName profileImage")
             .populate("category", "name")
             .populate("subCategory", "name")
             .sort({ createdAt: -1 })
@@ -766,7 +766,7 @@ const adminGetAllProjects = asyncHandler(async (req, res) => {
     const sort = { [sortBy]: sortOrder === "desc" ? -1 : 1 };
 
     const projects = await Project.find(query)
-        .populate("buyer", "firstName lastName email userType displayName profileImage createdAt isVerified rating reviewCount")
+        .populate("buyer", "firstName lastName agencyName email userType displayName profileImage createdAt isVerified rating reviewCount")
         .populate("category", "name")
         .populate("subCategory", "name")
         .sort(sort)
@@ -885,10 +885,10 @@ const adminGetProjectForEdit = asyncHandler(async (req, res) => {
     const { projectId } = req.params;
 
     const project = await Project.findById(projectId)
-        .populate("buyer", "firstName lastName displayName email profileImage createdAt location isVerified rating reviewCount")
+        .populate("buyer", "firstName lastName agencyName displayName email profileImage createdAt location isVerified rating reviewCount")
         .populate("category", "name")
         .populate("subCategory", "name")
-        .populate("proposals.freelancer", "firstName lastName displayName profileImage rating email");
+        .populate("proposals.freelancer", "firstName lastName agencyName displayName profileImage rating email");
 
     if (!project) {
         throw new ApiError(404, "Project not found");
@@ -999,9 +999,9 @@ const adminUpdateProject = asyncHandler(async (req, res) => {
     Object.assign(project, updates);
     await project.save();
 
-    await project.populate("buyer", "firstName lastName displayName profileImage rating email reviewCount");
+    await project.populate("buyer", "firstName lastName agencyName displayName profileImage rating email reviewCount");
 
-    const student = await User.findById(project.buyer).select("firstName lastName email");
+    const student = await User.findById(project.buyer).select("firstName lastName agencyName userType email");
 
     if (student) {
         projectUpdatedByAdminNotification(transporter, student, project)
@@ -1019,7 +1019,7 @@ const adminGetProjectProposals = asyncHandler(async (req, res) => {
     const { projectId } = req.params;
 
     const project = await Project.findById(projectId)
-        .populate("proposals.freelancer", "firstName lastName displayName profileImage rating reviewCount title");
+        .populate("proposals.freelancer", "firstName lastName agencyName displayName profileImage rating reviewCount title");
 
     if (!project) {
         throw new ApiError(404, "Project not found");

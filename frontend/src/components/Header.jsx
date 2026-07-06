@@ -109,6 +109,52 @@ const Header = () => {
         }
     ];
 
+    // Agency Menu Items
+    const agencyMenuItems = [
+        // {
+        //     label: 'Dashboard',
+        //     icon: <LayoutDashboard size={18} />,
+        //     path: '/agency/dashboard',
+        //     onClick: () => navigate('/agency/dashboard')
+        // },
+        {
+            label: 'My Projects',
+            icon: <FileText size={18} />,
+            path: '/agency/projects/all',
+            onClick: () => navigate('/agency/projects/all')
+        },
+        {
+            label: 'My Orders',
+            icon: <ShoppingBag size={18} />,
+            path: '/agency/orders',
+            onClick: () => navigate('/agency/orders')
+        },
+        {
+            label: 'Post a Project',
+            icon: <Plus size={18} />,
+            path: '/agency/projects/create',
+            onClick: () => navigate('/agency/projects/create')
+        },
+        {
+            label: 'Profile Settings',
+            icon: <Settings size={18} />,
+            path: '/agency/profile/settings',
+            onClick: () => navigate('/agency/profile/settings')
+        },
+        {
+            label: 'Help & Support',
+            icon: <HelpCircle size={18} />,
+            path: '/contact',
+            onClick: () => navigate('/contact')
+        },
+        {
+            label: 'Logout',
+            icon: <LogOut size={18} />,
+            onClick: handleLogout,
+            isLogout: true
+        }
+    ];
+
     // Freelancer Menu Items
     const freelancerMenuItems = [
         // {
@@ -225,7 +271,7 @@ const Header = () => {
         }
     ];
 
-    const menuItems = user?.userType === 'buyer' ? buyerMenuItems : user?.userType === 'freelancer' ? freelancerMenuItems : adminMenuItems;
+    const menuItems = user?.userType === 'buyer' ? buyerMenuItems : user?.userType === 'freelancer' ? freelancerMenuItems : user?.userType === 'agency' ? agencyMenuItems : adminMenuItems;
 
     return (
         <>
@@ -296,6 +342,22 @@ const Header = () => {
                                     </NavLink> */}
                                 </>
                             )}
+                            {user && user?.userType == 'agency' && (
+                                <>
+                                    <NavLink to="/" className="text-white/90 hover:text-white">
+                                        Home
+                                    </NavLink>
+                                    <NavLink to="/freelancers" className="text-white/90 hover:text-white">
+                                        Search {userTypes?.freelancer}
+                                    </NavLink>
+                                    <NavLink to="/agency/projects/all" className="text-white/90 hover:text-white">
+                                        My Projects
+                                    </NavLink>
+                                    {/* <NavLink to="/agency/orders" className="text-white/90 hover:text-white">
+                                        My Orders
+                                    </NavLink> */}
+                                </>
+                            )}
                             {user && user?.userType == 'freelancer' && (
                                 <>
                                     <NavLink to="/projects" className="text-white/90 hover:text-white">
@@ -353,7 +415,7 @@ const Header = () => {
                             <button
                                 onClick={() => {
                                     markOrdersAsViewed(); // Mark as viewed when navigating
-                                    navigate(user?.userType == 'buyer' ? '/buyer/orders' : '/freelancer/orders/all');
+                                    navigate(user?.userType == 'buyer' ? '/buyer/orders' : user?.userType == 'agency' ? '/agency/orders' : '/freelancer/orders/all');
                                 }}
                                 className='text-white relative'
                             >
@@ -391,6 +453,12 @@ const Header = () => {
                                     <span>Post Project</span>
                                 </Link>
                             )}
+                            {user && user?.userType == 'agency' && (
+                                <Link to="/agency/projects/create" className="flex items-center gap-2 text-black cursor-pointer transition bg-white px-3 py-2.5 rounded-md text-sm font-medium hover:bg-white/90">
+                                    <Plus size={20} strokeWidth={2.5} className="text-black cursor-pointer" />
+                                    <span>Post Project</span>
+                                </Link>
+                            )}
                             {/* {user && user?.userType == 'freelancer' && (
                                 <Link to="/freelancer/services/create" className="flex items-center gap-2 text-white cursor-pointer transition">
                                     <Plus size={20} className="text-white cursor-pointer" />
@@ -404,7 +472,7 @@ const Header = () => {
                             >
                                 <img
                                     src={user?.profileImage || dummyUserImg}
-                                    alt={user?.firstName}
+                                    alt={user?.firstName || user?.agencyName || 'User'}
                                     className='h-7 w-7 object-cover rounded-full '
                                 />
                                 <div className='flex items-center gap-2'>
@@ -418,7 +486,8 @@ const Header = () => {
                                 <div className="absolute right-0 top-full mt-3 w-64 bg-white rounded-lg shadow-xl border border-gray-100 overflow-hidden z-50">
                                     <div className="px-4 py-3 border-b border-gray-100 bg-gray-50">
                                         <p className="text-sm font-semibold text-gray-900">
-                                            {user?.firstName} {user?.lastName}
+                                            {/* {user?.firstName} {user?.lastName} */}
+                                            {user?.agencyName ? user?.agencyName : `${user?.firstName} ${user?.lastName}`}
                                         </p>
                                         <p className="text-xs text-gray-500 truncate">{user?.email}</p>
                                         {/* <p className="text-xs text-primary mt-1 capitalize">{user?.userType}</p> */}
@@ -454,7 +523,7 @@ const Header = () => {
                                 >
                                     <img
                                         src={user?.profileImage || dummyUserImg}
-                                        alt={user?.firstName}
+                                        alt={user?.firstName || user?.agencyName || 'User'}
                                         className='h-8 w-8 object-cover rounded-full border-2 border-white/20'
                                     />
                                 </button>
@@ -506,12 +575,13 @@ const Header = () => {
                         <div className="flex items-center gap-3 pb-4 border-b border-gray-200">
                             <img
                                 src={user?.profileImage || dummyUserImg}
-                                alt={user?.firstName}
+                                alt={user?.firstName || user?.agencyName || 'User'}
                                 className='h-12 w-12 object-cover rounded-full'
                             />
                             <div>
                                 <p className="font-semibold text-gray-900">
-                                    {user?.firstName} {user?.lastName}
+                                    {/* {user?.firstName} {user?.lastName} */}
+                                    {user?.agencyName ? user?.agencyName : `${user?.firstName} ${user?.lastName}`}
                                 </p>
                                 <p className="text-sm text-gray-500">{user?.email}</p>
                                 <p className="text-xs text-primary mt-0.5 capitalize">{user?.userType == 'freelancer' ? 'Mentor' : user?.userType == 'admin' ? 'Admin' : 'Student'}</p>
@@ -604,6 +674,14 @@ const Header = () => {
                             >
                                 Post a project
                             </Link>
+                        ) : user?.userType === 'agency' ? (
+                            <Link
+                                to="/agency/projects/create"
+                                onClick={() => setMobileOpen(false)}
+                                className="block bg-primary hover:bg-primary-dark text-white text-center py-3 rounded-lg"
+                            >
+                                Post a project
+                            </Link>
                         ) : null
                     )}
 
@@ -634,12 +712,13 @@ const Header = () => {
                                 <div className="flex items-center gap-3">
                                     <img
                                         src={user?.profileImage || dummyUserImg}
-                                        alt={user?.firstName}
+                                        alt={user?.firstName || user?.agencyName || 'User'}
                                         className='h-12 w-12 object-cover rounded-full'
                                     />
                                     <div>
                                         <p className="font-semibold text-gray-900">
-                                            {user?.firstName} {user?.lastName}
+                                            {/* {user?.firstName} {user?.lastName} */}
+                                            {user?.agencyName ? user?.agencyName : `${user?.firstName} ${user?.lastName}`}
                                         </p>
                                         <p className="text-sm text-gray-500">{user?.email}</p>
                                     </div>

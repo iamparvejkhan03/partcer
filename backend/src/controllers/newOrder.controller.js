@@ -298,11 +298,11 @@ const createOrder = asyncHandler(async (req, res) => {
   // Populate user details
   await order.populate(
     "buyer",
-    "firstName lastName displayName email profileImage",
+    "firstName lastName agencyName displayName email profileImage",
   );
   await order.populate(
     "seller",
-    "firstName lastName displayName email profileImage",
+    "firstName lastName agencyName displayName email profileImage",
   );
 
   return res
@@ -353,10 +353,10 @@ const getOrders = asyncHandler(async (req, res) => {
   const sort = { [sortBy]: sortOrder === "desc" ? -1 : 1 };
 
   const orders = await Order.find(query)
-    .populate("buyer", "firstName lastName displayName profileImage email")
+    .populate("buyer", "firstName lastName agencyName displayName profileImage email")
     .populate(
       "seller",
-      "firstName lastName displayName profileImage email country city isVerified",
+      "firstName lastName agencyName displayName profileImage email country city isVerified",
     )
     .populate({
       path: "service",
@@ -409,11 +409,11 @@ const getOrderById = asyncHandler(async (req, res) => {
   const order = await Order.findById(orderId)
     .populate(
       "buyer",
-      "firstName lastName displayName profileImage email phone country city rating reviewCount isVerified",
+      "firstName lastName agencyName displayName profileImage email phone country city rating reviewCount isVerified",
     )
     .populate(
       "seller",
-      "firstName lastName displayName profileImage email phone country city isVerified freelancerType rating reviewCount",
+      "firstName lastName agencyName displayName profileImage email phone country city isVerified freelancerType rating reviewCount",
     )
     .populate("service", "title slug description gallery")
     .populate("project", "title slug description")
@@ -445,8 +445,8 @@ const getOrderByOrderId = asyncHandler(async (req, res) => {
   const { orderId } = req.params;
 
   const order = await Order.findOne({ orderId })
-    .populate("buyer", "firstName lastName displayName profileImage email")
-    .populate("seller", "firstName lastName displayName profileImage email")
+    .populate("buyer", "firstName lastName agencyName displayName profileImage email")
+    .populate("seller", "firstName lastName agencyName displayName profileImage email")
     .populate("service", "title slug");
 
   if (!order) {
@@ -1238,10 +1238,10 @@ const adminGetAllOrders = asyncHandler(async (req, res) => {
   const sort = { [sortBy]: sortOrder === "desc" ? -1 : 1 };
 
   const orders = await Order.find(query)
-    .populate("buyer", "firstName lastName displayName profileImage country email")
+    .populate("buyer", "firstName lastName agencyName displayName profileImage country email")
     .populate(
       "seller",
-      "firstName lastName displayName profileImage email country city isVerified",
+      "firstName lastName agencyName displayName profileImage email country city isVerified",
     )
     .populate({
       path: "service",
@@ -1296,20 +1296,20 @@ const adminGetOrderDetails = asyncHandler(async (req, res) => {
   const order = await Order.findById(orderId)
     .populate(
       "buyer",
-      "firstName lastName displayName email phone country city isVerified createdAt",
+      "firstName lastName agencyName displayName email phone country city isVerified createdAt",
     )
     .populate(
       "seller",
-      "firstName lastName displayName email phone country city isVerified freelancerType rating createdAt",
+      "firstName lastName agencyName displayName email phone country city isVerified freelancerType rating createdAt",
     )
     .populate("service", "title slug description gallery price")
     .populate("project", "title slug description budget")
     .populate("customOffer", "title description pricing")
     .populate("category", "name")
     .populate("subCategory", "name")
-    .populate("timelineEvents.updatedBy", "firstName lastName displayName")
-    .populate("adminNotes.addedBy", "firstName lastName displayName")
-    .populate("flags.flaggedBy", "firstName lastName displayName");
+    .populate("timelineEvents.updatedBy", "firstName lastName agencyName displayName")
+    .populate("adminNotes.addedBy", "firstName lastName agencyName displayName")
+    .populate("flags.flaggedBy", "firstName lastName agencyName displayName");
 
   if (!order) {
     throw new ApiError(404, "Order not found");

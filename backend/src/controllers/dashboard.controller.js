@@ -28,6 +28,7 @@ const getAdminDashboardStats = asyncHandler(async (req, res) => {
     totalUsers,
     totalFreelancers,
     totalBuyers,
+    totalAgencies,
     totalAdmins,
     pendingVerifications,
     activeUsers,
@@ -40,6 +41,7 @@ const getAdminDashboardStats = asyncHandler(async (req, res) => {
     User.countDocuments(),
     User.countDocuments({ userType: "freelancer" }),
     User.countDocuments({ userType: "buyer" }),
+    User.countDocuments({ userType: "agency" }),
     User.countDocuments({ userType: "admin" }),
     User.countDocuments({ isVerified: false }),
     User.countDocuments({ isActive: true }),
@@ -153,7 +155,7 @@ const getAdminDashboardStats = asyncHandler(async (req, res) => {
     Transaction.find()
       .sort({ createdAt: -1 })
       .limit(10)
-    // .populate("userId", "firstName lastName email profileImage"),
+    // .populate("userId", "firstName lastName agencyName email profileImage"),
   ]);
 
   return res.status(200).json(
@@ -164,6 +166,7 @@ const getAdminDashboardStats = asyncHandler(async (req, res) => {
           total: totalUsers,
           freelancers: totalFreelancers,
           buyers: totalBuyers,
+          agencies: totalAgencies,
           admins: totalAdmins,
           pendingVerifications,
           active: activeUsers,
@@ -314,7 +317,7 @@ const getFreelancerDashboardStats = asyncHandler(async (req, res) => {
     Order.find({ freelancerId: userId })
       .sort({ createdAt: -1 })
       .limit(5)
-      .populate("buyerId", "firstName lastName profileImage"),
+      .populate("buyerId", "firstName lastName agencyName profileImage"),
     Order.aggregate([
       { $match: { freelancerId: new mongoose.Types.ObjectId(userId) } },
       {
@@ -340,7 +343,7 @@ const getFreelancerDashboardStats = asyncHandler(async (req, res) => {
       Review.find({ freelancerId: userId })
         .sort({ createdAt: -1 })
         .limit(5)
-        .populate("buyerId", "firstName lastName profileImage"),
+        .populate("buyerId", "firstName lastName agencyName profileImage"),
       Review.aggregate([
         { $match: { freelancerId: new mongoose.Types.ObjectId(userId) } },
         { $group: { _id: "$rating", count: { $sum: 1 } } },
@@ -465,7 +468,7 @@ const getBuyerDashboardStats = asyncHandler(async (req, res) => {
     Order.find({ buyerId: userId })
       .sort({ createdAt: -1 })
       .limit(5)
-      .populate("freelancerId", "firstName lastName profileImage"),
+      .populate("freelancerId", "firstName lastName agencyName profileImage"),
     Order.aggregate([
       { $match: { buyerId: new mongoose.Types.ObjectId(userId) } },
       {
@@ -487,12 +490,12 @@ const getBuyerDashboardStats = asyncHandler(async (req, res) => {
   // Favorite Freelancers
   const favoriteFreelancers = await User.find({
     _id: { $in: req.user.favoriteFreelancers || [] },
-  }).select("firstName lastName profileImage tagline hourlyRate rating");
+  }).select("firstName lastName agencyName profileImage tagline hourlyRate rating");
 
   // Saved Services
   const savedServices = await Service.find({
     _id: { $in: req.user.savedServices || [] },
-  }).populate("freelancerId", "firstName lastName profileImage");
+  }).populate("freelancerId", "firstName lastName agencyName profileImage");
 
   // Recent Activity (combined)
   const recentActivity = await Promise.all([

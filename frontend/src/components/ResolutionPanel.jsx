@@ -60,11 +60,11 @@ const ResolutionPanel = ({ order, onBack }) => {
 
     const handleFileUpload = (e) => {
         const files = Array.from(e.target.files);
-        const maxSize = 5 * 1024 * 1024; // 5MB per file
+        const maxSize = 25 * 1024 * 1024; // 5MB per file
 
         const validFiles = files.filter(file => {
             if (file.size > maxSize) {
-                toast.error(`${file.name} is too large (max 5MB)`);
+                toast.error(`${file.name} is too large (max 25MB)`);
                 return false;
             }
             return true;
@@ -347,7 +347,7 @@ const ResolutionPanel = ({ order, onBack }) => {
                             />
                         </label>
                         <span className="text-xs text-gray-400">
-                            Max 10 files • 5MB each
+                            Max 10 files • 25MB each
                         </span>
                     </div>
 

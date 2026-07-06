@@ -59,7 +59,10 @@ export const initializeSocket = (server) => {
 
   io.on("connection", (socket) => {
     console.log(
-      `🔌 User connected: ${socket.user?.firstName} ${socket.user?.lastName}`,
+      // `🔌 User connected: ${socket.user?.firstName} ${socket.user?.lastName}`,
+      socket.user?.agencyName
+        ? `🔌 Agency connected: ${socket.user.agencyName}`
+        : `🔌 User connected: ${socket.user?.firstName} ${socket.user?.lastName}`,
     );
 
     // Add user to online users
@@ -80,7 +83,7 @@ export const initializeSocket = (server) => {
         const conversations = await Conversation.find({
           participants: socket.user._id,
         })
-          .populate("participants", "firstName lastName profileImage userType")
+          .populate("participants", "firstName lastName agencyName profileImage userType")
           .populate("lastMessage")
           .sort({ lastMessageAt: -1 });
 
@@ -120,8 +123,8 @@ export const initializeSocket = (server) => {
           isDeleted: false,
           deletedFor: { $ne: socket.user._id },
         })
-          .populate("sender", "firstName lastName profileImage userType")
-          .populate("receiver", "firstName lastName profileImage userType")
+          .populate("sender", "firstName lastName agencyName profileImage userType")
+          .populate("receiver", "firstName lastName agencyName profileImage userType")
           .sort({ createdAt: 1 }); // Sort ascending (oldest first)
 
         socket.emit("messages:list", {
@@ -201,11 +204,11 @@ export const initializeSocket = (server) => {
         // Populate sender info
         await message.populate(
           "sender",
-          "firstName lastName profileImage userType",
+          "firstName lastName agencyName profileImage userType",
         );
         await message.populate(
           "receiver",
-          "firstName lastName profileImage userType",
+          "firstName lastName agencyName profileImage userType",
         );
 
         // Update conversation
@@ -239,7 +242,7 @@ export const initializeSocket = (server) => {
           }
 
           // Send email in background – don't await
-          const receiver = await User.findById(receiverId).select("firstName lastName email");
+          const receiver = await User.findById(receiverId).select("firstName lastName agencyName email");
           if (receiver) {
             newMessageEmail(transporter, receiver, socket.user, messagePreview, conversation._id)
               .catch(err => console.error("Email error for new message:", err));
@@ -255,7 +258,7 @@ export const initializeSocket = (server) => {
           )
             .populate(
               "participants",
-              "firstName lastName profileImage userType",
+              "firstName lastName agencyName profileImage userType",
             )
             .populate("lastMessage");
 
@@ -269,7 +272,7 @@ export const initializeSocket = (server) => {
         const updatedSenderConversation = await Conversation.findById(
           conversation._id,
         )
-          .populate("participants", "firstName lastName profileImage userType")
+          .populate("participants", "firstName lastName agencyName profileImage userType")
           .populate("lastMessage");
 
         socket.emit("conversation:updated", updatedSenderConversation);
@@ -295,7 +298,10 @@ export const initializeSocket = (server) => {
       if (receiverSocket) {
         io.to(receiverSocket.socketId).emit("typing:start", {
           senderId: socket.user._id,
-          senderName: `${socket.user.firstName} ${socket.user.lastName}`,
+          // senderName: `${socket.user.firstName} ${socket.user.lastName}`,
+          senderName: socket.user.agencyName
+            ? socket.user.agencyName
+            : `${socket.user.firstName} ${socket.user.lastName}`,
         });
       }
     });
@@ -375,7 +381,10 @@ export const initializeSocket = (server) => {
     // Handle disconnection
     socket.on("disconnect", () => {
       console.log(
-        `🔌 User disconnected: ${socket.user?.firstName} ${socket.user?.lastName}`,
+        // `🔌 User disconnected: ${socket.user?.firstName} ${socket.user?.lastName}`,
+        socket.user?.agencyName
+          ? `🔌 Agency disconnected: ${socket.user.agencyName}`
+          : `🔌 User disconnected: ${socket.user?.firstName} ${socket.user?.lastName}`,
       );
       onlineUsers.delete(socket.user._id.toString());
 

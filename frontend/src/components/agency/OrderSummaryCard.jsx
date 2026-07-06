@@ -12,7 +12,7 @@ import { formatOrderPrice } from '../../utils/currencyHelpers';
 import { useNavigate } from 'react-router-dom';
 import ProgressBar from '../ProgressBar';
 
-const BuyerOrderSummaryCard = ({ order, sessionStats, sessions, user, onAction, onRefresh, onShowResolution }) => {
+const AgencyOrderSummaryCard = ({ order, sessionStats, sessions, user, onAction, onRefresh, onShowResolution }) => {
     const [showCompleteModal, setShowCompleteModal] = useState(false);
     const [showReviewModal, setShowReviewModal] = useState(false);
     const [reviewData, setReviewData] = useState({ rating: 5, comment: '' });
@@ -476,4 +476,4 @@ const BuyerOrderSummaryCard = ({ order, sessionStats, sessions, user, onAction, 
     );
 };
 
-export default BuyerOrderSummaryCard;
+export default AgencyOrderSummaryCard;

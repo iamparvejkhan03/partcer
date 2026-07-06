@@ -167,7 +167,7 @@ export const welcomeEmail = async (transporter, user, verificationToken) => {
             <p style="margin: 0 0 8px 0;"><strong>Account Details:</strong></p>
             <p style="margin: 4px 0;">${user.displayName}</p>
             <p style="margin: 4px 0;">${user.email}</p>
-            <p style="margin: 4px 0;">Account: ${user.userType === 'freelancer' ? 'Mentor' : user.userType === 'buyer' && isAgency ? 'Agency' : 'Student'}</p>
+            <p style="margin: 4px 0;">Account: ${user.userType === 'freelancer' ? 'Mentor' : user.userType === 'agency' ? 'Agency' : 'Student'}</p>
         `)}
         
         ${createInfoCard(`This verification link will expire in 24 hours.`, 'warning')}
@@ -196,10 +196,10 @@ export const newUserRegistrationEmailForAdmin = async (transporter, adminEmail, 
         
         ${createInfoCard(`
             <p style="margin: 0 0 12px 0;"><strong>User Details</strong></p>
-            ${createSummaryRow('Name', `${user.firstName} ${user.lastName}`)}
+            ${createSummaryRow('Name', `${user?.agencyName || `${user.firstName} ${user.lastName}`}`)}
             ${createSummaryRow('Email', user.email)}
             ${createSummaryRow('Phone', user.phone || 'Not provided')}
-            ${createSummaryRow('User Type', user.userType === 'freelancer' ? 'Mentor' : 'Student')}
+            ${createSummaryRow('User Type', user.userType === 'freelancer' ? 'Mentor' : user.userType === 'agency' ? 'Agency' : 'Student')}
             ${createSummaryRow('Country', user.country || 'Not specified')}
             ${createSummaryRow('Joined', new Date(user.createdAt).toLocaleString())}
             ${createSummaryRow('Status', user.isVerified ? 'Verified' : 'Pending Verification')}
@@ -216,7 +216,7 @@ export const newUserRegistrationEmailForAdmin = async (transporter, adminEmail, 
         const info = await transporter.sendMail({
             from: `"Partcer" <${process.env.EMAIL_USER}>`,
             to: adminEmail,
-            subject: `New ${user.userType === 'freelancer' ? 'Mentor' : 'Student'} joined Partcer - ${user.firstName} ${user.lastName}`,
+            subject: `New ${user.userType === 'freelancer' ? 'Mentor' : user.userType === 'agency' ? 'Agency' : 'Student'} joined Partcer - ${user.agencyName || `${user.firstName} ${user.lastName}`}`,
             html
         });
         return !!info;
@@ -230,7 +230,7 @@ export const emailVerifiedSuccessEmail = async (transporter, user) => {
     const content = `
         <div style="text-align: center; margin: 10px 0 20px 0;">
             <h2 style="margin: 0 0 8px 0;">Email Verified!</h2>
-            <p>Your email has been confirmed, ${user.firstName}. You now have full access.</p>
+            <p>Your email has been confirmed, ${user.agencyName || user.firstName}. You now have full access.</p>
         </div>
         
         <div style="text-align: center;">
@@ -244,7 +244,7 @@ export const emailVerifiedSuccessEmail = async (transporter, user) => {
         const info = await transporter.sendMail({
             from: `"Partcer" <${process.env.EMAIL_USER}>`,
             to: user.email,
-            subject: `Email Verified - Welcome to Partcer, ${user.firstName}!`,
+            subject: `Email Verified - Welcome to Partcer, ${user.agencyName || user.firstName}!`,
             html
         });
         return !!info;
@@ -259,7 +259,7 @@ export const passwordResetEmail = async (transporter, user, resetToken) => {
 
     const content = `
         <h2>Reset your password</h2>
-        <p>Hello ${user.firstName},</p>
+        <p>Hello ${user.agencyName || user.firstName},</p>
         <p>We received a request to reset your Partcer password. Click the button below to create a new one.</p>
         
         <div style="text-align: center;">
@@ -329,7 +329,7 @@ export const accountSuspendedEmail = async (transporter, user, reason = null, is
 
     const content = `
         <h2>Account ${isPermanent ? 'Banned' : 'Suspended'}</h2>
-        <p>Hello ${user.firstName},</p>
+        <p>Hello ${user.agencyName ||user.firstName},</p>
         <p>We regret to inform you that your Partcer account has been ${suspensionType}.</p>
         
         ${createInfoCard(`
@@ -370,7 +370,7 @@ export const accountReactivatedEmail = async (transporter, user, wasPermanent = 
 
     const content = `
         <h2>Account Reactivated</h2>
-        <p>Hello ${user.firstName},</p>
+        <p>Hello ${user.agencyName || user.firstName},</p>
         <p>We're pleased to inform you that your Partcer account has been activated. You can now access all features again.</p>
         
         ${createInfoCard(`
@@ -410,8 +410,8 @@ export const accountReactivatedEmail = async (transporter, user, wasPermanent = 
 export const newMessageEmail = async (transporter, receiver, sender, messagePreview, conversationId) => {
     const content = `
         <h2>You have a new message</h2>
-        <p>Hello ${receiver.firstName},</p>
-        <p><strong>${sender.firstName} ${sender.lastName}</strong> sent you a message on Partcer.</p>
+        <p>Hello ${receiver.agencyName || receiver.firstName},</p>
+        <p><strong>${sender.agencyName || `${sender.firstName} ${sender.lastName}`}</strong> sent you a message on Partcer.</p>
         
         ${createInfoCard(`
             <p style="margin: 0 0 8px 0;"><strong>Message preview:</strong></p>
@@ -427,7 +427,7 @@ export const newMessageEmail = async (transporter, receiver, sender, messagePrev
         const info = await transporter.sendMail({
             from: `"Partcer" <${process.env.EMAIL_USER}>`,
             to: receiver.email,
-            subject: `New message from ${sender.firstName} ${sender.lastName} on Partcer`,
+            subject: `New message from ${sender.agencyName || `${sender.firstName} ${sender.lastName}`} on Partcer`,
             html
         });
         return !!info;
@@ -458,7 +458,7 @@ export const orderConfirmationForStudent = async (transporter, student, order, s
 
     const content = `
         <h2>Payment Confirmed! Your session is booked</h2>
-        <p>Hello ${student.firstName},</p>
+        <p>Hello ${student.agencyName || student.firstName},</p>
         <p>Thank you for your payment. Your session with the mentor has been successfully booked.</p>
         
         ${createInfoCard(`
@@ -473,7 +473,7 @@ export const orderConfirmationForStudent = async (transporter, student, order, s
         <p>You can view your booking and join the session from your dashboard.</p>
         
         <div style="text-align: center;">
-            <a href="${process.env.FRONTEND_URL}/buyer/orders" class="button">View My Order</a>
+            <a href="${process.env.FRONTEND_URL}/${student.userType === 'agency' ? 'agency' : 'buyer'}/orders" class="button">View My Order</a>
         </div>
         
         <div class="divider"></div>
@@ -505,12 +505,12 @@ export const orderConfirmationForMentor = async (transporter, mentor, order, stu
 
     const content = `
         <h2>New Session Booking</h2>
-        <p>Hello ${mentor.firstName},</p>
+        <p>Hello ${mentor.agencyName || mentor.firstName},</p>
         <p>A student has booked a session with you. The payment has been successfully processed.</p>
         
         ${createInfoCard(`
             <p style="margin: 0 0 12px 0;"><strong>Session Details</strong></p>
-            ${createSummaryRow('Student: ', `${student.firstName} ${student.lastName}`)}
+            ${createSummaryRow('Student: ', `${student.agencyName || `${student.firstName} ${student.lastName}`}`)}
             ${createSummaryRow('Service: ', sessionDetails.serviceType || order.serviceType)}
             ${createSummaryRow('Duration: ', sessionDetails.duration || order.durationDetails)}
             ${createSummaryRow('Your Fee (INR): ', mentorFeeFormatted)}
@@ -532,7 +532,7 @@ export const orderConfirmationForMentor = async (transporter, mentor, order, stu
         const info = await transporter.sendMail({
             from: `"Partcer" <${process.env.EMAIL_USER}>`,
             to: mentor.email,
-            subject: `New session booking - ${student.firstName} ${student.lastName}`,
+            subject: `New session booking - ${student.agencyName || `${student.firstName} ${student.lastName}`}`,
             html
         });
         return !!info;
@@ -547,8 +547,8 @@ export const orderDeliveredEmail = async (transporter, student, order, mentor, d
     
     const content = `
         <h2>Your order has been delivered</h2>
-        <p>Hello ${student.firstName},</p>
-        <p><strong>${mentor.firstName} ${mentor.lastName}</strong> has marked your order as delivered.</p>
+        <p>Hello ${student.agencyName || student.firstName},</p>
+        <p><strong>${mentor.agencyName || `${mentor.firstName} ${mentor.lastName}`}</strong> has marked your order as delivered.</p>
         
         ${createInfoCard(`
             <p style="margin: 0 0 12px 0;"><strong>Order Details</strong></p>
@@ -566,7 +566,7 @@ export const orderDeliveredEmail = async (transporter, student, order, mentor, d
         <p>Please log in to review the delivery. If everything was satisfactory, you can mark the order as completed. If you have any concerns, you may contact the mentor or our support team.</p>
         
         <div style="text-align: center;">
-            <a href="${process.env.FRONTEND_URL}/buyer/orders/${order._id}" class="button">View Order Details</a>
+            <a href="${process.env.FRONTEND_URL}/${student.userType === 'agency' ? 'agency' : 'buyer'}/orders/${order._id}" class="button">View Order Details</a>
         </div>
         
         <div class="divider"></div>
@@ -594,8 +594,8 @@ export const orderCompletedEmail = async (transporter, mentor, order, student, c
     
     const content = `
         <h2>Order completed by student</h2>
-        <p>Hello ${mentor.firstName},</p>
-        <p><strong>${student.firstName} ${student.lastName}</strong> has marked the order as completed.</p>
+        <p>Hello ${mentor.agencyName || mentor.firstName},</p>
+        <p><strong>${student.agencyName || `${student.firstName} ${student.lastName}`}</strong> has marked the order as completed.</p>
         
         ${createInfoCard(`
             <p style="margin: 0 0 12px 0;"><strong>Order Summary</strong></p>
@@ -637,12 +637,12 @@ export const reviewReceivedEmail = async (transporter, reviewee, reviewer, order
     const ratingStars = '★'.repeat(rating) + '☆'.repeat(5 - rating);
     
     // Determine subject based on roles
-    const subject = `${reviewer.firstName} ${reviewer.lastName} left a ${rating}-star review for your ${revieweeRole === 'buyer' ? 'mentorship' : 'session'}`;
+    const subject = `${reviewer.agencyName || `${reviewer.firstName} ${reviewer.lastName}`} left a ${rating}-star review for your ${(revieweeRole === 'buyer' || revieweeRole === 'agency') ? 'mentorship' : 'session'}`;
     
     const content = `
         <h2>You have received a new review</h2>
-        <p>Hello ${reviewee.firstName},</p>
-        <p><strong>${reviewer.firstName} ${reviewer.lastName}</strong> (${reviewerRole}) has left a review for your ${revieweeRole === 'buyer' ? 'service as a mentor' : 'session as a student'}.</p>
+        <p>Hello ${reviewee.agencyName || reviewee.firstName},</p>
+        <p><strong>${reviewer.agencyName || `${reviewer.firstName} ${reviewer.lastName}`}</strong> (${reviewerRole}) has left a review for your ${revieweeRole === 'buyer' || revieweeRole === 'agency' ? 'service as a mentor' : 'session as a student'}.</p>
         
         ${createInfoCard(`
             <p style="margin: 0 0 12px 0;"><strong>Review Details</strong></p>
@@ -676,12 +676,12 @@ export const reviewReceivedEmail = async (transporter, reviewee, reviewer, order
 export const complaintNotificationForAdmin = async (transporter, resolution, order, student, mentor) => {
     const content = `
         <h2>New Complaint Submitted</h2>
-        <p>A new complaint has been submitted by <strong>${student.firstName} ${student.lastName}</strong> for order <strong>${order.orderId}</strong>.</p>
+        <p>A new complaint has been submitted by <strong>${student.agencyName || `${student.firstName} ${student.lastName}`}</strong> for order <strong>${order.orderId}</strong>.</p>
         
         ${createInfoCard(`
             <p style="margin: 0 0 12px 0;"><strong>Complaint Details</strong></p>
-            ${createSummaryRow('Student: ', `${student.firstName} ${student.lastName} (${student.email})`)}
-            ${createSummaryRow('Mentor: ', `${mentor.firstName} ${mentor.lastName} (${mentor.email})`)}
+            ${createSummaryRow('Student: ', `${student.agencyName || `${student.firstName} ${student.lastName}`} (${student.email})`)}
+            ${createSummaryRow('Mentor: ', `${mentor.agencyName || `${mentor.firstName} ${mentor.lastName}`} (${mentor.email})`)}
             ${createSummaryRow('Issue Type: ', resolution.issueTypeDisplay)}
             ${createSummaryRow('Complaint: ', resolution.complaint)}
             ${createSummaryRow('Submitted At: ', new Date(resolution.createdAt).toLocaleString())}
@@ -714,8 +714,8 @@ export const complaintNotificationForAdmin = async (transporter, resolution, ord
 export const complaintNotificationForMentor = async (transporter, mentor, order, student, resolution) => {
     const content = `
         <h2>Complaint Raised on Your Order</h2>
-        <p>Hello ${mentor.firstName},</p>
-        <p><strong>${student.firstName} ${student.lastName}</strong> has raised a complaint regarding order <strong>${order.orderId}</strong>.</p>
+        <p>Hello ${mentor.agencyName || mentor.firstName},</p>
+        <p><strong>${student.agencyName || `${student.firstName} ${student.lastName}`}</strong> has raised a complaint regarding order <strong>${order.orderId}</strong>.</p>
         
         ${createInfoCard(`
             <p style="margin: 0 0 12px 0;"><strong>Complaint Details</strong></p>
@@ -771,7 +771,7 @@ export const resolutionStatusUpdateEmail = async (transporter, recipient, resolu
 
     const content = `
         <h2>Complaint Status Update</h2>
-        <p>Hello ${recipient.firstName},</p>
+        <p>Hello ${recipient.agencyName || recipient.firstName},</p>
         <p>Your complaint regarding order <strong>${order.orderId}</strong> has been updated.</p>
         
         ${createInfoCard(`
@@ -821,8 +821,8 @@ export const meetingNotificationForStudent = async (transporter, student, mentor
     const isCreated = type === 'created';
     const actionText = isCreated ? 'created' : 'updated';
     const subject = isCreated 
-        ? `Meeting scheduled for your session with ${mentor.firstName} ${mentor.lastName}`
-        : `Meeting details updated by ${mentor.firstName} ${mentor.lastName}`;
+        ? `Meeting scheduled for your session with ${mentor.agencyName || `${mentor.firstName} ${mentor.lastName}`}`
+        : `Meeting details updated by ${mentor.agencyName || `${mentor.firstName} ${mentor.lastName}`}`;
     
     // Format meeting details
     const meetingDetailsHtml = `
@@ -835,8 +835,8 @@ export const meetingNotificationForStudent = async (transporter, student, mentor
 
     const content = `
         <h2>Meeting ${isCreated ? 'Scheduled' : 'Details Updated'}</h2>
-        <p>Hello ${student.firstName},</p>
-        <p><strong>${mentor.firstName} ${mentor.lastName}</strong> has ${actionText} the meeting details for your session.</p>
+        <p>Hello ${student.agencyName || student.firstName},</p>
+        <p><strong>${mentor.agencyName || `${mentor.firstName} ${mentor.lastName}`}</strong> has ${actionText} the meeting details for your session.</p>
         
         ${createInfoCard(`
             <p style="margin: 0 0 12px 0;"><strong>Meeting Information</strong></p>
@@ -846,7 +846,7 @@ export const meetingNotificationForStudent = async (transporter, student, mentor
         <p>Please use the meeting link at the scheduled time. If you have any questions, reply to this email or contact the mentor directly through the Partcer messaging system.</p>
         
         <div style="text-align: center;">
-            <a href="${process.env.FRONTEND_URL}/buyer/orders" class="button">View My Orders</a>
+            <a href="${process.env.FRONTEND_URL}/${student.userType === 'agency' ? 'agency' : 'buyer'}/orders" class="button">View My Orders</a>
         </div>
         
         <div class="divider"></div>
@@ -877,7 +877,7 @@ export const withdrawalRequestAdminNotification = async (transporter, adminEmail
         ${createInfoCard(`
             <p style="margin: 0 0 12px 0;"><strong>Withdrawal Details</strong></p>
             ${createSummaryRow('Withdrawal ID: ', withdrawal.withdrawalId)}
-            ${createSummaryRow('Mentor Name: ', `${mentor.firstName} ${mentor.lastName}`)}
+            ${createSummaryRow('Mentor Name: ', `${mentor.agencyName || `${mentor.firstName} ${mentor.lastName}`}`)}
             ${createSummaryRow('Mentor Email: ', mentor.email)}
             ${createSummaryRow('Amount: ', new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(withdrawal.amount))}
             ${createSummaryRow('Method: ', withdrawal.method)}
@@ -901,7 +901,7 @@ export const withdrawalRequestAdminNotification = async (transporter, adminEmail
         const info = await transporter.sendMail({
             from: `"Partcer" <admin@partcer.com>`,
             to: adminEmail,
-            subject: `New Withdrawal Request - ${mentor.firstName} ${mentor.lastName} (${withdrawal.withdrawalId})`,
+            subject: `New Withdrawal Request - ${mentor.agencyName || `${mentor.firstName} ${mentor.lastName}`} (${withdrawal.withdrawalId})`,
             html
         });
         return !!info;
@@ -919,7 +919,7 @@ export const withdrawalCancellationAdminNotification = async (transporter, admin
         ${createInfoCard(`
             <p style="margin: 0 0 12px 0;"><strong>Cancelled Withdrawal Details</strong></p>
             ${createSummaryRow('Withdrawal ID: ', withdrawal.withdrawalId)}
-            ${createSummaryRow('Mentor Name: ', `${mentor.firstName} ${mentor.lastName}`)}
+            ${createSummaryRow('Mentor Name: ', `${mentor.agencyName || `${mentor.firstName} ${mentor.lastName}`}`)}
             ${createSummaryRow('Mentor Email: ', mentor.email)}
             ${createSummaryRow('Amount: ', new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(withdrawal.amount))}
             ${createSummaryRow('Method: ', withdrawal.method)}
@@ -940,7 +940,7 @@ export const withdrawalCancellationAdminNotification = async (transporter, admin
         const info = await transporter.sendMail({
             from: `"Partcer" <admin@partcer.com>`,
             to: adminEmail,
-            subject: `Withdrawal Cancelled - ${mentor.firstName} ${mentor.lastName} (${withdrawal.withdrawalId})`,
+            subject: `Withdrawal Cancelled - ${mentor.agencyName || `${mentor.firstName} ${mentor.lastName}`} (${withdrawal.withdrawalId})`,
             html
         });
         return !!info;
@@ -979,7 +979,7 @@ export const withdrawalStatusUpdateEmail = async (transporter, mentor, withdrawa
     
     const content = `
         <h2>${statusTitle}</h2>
-        <p>Hello ${mentor.firstName},</p>
+        <p>Hello ${mentor.agencyName || mentor.firstName},</p>
         <p>Your withdrawal request <strong>${withdrawal.withdrawalId}</strong> has been updated to <strong>${statusDisplay}</strong>.</p>
         
         ${createInfoCard(`
@@ -1036,7 +1036,7 @@ export const contactEmail = async (transporter, name, email, phone, userType, me
             ${createSummaryRow('Name: ', name)}
             ${createSummaryRow('Email: ', email)}
             ${createSummaryRow('Phone: ', phone || 'Not provided')}
-            ${createSummaryRow('User Type: ', userType === 'freelancer' ? 'Mentor' : 'Student')}
+            ${createSummaryRow('User Type: ', user.userType === 'freelancer' ? 'Mentor' : user.userType === 'agency' ? 'Agency' : 'Student')}
             ${createSummaryRow('Message: ', message)}
         `)}
         
@@ -1110,7 +1110,7 @@ export const contactConfirmationEmail = async (transporter, name, email) => {
 export const projectCreatedConfirmation = async (transporter, student, project) => {
     const content = `
         <h2>Your project has been posted</h2>
-        <p>Hello ${student.firstName},</p>
+        <p>Hello ${student.agencyName || student.firstName},</p>
         <p>Your project <strong>${project.title}</strong> has been successfully posted on Partcer. Mentors with matching skills will be notified, and you can start receiving proposals.</p>
         
         ${createInfoCard(`
@@ -1154,7 +1154,7 @@ export const projectCreatedConfirmation = async (transporter, student, project) 
 export const projectMatchingNotification = async (transporter, mentor, project) => {
     const content = `
         <h2>New project matching your skills</h2>
-        <p>Hello ${mentor.firstName},</p>
+        <p>Hello ${mentor.agencyName || mentor.firstName},</p>
         <p>A new project has been posted that matches your skills and categories.</p>
         
         ${createInfoCard(`
@@ -1196,12 +1196,12 @@ export const newProposalNotification = async (transporter, student, project, fre
     
     const content = `
         <h2>New proposal received for your project</h2>
-        <p>Hello ${student.firstName},</p>
-        <p><strong>${freelancer.firstName} ${freelancer.lastName}</strong> has submitted a proposal for your project <strong>${project.title}</strong>.</p>
+        <p>Hello ${student.agencyName || student.firstName},</p>
+        <p><strong>${freelancer.agencyName || `${freelancer.firstName} ${freelancer.lastName}`}</strong> has submitted a proposal for your project <strong>${project.title}</strong>.</p>
         
         ${createInfoCard(`
             <p style="margin: 0 0 12px 0;"><strong>Proposal Details</strong></p>
-            ${createSummaryRow('Mentor: ', `${freelancer.firstName} ${freelancer.lastName}`)}
+            ${createSummaryRow('Mentor: ', `${freelancer.agencyName || `${freelancer.firstName} ${freelancer.lastName}`}`)}
             ${createSummaryRow('Project: ', project.title)}
             ${createSummaryRow('Proposal Preview: ', proposalPreview)}
         `)}
@@ -1209,7 +1209,7 @@ export const newProposalNotification = async (transporter, student, project, fre
         <p>Log in to your dashboard to review the full proposal, view the mentor's profile, and decide whether to accept or decline.</p>
         
         <div style="text-align: center;">
-            <a href="${process.env.FRONTEND_URL}/buyer/projects/all" class="button">View Proposals</a>
+            <a href="${process.env.FRONTEND_URL}/${student.userType === 'agency' ? 'agency' : 'buyer'}/projects/all" class="button">View Proposals</a>
         </div>
         
         <div class="divider"></div>
@@ -1222,7 +1222,7 @@ export const newProposalNotification = async (transporter, student, project, fre
         const info = await transporter.sendMail({
             from: `"Partcer" <admin@partcer.com>`,
             to: student.email,
-            subject: `New proposal for "${project.title}" from ${freelancer.firstName} ${freelancer.lastName}`,
+            subject: `New proposal for "${project.title}" from ${freelancer.agencyName || `${freelancer.firstName} ${freelancer.lastName}`}`,
             html
         });
         return !!info;
@@ -1241,7 +1241,7 @@ export const proposalStatusUpdateEmail = async (transporter, mentor, project, pr
     
     const content = `
         <h2>${statusTitle}</h2>
-        <p>Hello ${mentor.firstName},</p>
+        <p>Hello ${mentor.agencyName || mentor.firstName},</p>
         <p>${statusMessage}</p>
         
         ${createInfoCard(`
@@ -1292,7 +1292,7 @@ export const proposalStatusUpdateEmail = async (transporter, mentor, project, pr
 export const projectUpdatedByAdminNotification = async (transporter, student, project) => {
     const content = `
         <h2>Your project has been updated by admin</h2>
-        <p>Hello ${student.firstName},</p>
+        <p>Hello ${student.agencyName || student.firstName},</p>
         <p>An administrator has made changes to your project <strong>${project.title}</strong>. The updates may include title, description, category, skills, attachments, or other details.</p>
         
         ${createInfoCard(`

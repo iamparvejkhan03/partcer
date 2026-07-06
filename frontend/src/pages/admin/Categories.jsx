@@ -464,11 +464,11 @@ const Categories = () => {
                                         <th className="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                             Level
                                         </th>
-                                        <th className="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        {/* <th className="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                             Order
-                                        </th>
+                                        </th> */}
                                         <th className="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Services
+                                            Mentors
                                         </th>
                                         <th className="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                             Status
@@ -625,11 +625,11 @@ const CategoryRow = ({
                         {category.level === 0 ? 'Parent' : 'Subcategory'}
                     </span>
                 </td>
-                <td className="py-4 px-6">
+                {/* <td className="py-4 px-6">
                     <div className="text-sm text-gray-600">
                         {category.order || 0}
                     </div>
-                </td>
+                </td> */}
                 <td className="py-4 px-6">
                     <div className="text-sm text-gray-600">
                         {category.freelancerCount || 0}
@@ -789,7 +789,7 @@ const CategoryFormModal = ({
                     </div>
 
                     {/* Display Order */}
-                    <div>
+                    {/* <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                             Display Order
                         </label>
@@ -809,7 +809,7 @@ const CategoryFormModal = ({
                         {errors.order && (
                             <p className="mt-1 text-sm text-red-600">{errors.order.message}</p>
                         )}
-                    </div>
+                    </div> */}
 
                     {/* Status */}
                     <div className="flex items-center">

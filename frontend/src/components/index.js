@@ -25,6 +25,9 @@ import FreelancerSidebar from "./freelancer/Sidebar";
 import BuyerHeader from "./buyer/Header";
 import BuyerContainer from "./buyer/Container";
 import BuyerSidebar from "./buyer/Sidebar";
+import AgencyHeader from "./agency/Header";
+import AgencyContainer from "./agency/Container";
+import AgencySidebar from "./agency/Sidebar";
 import AdminHeader from "./admin/Header";
 import AdminContainer from "./admin/Container";
 import AdminSidebar from "./admin/Sidebar";
@@ -47,6 +50,7 @@ import OrderHistoryPanel from "./OrdersHistoryPanel";
 import TextTruncate from "./TextTruncate";
 import FreelancerOrderSummaryCard from "./freelancer/OrderSummaryCard";
 import BuyerOrderSummaryCard from "./buyer/OrderSummaryCard";
+import AgencyOrderSummaryCard from "./agency/OrderSummaryCard";
 import ProgressBar from "./ProgressBar";
 
 export {
@@ -79,6 +83,10 @@ export {
     BuyerContainer,
     BuyerHeader,
     BuyerSidebar,
+    AgencyHeader,
+    AgencyContainer,
+    AgencySidebar,
+    AgencyOrderSummaryCard,
     AdminContainer,
     AdminHeader,
     AdminSidebar,

@@ -83,7 +83,7 @@ export const getOrderSessions = asyncHandler(async (req, res) => {
     }
 
     const sessions = await Session.find({ orderId })
-        .populate("submittedBy", "firstName lastName profileImage")
+        .populate("submittedBy", "firstName lastName agencyName profileImage")
         .sort({ sessionNumber: 1 });
 
     // Get session stats

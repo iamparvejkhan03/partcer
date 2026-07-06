@@ -28,8 +28,8 @@ export const submitComplaint = asyncHandler(async (req, res) => {
 
     // Find the order
     const order = await NewOrder.findById(orderId)
-        .populate("studentId", "firstName lastName email")
-        .populate("mentorId", "firstName lastName email");
+        .populate("studentId", "firstName lastName agencyName email")
+        .populate("mentorId", "firstName lastName agencyName email");
 
     if (!order) {
         throw new ApiError(404, "Order not found");
@@ -136,8 +136,8 @@ export const getAllResolutions = asyncHandler(async (req, res) => {
     if (status) filter.status = status;
 
     const resolutions = await Resolution.find(filter)
-        .populate("userId", "firstName lastName email profileImage")
-        .populate("mentorId", "firstName lastName email profileImage")
+        .populate("userId", "firstName lastName agencyName email profileImage")
+        .populate("mentorId", "firstName lastName agencyName email profileImage")
         .populate("orderId", "orderId amount period duration")
         .sort({ createdAt: -1 })
         .skip((page - 1) * limit)
@@ -164,8 +164,8 @@ export const updateResolutionStatus = asyncHandler(async (req, res) => {
     } = req.body;
 
     const resolutionDoc = await Resolution.findById(resolutionId)
-        .populate("userId", "firstName lastName email")
-        .populate("mentorId", "firstName lastName email")
+        .populate("userId", "firstName lastName agencyName email")
+        .populate("mentorId", "firstName lastName agencyName email")
         .populate("orderId");
 
     if (!resolutionDoc) {
@@ -275,7 +275,7 @@ const sendResolutionEmailToAdmin = async (resolution, order, user) => {
     <h2>New Resolution Complaint</h2>
     <p><strong>Order Number:</strong> ${order.orderId}</p>
     <p><strong>Booking Date:</strong> ${new Date(order.createdAt).toLocaleDateString()}</p>
-    <p><strong>Student:</strong> ${user.firstName} ${user.lastName} (${user.email})</p>
+    <p><strong>Student:</strong> ${user?.agencyName || user.firstName + ' ' + user.lastName} (${user.email})</p>
     <p><strong>Mentor:</strong> ${order.mentorId.firstName} ${order.mentorId.lastName}</p>
     <p><strong>Issue Type:</strong> ${issueTypeMap[resolution.issueType]}</p>
     <p><strong>Complaint:</strong></p>

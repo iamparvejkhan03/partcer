@@ -83,7 +83,7 @@ const formatTransaction = (order, type = "credit") => {
         date: order.createdAt,
         customer: {
             id: customer._id,
-            name: customer.displayName || `${customer.firstName || ""} ${customer.lastName || ""}`.trim() || "Unknown",
+            name: customer.displayName || customer?.agencyName || `${customer.firstName || ""} ${customer.lastName || ""}`.trim() || "Unknown",
             avatar: customer.profileImage || null,
             email: customer.email || "",
             location: customer.city || customer.country || "",
@@ -207,8 +207,8 @@ const getEarningsTransactions = asyncHandler(async (req, res) => {
 
     // Fetch orders with student population
     const orders = await NewOrder.find(query)
-        .populate("studentId", "firstName lastName displayName email profileImage city country isVerified")
-        .populate("mentorId", "firstName lastName displayName email profileImage")
+        .populate("studentId", "firstName lastName agencyName displayName email profileImage city country isVerified")
+        .populate("mentorId", "firstName lastName agencyName displayName email profileImage")
         .sort(sort)
         .skip(skip)
         .limit(Number(limit));
@@ -309,13 +309,13 @@ const getTransactionDetails = asyncHandler(async (req, res) => {
             { _id: mongoose.Types.ObjectId.isValid(orderId) ? orderId : null }
         ]
     })
-        .populate("studentId", "firstName lastName displayName email profileImage city country isVerified")
-        .populate("mentorId", "firstName lastName displayName email profileImage");
+        .populate("studentId", "firstName lastName agencyName displayName email profileImage city country isVerified")
+        .populate("mentorId", "firstName lastName agencyName displayName email profileImage");
 
     if (!order && mongoose.Types.ObjectId.isValid(orderId)) {
         order = await NewOrder.findById(orderId)
-            .populate("studentId", "firstName lastName displayName email profileImage city country isVerified")
-            .populate("mentorId", "firstName lastName displayName email profileImage");
+            .populate("studentId", "firstName lastName agencyName displayName email profileImage city country isVerified")
+            .populate("mentorId", "firstName lastName agencyName displayName email profileImage");
     }
 
     if (!order) {
@@ -469,13 +469,13 @@ const generateInvoice = asyncHandler(async (req, res) => {
             { _id: mongoose.Types.ObjectId.isValid(orderId) ? orderId : null }
         ]
     })
-        .populate("studentId", "firstName lastName displayName email profileImage city country")
-        .populate("mentorId", "firstName lastName displayName email profileImage");
+        .populate("studentId", "firstName lastName agencyName displayName email profileImage city country")
+        .populate("mentorId", "firstName lastName agencyName displayName email profileImage");
 
     if (!order && mongoose.Types.ObjectId.isValid(orderId)) {
         order = await NewOrder.findById(orderId)
-            .populate("studentId", "firstName lastName displayName email profileImage city country")
-            .populate("mentorId", "firstName lastName displayName email profileImage");
+            .populate("studentId", "firstName lastName agencyName displayName email profileImage city country")
+            .populate("mentorId", "firstName lastName agencyName displayName email profileImage");
     }
 
     if (!order) {
@@ -503,7 +503,7 @@ const generateInvoice = asyncHandler(async (req, res) => {
 
         // Student/Buyer info
         student: {
-            name: order.studentId.displayName || `${order.studentId.firstName} ${order.studentId.lastName}`,
+            name: order.studentId.displayName || order.studentId.agencyName || `${order.studentId.firstName} ${order.studentId.lastName}`,
             email: order.studentId.email,
             location: [order.studentId.city, order.studentId.country].filter(Boolean).join(", ")
         },
@@ -553,7 +553,7 @@ const exportEarnings = asyncHandler(async (req, res) => {
     }
 
     const orders = await NewOrder.find(query)
-        .populate("studentId", "firstName lastName displayName email")
+        .populate("studentId", "firstName lastName agencyName displayName email")
         .sort({ createdAt: -1 });
 
     const transactions = orders.map(order => formatTransaction(order));

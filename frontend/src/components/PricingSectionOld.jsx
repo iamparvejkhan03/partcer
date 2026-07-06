@@ -1,17 +1,22 @@
 import React, { useState } from 'react';
-import { Calendar, Clock, Briefcase, ChevronDown, Info, ArrowRight } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { Calendar, Clock, Briefcase, ChevronDown, Loader2, Info } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../contexts/AuthContext';
+import {
+    loadRazorpayScript,
+    createOrder,
+    verifyPayment,
+    initiateRazorpayPayment
+} from '../services/paymentService.js';
 import { useCurrency } from '../hooks/useCurrency';
 
-const PricingSection = ({ freelancerId, freelancerName, freelancerEmail }) => {
+const PricingSection = ({ freelancerName, freelancerId, freelancerEmail }) => {
     const { user } = useAuth();
-    const navigate = useNavigate();
     const [selectedPeriod, setSelectedPeriod] = useState('per_day');
     const [selectedDuration, setSelectedDuration] = useState('standard');
     const [selectedService, setSelectedService] = useState('Job Support (Mentoring)');
     const [showServiceDropdown, setShowServiceDropdown] = useState(false);
+    const [processing, setProcessing] = useState(false);
 
     // Get user type for pricing
     const userType = user?.userType || 'buyer';
@@ -64,10 +69,12 @@ const PricingSection = ({ freelancerId, freelancerName, freelancerEmail }) => {
         let learnerPays;
 
         if (isAgency) {
+            // Agency: 7% fee
             partnerFeePercentage = 7;
             partnerFee = Math.round((mentorFee * partnerFeePercentage) / 100);
             learnerPays = mentorFee + partnerFee;
         } else {
+            // Buyer/Student: 30% fee
             partnerFeePercentage = 30;
             partnerFee = Math.round((mentorFee * partnerFeePercentage) / 100);
             learnerPays = mentorFee + partnerFee;
@@ -105,9 +112,9 @@ const PricingSection = ({ freelancerId, freelancerName, freelancerEmail }) => {
     const basePricing = pricingData[selectedPeriod]?.[selectedDuration];
     const currentPricing = basePricing ? calculateFees(basePricing.mentorFee) : null;
 
-    const { convertPrice, getCurrencySymbol, rates, currency } = useCurrency();
+    const { convertPrice, getCurrencySymbol, loading, rates, currency } = useCurrency();
 
-    const handleProceedToCheckout = () => {
+    const handlePayment = async () => {
         if (!user) {
             toast.error('Please login to book a session');
             return;
@@ -118,29 +125,111 @@ const PricingSection = ({ freelancerId, freelancerName, freelancerEmail }) => {
             return;
         }
 
-        if (!freelancerId) {
-            toast.error('Mentor information missing');
-            return;
+        setProcessing(true);
+
+        try {
+            // 1. Load Razorpay script
+            const isScriptLoaded = await loadRazorpayScript();
+            if (!isScriptLoaded) {
+                toast.error('Failed to load payment gateway. Please try again.');
+                setProcessing(false);
+                return;
+            }
+
+            // 2. Determine which currency to use based on user's preference
+            const useUSD = currency === 'USD';
+
+            // Get the amount in the correct currency
+            let amountToSend;
+            let studentCurrency;
+            let exchangeRate = null;
+
+            if (useUSD) {
+                amountToSend = convertPrice(currentPricing.learnerPays);
+                studentCurrency = "USD";
+                exchangeRate = rates.USD;
+                exchangeRate = parseFloat((1 / rates.USD).toFixed(2));
+            } else {
+                amountToSend = currentPricing.learnerPays;
+                studentCurrency = "INR";
+                exchangeRate = null;
+            }
+
+            // 3. Create order on backend with currency info
+            const orderData = {
+                serviceType: selectedService,
+                period: basePricing.periodLabel,
+                duration: basePricing.duration,
+                mentorId: freelancerId,
+                studentPaidAmount: amountToSend,
+                studentCurrency: studentCurrency,
+                exchangeRateUsed: exchangeRate,
+                originalINRAmount: currentPricing.learnerPays,
+                mentorFeeINR: currentPricing.mentorFee,
+                partnerFeeINR: currentPricing.partnerFee,
+                userType: user.userType, // Send user type to backend
+            };
+
+            const response = await createOrder(orderData);
+
+            if (!response.success) {
+                throw new Error(response.message || 'Failed to create order');
+            }
+
+            const {
+                razorpayOrderId,
+                razorpayKeyId,
+                amount,
+                currency: razorpayCurrency
+            } = response.data;
+
+            // 4. Initialize Razorpay payment
+            const paymentResponse = await initiateRazorpayPayment({
+                keyId: razorpayKeyId,
+                orderId: razorpayOrderId,
+                amount: amount,
+                currency: razorpayCurrency,
+                description: `${selectedService} - ${basePricing.periodLabel} (${basePricing.duration})`,
+                prefill: {
+                    name: `${user.firstName} ${user.lastName}`,
+                    email: user.email,
+                    contact: user.phone || '',
+                },
+                theme: {
+                    color: '#6366f1',
+                },
+            });
+
+            // 5. Verify payment
+            const verificationData = {
+                razorpay_order_id: paymentResponse.razorpay_order_id,
+                razorpay_payment_id: paymentResponse.razorpay_payment_id,
+                razorpay_signature: paymentResponse.razorpay_signature,
+            };
+
+            const verifyResponse = await verifyPayment(verificationData);
+
+            if (verifyResponse.success) {
+                toast.success('Payment successful! Your booking has been confirmed.');
+                setTimeout(() => {
+                    window.location.href = `/buyer/orders/${verifyResponse.data.order._id}`;
+                }, 2000);
+            } else {
+                throw new Error(verifyResponse.message || 'Payment verification failed');
+            }
+
+        } catch (error) {
+            console.error('Payment error:', error);
+            toast.error(error.message || 'Payment failed. Please try again.');
+        } finally {
+            setProcessing(false);
         }
-
-        // Build URL parameters - ONLY pass identifiers, NOT prices
-        const params = new URLSearchParams({
-            mentorId: freelancerId,
-            serviceType: selectedService,
-            period: selectedPeriod, // Pass the key, not the label
-            duration: selectedDuration, // Pass the key, not the label
-        });
-
-        navigate(`/checkout?${params.toString()}`);
     };
 
     if (!currentPricing) return null;
 
     return (
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden mb-6">
-            {/* ... rest of the component remains the same ... */}
-            {/* Keep all the UI exactly as before */}
-
             <div className="bg-gradient-to-r from-primary/5 to-transparent px-6 py-4 border-b border-gray-200">
                 <div className="flex items-center justify-between">
                     <div>
@@ -149,6 +238,9 @@ const PricingSection = ({ freelancerId, freelancerName, freelancerEmail }) => {
                             Period and Duration determine the price — select any service you need
                         </p>
                     </div>
+                    {/* <div className={`px-3 py-1 rounded-full text-xs font-medium ${isAgency ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'}`}>
+                        {isAgency ? '🤝 Agency Pricing (7% fee)' : '🎓 Student Pricing (30% fee)'}
+                    </div> */}
                 </div>
             </div>
 
@@ -266,6 +358,12 @@ const PricingSection = ({ freelancerId, freelancerName, freelancerEmail }) => {
                                             <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
                                                 Mentor Fee
                                             </th>
+                                            {/* <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
+                                                Platform Fee ({currentPricing.partnerFeePercentage}%)
+                                            </th>
+                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
+                                                Total You Pay
+                                            </th> */}
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-200">
@@ -295,7 +393,34 @@ const PricingSection = ({ freelancerId, freelancerName, freelancerEmail }) => {
                                                     </div>
                                                 )}
                                             </td>
-                                            
+                                            {/* <td className="px-4 py-3">
+                                                <div className="text-sm font-medium text-gray-900">
+                                                    {getCurrencySymbol()}{convertPrice(currentPricing.partnerFee).toLocaleString()}
+                                                </div>
+                                                {currency === 'INR' ? (
+                                                    <div className="text-xs text-gray-500">
+                                                        ~${(currentPricing.partnerFee * rates.USD).toFixed(2).toLocaleString('en-US')}
+                                                    </div>
+                                                ) : (
+                                                    <div className="text-xs text-gray-500">
+                                                        ~₹{currentPricing.partnerFee.toLocaleString('en-IN')}
+                                                    </div>
+                                                )}
+                                            </td>
+                                            <td className="px-4 py-3">
+                                                <div className="text-sm font-bold text-primary">
+                                                    {getCurrencySymbol()}{convertPrice(currentPricing.learnerPays).toLocaleString()}
+                                                </div>
+                                                {currency === 'INR' ? (
+                                                    <div className="text-xs text-gray-500">
+                                                        ~${(currentPricing.learnerPays * rates.USD).toFixed(2).toLocaleString('en-US')}
+                                                    </div>
+                                                ) : (
+                                                    <div className="text-xs text-gray-500">
+                                                        ~₹{currentPricing.learnerPays.toLocaleString('en-IN')}
+                                                    </div>
+                                                )}
+                                            </td> */}
                                         </tr>
                                     </tbody>
                                 </table>
@@ -308,13 +433,20 @@ const PricingSection = ({ freelancerId, freelancerName, freelancerEmail }) => {
                     </div>
                 )}
 
-                {/* Proceed to Checkout Button */}
+                {/* Book Now Button */}
                 <button
-                    onClick={handleProceedToCheckout}
-                    className="w-full bg-primary hover:bg-primary/90 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 transform hover:scale-[1.02] shadow-md flex items-center justify-center gap-2"
+                    onClick={handlePayment}
+                    disabled={processing}
+                    className="w-full bg-primary hover:bg-primary/90 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 transform hover:scale-[1.02] shadow-md disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                 >
-                    Proceed to Checkout
-                    <ArrowRight size={18} />
+                    {processing ? (
+                        <div className="flex items-center justify-center gap-2">
+                            <Loader2 size={20} className="animate-spin" />
+                            Processing...
+                        </div>
+                    ) : (
+                        `Book Now & Pay ${getCurrencySymbol()}${convertPrice(currentPricing.learnerPays).toLocaleString()}`
+                    )}
                 </button>
 
                 <p className="text-xs text-gray-400 text-center mt-4">

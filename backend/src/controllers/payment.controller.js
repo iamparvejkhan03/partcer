@@ -333,7 +333,7 @@ export const createOrder = asyncHandler(async (req, res) => {
             io.to(order.mentorId.toString()).emit('order:new', {
                 orderId: order._id,
                 mentorId: order.mentorId,
-                studentName: req.user.firstName + ' ' + req.user.lastName,
+                studentName: req.user?.agencyName || req.user.firstName + ' ' + req.user.lastName,
                 message: 'You have a new order!'
             });
         } catch (socketError) {
@@ -465,8 +465,8 @@ export const verifyPayment = asyncHandler(async (req, res) => {
     );
 
     // Populate user details
-    await order.populate("studentId", "firstName lastName email");
-    await order.populate("mentorId", "firstName lastName email profileImage");
+    await order.populate("studentId", "firstName lastName agencyName userType email");
+    await order.populate("mentorId", "firstName lastName agencyName userType email profileImage");
 
     const student = await User.findById(order.studentId);
     const mentor = await User.findById(order.mentorId);
@@ -549,8 +549,8 @@ export const getOrderStatus = asyncHandler(async (req, res) => {
     const { orderId } = req.params;
 
     const order = await Order.findById(orderId)
-        .populate("studentId", "firstName lastName email profileImage")
-        .populate("mentorId", "firstName lastName email profileImage");
+        .populate("studentId", "firstName lastName agencyName email profileImage")
+        .populate("mentorId", "firstName lastName agencyName email profileImage");
 
     if (!order) {
         return res.status(404).json(
@@ -672,8 +672,8 @@ export const getUserOrders = asyncHandler(async (req, res) => {
     const skip = (page - 1) * limit;
 
     const orders = await Order.find(query)
-        .populate("studentId", "firstName lastName email profileImage")
-        .populate("mentorId", "firstName lastName email profileImage")
+        .populate("studentId", "firstName lastName agencyName email profileImage")
+        .populate("mentorId", "firstName lastName agencyName email profileImage")
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(parseInt(limit));
@@ -687,13 +687,13 @@ export const getUserOrders = asyncHandler(async (req, res) => {
             const studentReview = await Review.findOne({
                 order: order._id,
                 reviewerRole: "student"
-            }).populate("reviewer", "firstName lastName");
+            }).populate("reviewer", "firstName lastName agencyName");
 
             // Get mentor's review (mentor reviewing student)
             const mentorReview = await Review.findOne({
                 order: order._id,
                 reviewerRole: "mentor"
-            }).populate("reviewer", "firstName lastName");
+            }).populate("reviewer", "firstName lastName agencyName");
 
             // Get session stats for this order
             const sessions = await Session.find({ orderId: order._id });
@@ -772,8 +772,8 @@ export const markOrderDelivered = asyncHandler(async (req, res) => {
 
     await order.save();
 
-    const student = await User.findById(order.studentId).select("firstName lastName email");
-    const mentor = await User.findById(order.mentorId).select("firstName lastName");
+    const student = await User.findById(order.studentId).select("firstName lastName agencyName userType email");
+    const mentor = await User.findById(order.mentorId).select("firstName lastName agencyName userType email");
 
     if (student && mentor) {
         orderDeliveredEmail(transporter, student, order, mentor, order.deliveryDetails)
@@ -803,8 +803,8 @@ export const completeOrder = asyncHandler(async (req, res) => {
 
     await order.save();
 
-    const student = await User.findById(order.studentId).select("firstName lastName email");
-    const mentor = await User.findById(order.mentorId).select("firstName lastName email");
+    const student = await User.findById(order.studentId).select("firstName lastName agencyName email");
+    const mentor = await User.findById(order.mentorId).select("firstName lastName agencyName email");
 
     if (student && mentor) {
         const completionDetails = {
@@ -828,8 +828,8 @@ export const getAllOrdersForAdmin = asyncHandler(async (req, res) => {
     const skip = (page - 1) * limit;
 
     const orders = await Order.find(query)
-        .populate("studentId", "firstName lastName email profileImage")
-        .populate("mentorId", "firstName lastName email profileImage")
+        .populate("studentId", "firstName lastName agencyName email profileImage")
+        .populate("mentorId", "firstName lastName agencyName email profileImage")
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(parseInt(limit));
@@ -1004,8 +1004,8 @@ export const adminUpdateOrderStatus = asyncHandler(async (req, res) => {
     const { paymentStatus, orderStatus, refundAmount, adminNotes } = req.body;
 
     const order = await NewOrder.findById(orderId)
-        .populate("studentId", "firstName lastName email")
-        .populate("mentorId", "firstName lastName email");
+        .populate("studentId", "firstName lastName agencyName email")
+        .populate("mentorId", "firstName lastName agencyName email");
 
     if (!order) {
         throw new ApiError(404, "Order not found");
@@ -1065,8 +1065,8 @@ export const adminGetOrderById = asyncHandler(async (req, res) => {
     const { orderId } = req.params;
 
     const order = await NewOrder.findById(orderId)
-        .populate("studentId", "firstName lastName email profileImage phone")
-        .populate("mentorId", "firstName lastName email profileImage phone");
+        .populate("studentId", "firstName lastName agencyName email profileImage phone")
+        .populate("mentorId", "firstName lastName agencyName email profileImage phone");
 
     if (!order) {
         throw new ApiError(404, "Order not found");
@@ -1074,7 +1074,7 @@ export const adminGetOrderById = asyncHandler(async (req, res) => {
 
     // Get resolution/complaint if exists
     const resolution = await Resolution.findOne({ orderId: order._id })
-        .populate("userId", "firstName lastName email");
+        .populate("userId", "firstName lastName agencyName email");
 
     // Get all transactions for this order
     const transactions = await Transaction.find({ orderId: order._id })
@@ -1229,8 +1229,8 @@ export const getOrderHistoryBetweenUsers = asyncHandler(async (req, res) => {
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
     const orders = await Order.find(query)
-        .populate("studentId", "firstName lastName email profileImage")
-        .populate("mentorId", "firstName lastName email profileImage")
+        .populate("studentId", "firstName lastName agencyName email profileImage")
+        .populate("mentorId", "firstName lastName agencyName email profileImage")
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(parseInt(limit));

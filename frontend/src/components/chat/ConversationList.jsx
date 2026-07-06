@@ -136,7 +136,7 @@ const ConversationList = ({
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center justify-between mb-1">
                                             <h3 className="font-medium text-gray-900 truncate">
-                                                {otherParticipant?.firstName} {otherParticipant?.lastName}
+                                                {otherParticipant?.agencyName || `${otherParticipant?.firstName} ${otherParticipant?.lastName}`}
                                             </h3>
                                             {conversation.lastMessage && (
                                                 <span className="text-xs text-gray-400 flex-shrink-0 ml-2">

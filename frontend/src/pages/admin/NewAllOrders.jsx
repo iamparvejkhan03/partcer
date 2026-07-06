@@ -599,12 +599,12 @@ const NewOrders = () => {
                                     <div className="flex items-start gap-3">
                                         <img
                                             src={selectedOrder.studentId?.profileImage || 'https://via.placeholder.com/48'}
-                                            alt={selectedOrder.studentId?.firstName}
+                                            alt={selectedOrder.studentId?.agencyName || `${selectedOrder.studentId?.firstName} ${selectedOrder.studentId?.lastName}`}
                                             className="w-12 h-12 rounded-full object-cover"
                                         />
                                         <div>
                                             <p className="font-medium text-gray-900">
-                                                {selectedOrder.studentId?.firstName} {selectedOrder.studentId?.lastName}
+                                                {selectedOrder.studentId?.agencyName || `${selectedOrder.studentId?.firstName} ${selectedOrder.studentId?.lastName}`}
                                             </p>
                                             <p className="text-sm text-gray-600">{selectedOrder.studentId?.email}</p>
                                             {/* <Link

@@ -30,7 +30,7 @@ const FAQs = lazy(() => import('./pages/FAQs'));
 const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
 const ResetPassword = lazy(() => import('./pages/ResetPassword'));
 const SingleFreelancer = lazy(() => import('./pages/FreelancerProfile'));
-const Checkout = lazy(() => import('./pages/Checkout'));
+const Checkout = lazy(() => import('./pages/NewCheckout'));
 
 //Freelancer Pages
 const FreelancerLayout = lazy(() => import('./pages/freelancer/Layout'));
@@ -62,6 +62,19 @@ const EditProject = lazy(() => import('./pages/buyer/EditProject'));
 const BuyerAllProjects = lazy(() => import('./pages/buyer/AllProjects'));
 const BuyerChat = lazy(() => import('./pages/buyer/Chat'));
 const BuyerOrderDetails = lazy(() => import('./pages/buyer/OrderDetails'));
+
+//Agency Pages
+const AgencyLayout = lazy(() => import('./pages/agency/Layout'));
+const AgencyDashboard = lazy(() => import('./pages/agency/Dashboard'));
+const AgencyAllOrders = lazy(() => import('./pages/agency/NewAllOrders'));
+const AgencyProfile = lazy(() => import('./pages/agency/Profile'));
+const AgencyAccountSettings = lazy(() => import('./pages/agency/AccountSettings'));
+const AgencyBilling = lazy(() => import('./pages/agency/Billing'));
+const AgencyCreateProject = lazy(() => import('./pages/agency/CreateProject'));
+const AgencyEditProject = lazy(() => import('./pages/agency/EditProject'));
+const AgencyAllProjects = lazy(() => import('./pages/agency/AllProjects'));
+const AgencyChat = lazy(() => import('./pages/agency/Chat'));
+const AgencyOrderDetails = lazy(() => import('./pages/agency/OrderDetails'));
 
 //Admin Pages
 const AdminLayout = lazy(() => import('./pages/admin/Layout'));
@@ -413,6 +426,87 @@ createRoot(document.getElementById('root')).render(
 
                   {/* Add 404 for buyer routes */}
                   <Route path="*" element={<Navigate to="/buyer/profile/settings" replace />} />
+                </Route>
+
+                {/* Agency Routes - If you have them */}
+                <Route path='/agency' element={
+                  <Protected authentication={true} userType='agency'>
+                    <AgencyLayout />
+                  </Protected>
+                }>
+                  {/* Index route for agencies */}
+                  <Route index element={
+                    // <Navigate to="/agency/dashboard" replace />
+                    <Navigate to="/agency/profile/settings" replace />
+                  } />
+
+                  {/* Agency dashboard */}
+                  {/* <Route path='dashboard' element={
+                <Suspense fallback={<LoadingSpinner height={'725px'} />}>
+                  <AgencyDashboard />
+                </Suspense>
+              } /> */}
+
+                  {/* agency chat */}
+                  <Route path='chat' element={
+                    <Suspense fallback={<LoadingSpinner height={'725px'} />}>
+                      <AgencyChat />
+                    </Suspense>
+                  } />
+
+                  {/* Agency all orders page */}
+                  <Route path='orders' element={
+                    <Suspense fallback={<LoadingSpinner height={'725px'} />}>
+                      <AgencyAllOrders />
+                    </Suspense>
+                  } />
+
+                  {/* Agency all orders page */}
+                  <Route path='orders/:orderId' element={
+                    <Suspense fallback={<LoadingSpinner height={'725px'} />}>
+                      <AgencyOrderDetails />
+                    </Suspense>
+                  } />
+
+                  {/* Agency create project */}
+                  <Route path='projects/create' element={
+                    <Suspense fallback={<LoadingSpinner height={'725px'} />}>
+                      <AgencyCreateProject />
+                    </Suspense>
+                  } />
+
+                  {/* Agency all projects */}
+                  <Route path='projects/all' element={
+                    <Suspense fallback={<LoadingSpinner height={'725px'} />}>
+                      <AgencyAllProjects />
+                    </Suspense>
+                  } />
+
+                  {/* Agency edit projects */}
+                  <Route path='projects/edit/:projectId' element={
+                    <Suspense fallback={<LoadingSpinner height={'725px'} />}>
+                      <AgencyEditProject />
+                    </Suspense>
+                  } />
+
+                  {/* Agency profile routes with nested structure */}
+                  <Route path='profile'>
+                    <Route index element={<Navigate to="settings" replace />} />
+                    <Route path='settings' element={
+                      <Suspense fallback={<LoadingSpinner height={'725px'} />}>
+                        <AgencyProfile />
+                      </Suspense>
+                    } />
+                    <Route path='billing' element={<AgencyBilling />} />
+                    <Route path='account' element={
+                      <Suspense fallback={<LoadingSpinner height={'725px'} />}>
+                        <AgencyAccountSettings />
+                      </Suspense>
+                    } />
+                  </Route>
+
+                  {/* Add 404 for agency routes */}
+                  <Route path="*" element={<Navigate to="/agency/profile/settings" replace />} />
                 </Route>
 
                 {/* Admin Routes */}

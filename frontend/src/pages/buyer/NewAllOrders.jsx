@@ -287,13 +287,13 @@ const NewAllOrders = () => {
                                 <RefreshCw size={18} />
                                 Refresh
                             </button>
-                            <Link
+                            {/* <Link
                                 to="/services"
                                 className="inline-flex items-center gap-2 px-5 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors font-medium"
                             >
                                 <ShoppingBag size={18} />
                                 Browse Services
-                            </Link>
+                            </Link> */}
                         </div>
                     </div>
 

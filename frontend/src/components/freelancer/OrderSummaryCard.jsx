@@ -21,7 +21,7 @@ const OrderSummaryCard = ({ order, sessionStats, sessions, user, onAction, onRef
     const [studentReview, setStudentReview] = useState(null);
     const { convertPrice, getCurrencySymbol, currency } = useCurrency();
 
-    const hasUserReviewed = user?.userType === 'buyer'
+    const hasUserReviewed = (user?.userType === 'buyer' || user?.userType === 'agency')
         ? order?.studentReviewed
         : order?.mentorReviewed;
 
@@ -223,7 +223,7 @@ const OrderSummaryCard = ({ order, sessionStats, sessions, user, onAction, onRef
                             <div>
                                 <p className="text-xs text-gray-500">Student</p>
                                 <p className="font-medium text-gray-900">
-                                    {order.studentId?.firstName} {order.studentId?.lastName}
+                                    {order.studentId?.agencyName || `${order.studentId?.firstName} ${order.studentId?.lastName}`}
                                 </p>
                             </div>
                         </div>

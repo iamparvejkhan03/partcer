@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, Navigate, useNavigate } from 'react-router-dom';
 import {
     Search,
     ShoppingBag,
@@ -19,16 +19,15 @@ import {
     MessageCircle,
     CreditCard,
     Package,
-    TrendingUp,
-    Award,
     Info
 } from "lucide-react";
-import { FreelancerSidebar, FreelancerHeader, FreelancerContainer } from '../../components';
+import { AgencySidebar, AgencyHeader, AgencyContainer, ProgressBar } from '../../components';
 import toast from 'react-hot-toast';
 import axiosInstance from '../../utils/axiosInstance';
 import { useAuth } from '../../contexts/AuthContext';
 import { format } from 'date-fns';
-import { useNotifications } from '../../contexts/NotificationContext';
+import { useCurrency } from '../../hooks/useCurrency';
+import { formatOrderPrice } from '../../utils/currencyHelpers';
 
 const NewAllOrders = () => {
     const [orders, setOrders] = useState([]);
@@ -41,26 +40,17 @@ const NewAllOrders = () => {
     const [showOrderDetails, setShowOrderDetails] = useState(false);
     const [showReviewModal, setShowReviewModal] = useState(false);
     const [reviewData, setReviewData] = useState({ rating: 5, comment: '' });
-    const [showDeliveryModal, setShowDeliveryModal] = useState(false);
-    const [deliveryNotes, setDeliveryNotes] = useState('');
-    const [deliveryAttachments, setDeliveryAttachments] = useState([]);
     const [stats, setStats] = useState({
         total: 0,
         paid: 0,
         pending: 0,
         failed: 0,
-        totalEarnings: 0,
-        avgOrderValue: 0
+        totalSpent: 0
     });
 
     const { user } = useAuth();
     const navigate = useNavigate();
-    const { markOrdersAsViewed } = useNotifications();
-
-    // useEffect to mark as viewed when page loads
-    useEffect(() => {
-        markOrdersAsViewed();
-    }, []);
+    const { convertPrice, getCurrencySymbol, rates, currency } = useCurrency();
 
     useEffect(() => {
         fetchOrders();
@@ -70,8 +60,7 @@ const NewAllOrders = () => {
         try {
             setLoading(true);
 
-            // Fetch orders where current user is the mentor
-            const response = await axiosInstance.get(`/api/v1/payments/user/${user?._id}?role=mentor`);
+            const response = await axiosInstance.get(`/api/v1/payments/user/${user?._id}`);
 
             if (response.data?.success) {
                 const fetchedOrders = response.data.data.orders || [];
@@ -87,35 +76,20 @@ const NewAllOrders = () => {
     };
 
     const calculateStats = (ordersData) => {
-        const paidOrders = ordersData.filter(o => o.paymentStatus === 'paid');
-        const totalEarnings = paidOrders.reduce((sum, o) => sum + (o.mentorFee || 0), 0);
-
         const stats = {
             total: ordersData.length,
-            paid: paidOrders.length,
+            paid: ordersData.filter(o => o.paymentStatus === 'paid').length,
             pending: ordersData.filter(o => o.paymentStatus === 'pending' || o.paymentStatus === 'created').length,
             failed: ordersData.filter(o => o.paymentStatus === 'failed').length,
-            totalEarnings: totalEarnings,
-            avgOrderValue: paidOrders.length > 0 ? totalEarnings / paidOrders.length : 0
+            totalSpent: ordersData
+                .filter(o => o.paymentStatus === 'paid')
+                .reduce((sum, o) => sum + (o.amount || 0), 0)
         };
         setStats(stats);
     };
 
-    const deliveryStatusConfig = {
-        pending: { label: 'Not Delivered', bg: 'bg-yellow-100', text: 'text-yellow-700', icon: Clock },
-        delivered: { label: 'Delivered', bg: 'bg-blue-100', text: 'text-blue-700', icon: Package },
-        completed: { label: 'Completed', bg: 'bg-green-100', text: 'text-green-700', icon: CheckCircle }
-    };
-
-    const getDeliveryStatusBadge = (status) => {
-        const config = deliveryStatusConfig[status] || deliveryStatusConfig.pending;
-        const Icon = config.icon;
-        return (
-            <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${config.bg} ${config.text}`}>
-                <Icon size={12} />
-                {config.label}
-            </span>
-        );
+    const handleMessage = (order) => {
+        navigate(`/agency/chat?user=${order?.mentorId?._id}`);
     };
 
     // Filter orders
@@ -128,10 +102,10 @@ const NewAllOrders = () => {
         // Search filter
         if (searchTerm.trim()) {
             const term = searchTerm.toLowerCase();
-            const studentName = order.studentId?.agencyName ? order.studentId.agencyName.toLowerCase() : `${order.studentId?.firstName || ''} ${order.studentId?.lastName || ''}`.toLowerCase();
+            const mentorName = `${order.mentorId?.firstName || ''} ${order.mentorId?.lastName || ''}`.toLowerCase();
             return (
                 order.orderId?.toLowerCase().includes(term) ||
-                studentName.includes(term) ||
+                mentorName.includes(term) ||
                 order.serviceType?.toLowerCase().includes(term)
             );
         }
@@ -155,35 +129,17 @@ const NewAllOrders = () => {
         toast.success('Orders refreshed');
     };
 
-    const handleDeliverOrder = async (orderId) => {
-        // if (!deliveryNotes.trim()) {
-        //     toast.error('Please provide delivery notes');
-        //     return;
-        // }
-
+    const handleCompleteOrder = async (orderId) => {
         try {
-            const formData = new FormData();
-            formData.append('deliveryNotes', deliveryNotes);
-            formData.append('orderId', orderId);
-
-            // Append attachments if any
-            deliveryAttachments.forEach((file, index) => {
-                formData.append(`attachments`, file);
-            });
-
-            const response = await axiosInstance.post(`/api/v1/payments/orders/${orderId}/deliver`, formData, {
-                headers: { 'Content-Type': 'multipart/form-data' }
-            });
+            const response = await axiosInstance.post(`/api/v1/payments/orders/${orderId}/complete`);
 
             if (response.data?.success) {
-                toast.success('Order marked as delivered!');
-                setShowDeliveryModal(false);
-                setDeliveryNotes('');
-                setDeliveryAttachments([]);
-                fetchOrders(); // Refresh orders
+                toast.success('Order marked as completed!');
+                fetchOrders();
+                setShowOrderDetails(false);
             }
         } catch (error) {
-            toast.error(error.response?.data?.message || 'Failed to mark order as delivered');
+            toast.error(error.response?.data?.message || 'Failed to complete order');
         }
     };
 
@@ -249,15 +205,26 @@ const NewAllOrders = () => {
         );
     };
 
+    const deliveryStatusConfig = {
+        pending: { label: 'Not Delivered', bg: 'bg-yellow-100', text: 'text-yellow-700', icon: Clock },
+        delivered: { label: 'Delivered', bg: 'bg-blue-100', text: 'text-blue-700', icon: Package },
+        completed: { label: 'Completed', bg: 'bg-green-100', text: 'text-green-700', icon: CheckCircle }
+    };
+
+    const getDeliveryStatusBadge = (status) => {
+        const config = deliveryStatusConfig[status] || deliveryStatusConfig.pending;
+        const Icon = config.icon;
+        return (
+            <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${config.bg} ${config.text}`}>
+                <Icon size={12} />
+                {config.label}
+            </span>
+        );
+    };
+
     const handleViewOrder = (order) => {
         setSelectedOrder(order);
         setShowOrderDetails(true);
-    };
-
-    const handleMessage = (order) => {
-        // window.location.href = `/freelancer/chat?user=${order.studentId?._id}`;
-        navigate(`/freelancer/chat?user=${order?.studentId?._id}`);
-        // navigate(`/freelancer/chat?user=${order.studentId?._id}`);
     };
 
     const handleSubmitReview = async () => {
@@ -287,14 +254,14 @@ const NewAllOrders = () => {
     if (loading) {
         return (
             <section className="flex min-h-screen bg-gray-50">
-                <FreelancerSidebar />
+                <AgencySidebar />
                 <div className="w-full relative">
-                    <FreelancerHeader />
-                    <FreelancerContainer>
+                    <AgencyHeader />
+                    <AgencyContainer>
                         <div className="flex justify-center items-center h-64">
                             <Loader className="w-12 h-12 animate-spin text-primary" />
                         </div>
-                    </FreelancerContainer>
+                    </AgencyContainer>
                 </div>
             </section>
         );
@@ -302,15 +269,15 @@ const NewAllOrders = () => {
 
     return (
         <section className="flex min-h-screen bg-gray-50">
-            <FreelancerSidebar />
+            <AgencySidebar />
             <div className="w-full relative">
-                <FreelancerHeader />
-                <FreelancerContainer>
+                <AgencyHeader />
+                <AgencyContainer>
                     {/* Header */}
                     <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6 mt-20 md:mt-0">
                         <div>
                             <h1 className="text-2xl md:text-3xl font-bold text-gray-900">My Orders</h1>
-                            <p className="text-gray-600 mt-1">Track and manage orders from students</p>
+                            <p className="text-gray-600 mt-1">Track and manage your bookings</p>
                         </div>
                         <div className="mt-4 md:mt-0 flex gap-2">
                             <button
@@ -320,11 +287,18 @@ const NewAllOrders = () => {
                                 <RefreshCw size={18} />
                                 Refresh
                             </button>
+                            {/* <Link
+                                to="/services"
+                                className="inline-flex items-center gap-2 px-5 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors font-medium"
+                            >
+                                <ShoppingBag size={18} />
+                                Browse Services
+                            </Link> */}
                         </div>
                     </div>
 
                     {/* Stats Cards */}
-                    <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                         <div className="bg-white p-4 rounded-xl border border-gray-200">
                             <div className="flex items-center gap-3">
                                 <div className="p-2 bg-blue-100 rounded-lg">
@@ -360,23 +334,12 @@ const NewAllOrders = () => {
                         </div>
                         <div className="bg-white p-4 rounded-xl border border-gray-200">
                             <div className="flex items-center gap-3">
-                                <div className="p-2 bg-purple-100 rounded-lg">
-                                    <TrendingUp size={20} className="text-purple-600" />
-                                </div>
-                                <div>
-                                    <p className="text-sm text-gray-600">Total Earnings</p>
-                                    <p className="text-2xl text-purple-600 font-bold">{formatCurrency(stats.totalEarnings)}</p>
-                                </div>
-                            </div>
-                        </div>
-                        <div className="bg-white p-4 rounded-xl border border-gray-200">
-                            <div className="flex items-center gap-3">
                                 <div className="p-2 bg-teal-100 rounded-lg">
-                                    <Award size={20} className="text-teal-600" />
+                                    <DollarSign size={20} className="text-teal-600" />
                                 </div>
                                 <div>
-                                    <p className="text-sm text-gray-600">Avg. Order Value</p>
-                                    <p className="text-2xl text-teal-600 font-bold">{formatCurrency(stats.avgOrderValue)}</p>
+                                    <p className="text-sm text-gray-600">Total Spent</p>
+                                    <p className="text-2xl text-teal-600 font-bold">{getCurrencySymbol()}{convertPrice(stats.totalSpent)}</p>
                                 </div>
                             </div>
                         </div>
@@ -389,7 +352,7 @@ const NewAllOrders = () => {
                                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
                                 <input
                                     type="text"
-                                    placeholder="Search by order ID, student name, service..."
+                                    placeholder="Search by order ID, mentor name, service..."
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
                                     className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
@@ -420,27 +383,27 @@ const NewAllOrders = () => {
                                         <div className="flex justify-between items-start mb-2">
                                             <div>
                                                 <h3 className="font-medium text-gray-900">{order.serviceType}</h3>
-                                                <p className="text-xs text-gray-500 mt-1">{order.orderId?.slice(-8)}</p>
+                                                <p className="text-xs text-gray-500 mt-1">{order.orderId}</p>
                                             </div>
                                             {getPaymentStatusBadge(order.paymentStatus)}
                                         </div>
 
                                         <div className="flex items-center gap-2 mb-3">
                                             <img
-                                                src={order.studentId?.profileImage || 'https://via.placeholder.com/32'}
-                                                alt={order.studentId?.firstName || order.studentId?.agencyName || 'Student'}
+                                                src={order.mentorId?.profileImage || 'https://via.placeholder.com/32'}
+                                                alt={order.mentorId?.firstName}
                                                 className="w-6 h-6 rounded-full object-cover"
                                             />
                                             <span className="text-sm text-gray-600">
-                                                {/* {order.studentId?.firstName} {order.studentId?.lastName} */}
-                                                {order.studentId?.agencyName ? order.studentId.agencyName : `${order.studentId?.firstName} ${order.studentId?.lastName}`}
+                                                {order.mentorId?.firstName} {order.mentorId?.lastName}
                                             </span>
                                         </div>
 
                                         <div className="grid grid-cols-2 gap-2 mb-3 text-sm">
                                             <div>
-                                                <span className="text-gray-500">Earnings:</span>
-                                                <span className="ml-1 font-medium text-green-600">{formatCurrency(order.mentorFee)}</span>
+                                                <span className="text-gray-500">Amount:</span>
+                                                {/* <span className="ml-1 font-medium">{formatCurrency(order.amount)}</span> */}
+                                                <span className="ml-1 font-medium">{formatOrderPrice(order).formatted}</span>
                                             </div>
                                             <div>
                                                 <span className="text-gray-500">Date:</span>
@@ -448,22 +411,33 @@ const NewAllOrders = () => {
                                             </div>
                                         </div>
 
-                                        <div className="flex gap-2">
-                                            {/* <button
-                                                onClick={() => handleViewOrder(order)}
-                                                className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-primary border border-primary/20 rounded-lg hover:bg-primary/5"
-                                            >
-                                                <Eye size={16} />
-                                                View
-                                            </button> */}
-                                            <button
+                                        <div className="mb-3">
+                                            <div className="relative flex items-center max-w-full w-full bg-gray-500/80 h-4 rounded-md">
+                                            <div className="bg-green-600 h-4 rounded-md" style={{ width: `${Math.ceil((order?.sessionStats?.approved / order?.sessionStats?.total) * 100)}%` }} />
+                                            <span className="absolute inset-0 flex items-center justify-center text-xs font-normal text-white">
+                                                {order.sessionStats?.approved} / {order.sessionStats?.total}
+                                            </span>
+                                        </div>
+                                        <span className="mt-1 flex items-center justify-center text-xs font-normal">
+                                            {order.sessionStats?.approved} of {order.sessionStats?.total} session completed
+                                        </span>
+                                        </div>
+
+                                        {/* <button
+                                            onClick={() => handleViewOrder(order)}
+                                            className="w-full flex items-center justify-center gap-2 px-3 py-2 text-primary border border-primary/20 rounded-lg hover:bg-primary/5"
+                                        >
+                                            <Eye size={16} />
+                                            View Details
+                                        </button> */}
+
+                                        <button
                                                 onClick={() => handleMessage(order)}
-                                                className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50"
+                                                className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 w-full"
                                             >
                                                 <MessageCircle size={16} />
                                                 Message
                                             </button>
-                                        </div>
                                     </div>
                                 ))
                             ) : (
@@ -473,7 +447,7 @@ const NewAllOrders = () => {
                                     <p className="text-sm text-gray-400 mt-1">
                                         {searchTerm || statusFilter !== 'all'
                                             ? 'Try adjusting your filters'
-                                            : 'You haven\'t received any orders yet'}
+                                            : 'You haven\'t placed any orders yet'}
                                     </p>
                                 </div>
                             )}
@@ -484,10 +458,10 @@ const NewAllOrders = () => {
                             <table className="w-full">
                                 <thead className="bg-gray-50 border-b border-gray-200">
                                     <tr>
-                                        <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">Student</th>
-                                        <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">Service</th>
+                                        <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">Mentor</th>
+                                        {/* <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">Service</th> */}
                                         {/* <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">Period</th> */}
-                                        {/* <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">Mentor Fee</th> */}
+                                        <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
                                         <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">Payment</th>
                                         <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">Progress</th>
                                         {/* <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">Delivery</th> */}
@@ -503,37 +477,41 @@ const NewAllOrders = () => {
                                                 <td className="px-6 py-4">
                                                     <div className="flex items-center gap-2">
                                                         <img
-                                                            src={order.studentId?.profileImage || 'https://via.placeholder.com/32'}
-                                                            alt={order.studentId?.firstName || order.studentId?.agencyName || 'Student'}
+                                                            src={order.mentorId?.profileImage || 'https://via.placeholder.com/32'}
+                                                            alt={order.mentorId?.firstName}
                                                             className="w-8 h-8 rounded-full object-cover"
                                                         />
                                                         <div>
                                                             <div className="text-sm font-medium text-gray-900">
-                                                                {/* {order.studentId?.firstName} {order.studentId?.lastName} */}
-                                                                {order.studentId?.agencyName ? order.studentId.agencyName : `${order.studentId?.firstName} ${order.studentId?.lastName}`}
+                                                                {order.mentorId?.firstName} {order.mentorId?.lastName}
                                                             </div>
-                                                            {/* <div className="text-xs text-gray-500">{order.studentId?.email}</div> */}
+                                                            <Link
+                                                                to={`/freelancer/${order.mentorId?._id}`}
+                                                                className="text-xs text-primary hover:underline"
+                                                            >
+                                                                View Profile
+                                                            </Link>
                                                         </div>
                                                     </div>
                                                 </td>
-                                                <td className="px-6 py-4">
+                                                {/* <td className="px-6 py-4">
                                                     <div className="text-sm text-gray-900">{order.serviceType}</div>
                                                     <div className="text-xs text-gray-500 mt-1 line-clamp-1">{order.duration}</div>
-                                                    <div className="text-xs text-gray-500 mt-1 line-clamp-1">{order.period}</div>
-                                                </td>
+                                                </td> */}
                                                 {/* <td className="px-6 py-4">
                                                     <div className="text-sm text-gray-900">{order.period}</div>
                                                 </td> */}
-                                                {/* <td className="px-6 py-4">
-                                                    <div className="font-bold text-green-600">{formatCurrency(order.mentorFee)}</div>
-                                                </td> */}
-                                                {/* <td className="px-6 py-4">
-                                                    <div className="text-sm text-gray-900">{formatCurrency(order.amount)}</div>
-                                                </td> */}
+                                                <td className="px-6 py-4">
+                                                    {/* <div className="font-bold text-gray-900">{formatCurrency(order.amount)}</div> */}
+                                                    <div className="font-normal  text-sm text-gray-900">{formatOrderPrice(order).formatted}</div>
+                                                    {/* <div className="text-xs text-gray-500">Mentor: {formatOrderPrice(order).formatted}</div> */}
+                                                </td>
                                                 <td className="px-6 py-4">
                                                     {getPaymentStatusBadge(order.paymentStatus)}
-                                                    {/* {order.orderStatus && (
-                                                        <div className="mt-1">{getOrderStatusBadge(order.orderStatus)}</div>
+                                                    {/* {order.paymentCompletedAt && (
+                                                        <div className="text-xs text-gray-500 mt-1">
+                                                            {formatDate(order.paymentCompletedAt)}
+                                                        </div>
                                                     )} */}
                                                 </td>
                                                 <td className="px-6 py-4">
@@ -551,22 +529,17 @@ const NewAllOrders = () => {
                                                     {order.deliveryStatus === 'delivered' ? (
                                                         <div className="space-y-1">
                                                             {getDeliveryStatusBadge(order.deliveryStatus)}
-                                                            {!order.completed && (
-                                                                <div className="text-xs text-gray-500 mt-1">Awaiting student confirmation</div>
-                                                            )}
+                                                            <button
+                                                                onClick={() => {
+                                                                    handleCompleteOrder(order._id);
+                                                                }}
+                                                                className="mt-2 text-xs bg-green-600 text-white px-2 py-1 rounded block"
+                                                            >
+                                                                Complete Order
+                                                            </button>
                                                         </div>
                                                     ) : (
                                                         getDeliveryStatusBadge(order.deliveryStatus || 'pending')
-                                                    )}
-                                                    {order.deliveryStatus === 'pending' && order.paymentStatus === 'paid' && (
-                                                        <button
-                                                            onClick={() => {
-                                                                handleDeliverOrder(order._id);
-                                                            }}
-                                                            className="mt-2 text-xs bg-primary text-white px-2 py-1 rounded"
-                                                        >
-                                                            Mark as Delivered
-                                                        </button>
                                                     )}
                                                 </td> */}
                                                 <td className="px-6 py-4">
@@ -574,13 +547,10 @@ const NewAllOrders = () => {
                                                 </td>
                                                 {/* <td className="px-6 py-4">
                                                     <div className="text-sm text-gray-900">{formatDate(order.createdAt)}</div>
-                                                    {order.paymentCompletedAt && (
-                                                        <div className="text-xs text-gray-500">Paid: {formatDate(order.paymentCompletedAt)}</div>
-                                                    )}
                                                 </td> */}
                                                 <td className="px-6 py-4">
                                                     {/* <button
-                                                        onClick={() => navigate(`/freelancer/orders/${order._id}`)}
+                                                        onClick={() => navigate(`/agency/orders/${order._id}`)}
                                                         className="p-2 text-gray-600 hover:text-primary hover:bg-gray-100 rounded-lg transition-colors"
                                                         title="View Details"
                                                     >
@@ -599,14 +569,14 @@ const NewAllOrders = () => {
                                         ))
                                     ) : (
                                         <tr>
-                                            <td colSpan={9} className="px-6 py-12 text-center">
+                                            <td colSpan={8} className="px-6 py-12 text-center">
                                                 <div className="flex flex-col items-center">
                                                     <ShoppingBag size={40} className="text-gray-300 mb-3" />
                                                     <p className="text-gray-500 font-medium">No orders found</p>
                                                     <p className="text-sm text-gray-400 mt-1">
                                                         {searchTerm || statusFilter !== 'all'
                                                             ? 'Try adjusting your filters'
-                                                            : 'You haven\'t received any orders yet'}
+                                                            : 'You haven\'t placed any orders yet'}
                                                     </p>
                                                 </div>
                                             </td>
@@ -665,7 +635,7 @@ const NewAllOrders = () => {
                             </div>
                         )}
                     </div>
-                </FreelancerContainer>
+                </AgencyContainer>
             </div>
 
             {/* Order Details Modal */}
@@ -702,30 +672,36 @@ const NewAllOrders = () => {
                                 )}
                             </div>
 
-                            {/* Student Info */}
+                            {/* Mentor Info */}
                             <div className="bg-gray-50 p-4 rounded-lg">
                                 <h4 className="font-medium mb-3 flex items-center gap-2">
                                     <User size={16} />
-                                    Student Information
+                                    Mentor Information
                                 </h4>
                                 <div className="flex items-start gap-3">
                                     <img
-                                        src={selectedOrder.studentId?.profileImage || 'https://via.placeholder.com/48'}
-                                        alt={selectedOrder.studentId?.firstName || selectedOrder.studentId?.agencyName || 'Student'}
+                                        src={selectedOrder.mentorId?.profileImage || 'https://via.placeholder.com/48'}
+                                        alt={selectedOrder.mentorId?.firstName}
                                         className="w-12 h-12 rounded-full object-cover"
                                     />
                                     <div className="flex-1">
                                         <p className="font-medium">
-                                            {selectedOrder.studentId?.agencyName ? selectedOrder.studentId.agencyName : `${selectedOrder.studentId?.firstName} ${selectedOrder.studentId?.lastName}`}
+                                            {selectedOrder.mentorId?.firstName} {selectedOrder.mentorId?.lastName}
                                         </p>
-                                        <p className="text-sm text-gray-600">{selectedOrder.studentId?.email}</p>
+                                        <p className="text-sm text-gray-600">{selectedOrder.mentorId?.email}</p>
                                         <div className="flex gap-2 mt-2">
-                                            <button
-                                                onClick={() => handleMessage(selectedOrder)}
+                                            <Link
+                                                to={`/freelancer/${selectedOrder.mentorId?._id}`}
+                                                className="text-sm text-primary hover:underline"
+                                            >
+                                                View Profile
+                                            </Link>
+                                            <Link
+                                                to={`/agency/orders/${selectedOrder?._id}`}
                                                 className="text-sm text-primary hover:underline"
                                             >
                                                 Send Message
-                                            </button>
+                                            </Link>
                                         </div>
                                     </div>
                                 </div>
@@ -761,21 +737,17 @@ const NewAllOrders = () => {
                                 </h4>
                                 <div className="space-y-2">
                                     <div className="flex justify-between">
-                                        <span className="text-gray-600">Student Paid:</span>
-                                        <span className="font-medium">{formatCurrency(selectedOrder.amount)}</span>
-                                    </div>
-                                    <div className="flex justify-between">
-                                        <span className="text-gray-600">Your Earnings (Mentor Fee):</span>
-                                        <span className="font-bold text-green-600">{formatCurrency(selectedOrder.mentorFee)}</span>
+                                        <span className="text-gray-600">Mentor Fee:</span>
+                                        <span className="font-medium">{getCurrencySymbol()}{convertPrice(selectedOrder.mentorFee)}</span>
                                     </div>
                                     <div className="flex justify-between">
                                         <span className="text-gray-600">Partcer Fee:</span>
-                                        <span className="font-medium text-gray-500">{formatCurrency(selectedOrder.partnerFee)}</span>
+                                        <span className="font-medium">{getCurrencySymbol()}{convertPrice(selectedOrder.partnerFee)}</span>
                                     </div>
                                     <div className="border-t pt-2 mt-2">
                                         <div className="flex justify-between">
-                                            <span className="font-bold text-gray-900">Your Net Earnings:</span>
-                                            <span className="font-bold text-primary text-lg">{formatCurrency(selectedOrder.mentorFee)}</span>
+                                            <span className="font-bold text-gray-900">Total Paid:</span>
+                                            <span className="font-bold text-primary text-lg">{getCurrencySymbol()}{convertPrice(selectedOrder.amount)}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -810,7 +782,7 @@ const NewAllOrders = () => {
                                 <div className="bg-gray-50 p-4 rounded-lg">
                                     <h4 className="font-medium mb-3 flex items-center gap-2">
                                         <Star size={16} className="" />
-                                        Student Review
+                                        Your Review
                                     </h4>
                                     <div className="space-y-2">
                                         <div className="flex items-center gap-1">
@@ -847,7 +819,7 @@ const NewAllOrders = () => {
                                 <div className="bg-gray-50 p-4 rounded-lg">
                                     <h4 className="font-medium mb-3 flex items-center gap-2">
                                         <Star size={16} className="" />
-                                        Your Review
+                                        Mentor Review
                                     </h4>
                                     <div className="space-y-2">
                                         <div className="flex items-center gap-1">
@@ -881,14 +853,24 @@ const NewAllOrders = () => {
 
                             {/* Actions */}
                             <div className="flex gap-3 pt-4">
-                                <button
-                                    onClick={() => handleMessage(selectedOrder)}
+                                <Link
+                                    to={`/agency/chat?user=${selectedOrder?.mentorId?._id}`}
+                                    // to={`/agency/chat?user=${selectedOrder.mentorId?._id}`}
                                     className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-center flex items-center justify-center gap-2"
                                 >
                                     <MessageCircle size={16} />
-                                    Message Student
-                                </button>
-                                {selectedOrder.orderStatus === 'completed' && !selectedOrder.mentorReviewed && (
+                                    Message Mentor
+                                </Link>
+                                {selectedOrder.deliveryStatus === 'delivered' && !selectedOrder.completed && (
+                                    <button
+                                        onClick={() => handleCompleteOrder(selectedOrder._id)}
+                                        className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center justify-center gap-2"
+                                    >
+                                        <CheckCircle size={16} />
+                                        Confirm & Complete Order
+                                    </button>
+                                )}
+                                {selectedOrder.orderStatus === 'completed' && !selectedOrder.studentReviewed && (
                                     <button
                                         onClick={() => {
                                             setShowReviewModal(true);
@@ -900,89 +882,6 @@ const NewAllOrders = () => {
                                         Leave Review
                                     </button>
                                 )}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Delivery Modal */}
-            {showDeliveryModal && selectedOrder && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-xl max-w-lg w-full">
-                        <div className="p-6 border-b border-gray-200 flex justify-between items-center">
-                            <h3 className="text-xl font-bold text-gray-900">Mark Order as Delivered</h3>
-                            <button
-                                onClick={() => {
-                                    setShowDeliveryModal(false);
-                                    setDeliveryNotes('');
-                                    setDeliveryAttachments([]);
-                                }}
-                                className="p-2 hover:bg-gray-100 rounded-lg"
-                            >
-                                <XCircle size={20} />
-                            </button>
-                        </div>
-                        <div className="p-6 space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Delivery Notes *
-                                </label>
-                                <textarea
-                                    value={deliveryNotes}
-                                    onChange={(e) => setDeliveryNotes(e.target.value)}
-                                    rows={4}
-                                    placeholder="Describe what was delivered, any important information, next steps..."
-                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-                                />
-                            </div>
-
-                            {/* <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Attachments (Optional)
-                                </label>
-                                <input
-                                    type="file"
-                                    multiple
-                                    onChange={(e) => setDeliveryAttachments(Array.from(e.target.files))}
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-                                />
-                                {deliveryAttachments.length > 0 && (
-                                    <div className="mt-2 space-y-1">
-                                        {deliveryAttachments.map((file, idx) => (
-                                            <div key={idx} className="text-sm text-gray-600 flex items-center gap-2">
-                                                <Paperclip size={14} />
-                                                {file.name}
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                            </div> */}
-
-                            <div className="bg-yellow-50 p-3 rounded-lg">
-                                <p className="text-xs text-yellow-700">
-                                    ⓘ Once marked as delivered, the student will be notified and can review the delivery.
-                                    The order will be marked as completed only after student confirmation.
-                                </p>
-                            </div>
-
-                            <div className="flex gap-3 pt-4">
-                                <button
-                                    onClick={() => {
-                                        setShowDeliveryModal(false);
-                                        setDeliveryNotes('');
-                                        setDeliveryAttachments([]);
-                                    }}
-                                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    onClick={() => handleDeliverOrder(selectedOrder._id)}
-                                    className="flex-1 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark"
-                                >
-                                    Mark as Delivered
-                                </button>
                             </div>
                         </div>
                     </div>

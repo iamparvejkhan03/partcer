@@ -16,7 +16,7 @@ const getAllUsers = asyncHandler(async (req, res) => {
     verified,
     search,
     page = 1,
-    limit = 10,
+    limit = 100,
     sortBy = "createdAt",
     sortOrder = "desc",
     dateRange,
@@ -46,6 +46,7 @@ const getAllUsers = asyncHandler(async (req, res) => {
     query.$or = [
       { firstName: { $regex: search, $options: "i" } },
       { lastName: { $regex: search, $options: "i" } },
+      { agencyName: { $regex: search, $options: "i" } },
       { email: { $regex: search, $options: "i" } },
       { "location.country": { $regex: search, $options: "i" } },
       { "location.city": { $regex: search, $options: "i" } },
@@ -107,6 +108,7 @@ const getUserStats = asyncHandler(async (req, res) => {
 
   const freelancers = await User.countDocuments({ userType: "freelancer" });
   const buyers = await User.countDocuments({ userType: "buyer" });
+  const agencies = await User.countDocuments({ userType: "agency" });
   const admins = await User.countDocuments({ userType: "admin" });
 
   const verified = await User.countDocuments({ isVerified: true });
@@ -139,6 +141,7 @@ const getUserStats = asyncHandler(async (req, res) => {
     pending,
     freelancers,
     buyers,
+    agencies,
     admins,
     verified,
     unverified,
@@ -290,6 +293,7 @@ const deleteUser = asyncHandler(async (req, res) => {
   user.email = `deleted_${Date.now()}_${user.email}`;
   user.firstName = "Deleted";
   user.lastName = "User";
+  user.agencyName = undefined;
   user.phone = undefined;
   user.profileImage = undefined;
   user.status = "deleted";

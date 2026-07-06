@@ -79,7 +79,7 @@ export const requireFreelancer = (req, res, next) => {
 };
 
 export const requireBuyer = (req, res, next) => {
-  if (req.user.userType !== "buyer") {
+  if (req.user.userType !== "buyer" && req.user.userType !== "agency") {
     return res.status(403).json({
       success: false,
       message: "Only buyers can perform this action",

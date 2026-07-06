@@ -253,7 +253,7 @@ const cancelWithdrawal = asyncHandler(async (req, res) => {
     const adminEmail = process.env.EMAIL_USER;
 
     if (adminEmail) {
-        const mentor = await User.findById(freelancerId).select("firstName lastName email");
+        const mentor = await User.findById(freelancerId).select("firstName lastName agencyName email");
         if (mentor) {
             const cancellationReason = withdrawal.cancellationReason;
             withdrawalCancellationAdminNotification(transporter, adminEmail, withdrawal, mentor, cancellationReason)
@@ -280,8 +280,8 @@ const adminGetWithdrawals = asyncHandler(async (req, res) => {
     const skip = (Number(page) - 1) * Number(limit);
 
     const withdrawals = await Withdrawal.find(query)
-        .populate("freelancerId", "firstName lastName email displayName")
-        .populate("processedBy", "firstName lastName email")
+        .populate("freelancerId", "firstName lastName agencyName email displayName")
+        .populate("processedBy", "firstName lastName agencyName email")
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(Number(limit));
@@ -326,7 +326,7 @@ const processWithdrawal = asyncHandler(async (req, res) => {
 
     await withdrawal.save();
 
-    const mentor = await User.findById(withdrawal.freelancerId).select("firstName lastName email");
+    const mentor = await User.findById(withdrawal.freelancerId).select("firstName lastName agencyName email");
 
     if (mentor) {
         const updateDetails = {

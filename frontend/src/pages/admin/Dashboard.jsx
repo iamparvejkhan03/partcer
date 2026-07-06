@@ -28,7 +28,8 @@ import {
   CreditCard,
   Handshake,
   UserCircle,
-  BanknoteArrowDown
+  BanknoteArrowDown,
+  Building
 } from "lucide-react";
 
 const Dashboard = () => {
@@ -104,6 +105,14 @@ const Dashboard = () => {
       icon: <ShoppingBag size={24} />,
       trend: "up",
       description: "Service buyers"
+    },
+    {
+      title: "Agencies",
+      value: formatNumber(dashboardData.users?.agencies),
+      change: `${dashboardData.users?.newThisWeek || 0} this week`,
+      icon: <Building size={24} />,
+      trend: "up",
+      description: "Service agencies"
     },
     {
       title: "Active Users",

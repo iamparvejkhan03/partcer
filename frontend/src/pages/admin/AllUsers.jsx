@@ -35,7 +35,8 @@ import {
     Activity,
     TrendingUp,
     TrendingDown,
-    X
+    X,
+    Building
 } from "lucide-react";
 import { AdminSidebar, AdminHeader, AdminContainer } from '../../components';
 import toast from 'react-hot-toast';
@@ -53,7 +54,7 @@ const AllUsers = () => {
     const [verificationFilter, setVerificationFilter] = useState('all');
     const [dateRange, setDateRange] = useState('all');
     const [currentPage, setCurrentPage] = useState(1);
-    const [itemsPerPage] = useState(10);
+    const [itemsPerPage] = useState(100);
     const [selectedUser, setSelectedUser] = useState(null);
     const [showUserModal, setShowUserModal] = useState(false);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -71,6 +72,7 @@ const AllUsers = () => {
         pending: 0,
         freelancers: 0,
         buyers: 0,
+        agencies: 0,
         admins: 0,
         verified: 0,
         unverified: 0,
@@ -144,6 +146,7 @@ const AllUsers = () => {
             filtered = filtered.filter(user =>
                 user.firstName?.toLowerCase().includes(term) ||
                 user.lastName?.toLowerCase().includes(term) ||
+                user.agencyName?.toLowerCase().includes(term) ||
                 `${user.firstName} ${user.lastName}`.toLowerCase().includes(term) ||
                 user.email?.toLowerCase().includes(term) ||
                 user.country?.toLowerCase().includes(term) ||
@@ -190,8 +193,8 @@ const AllUsers = () => {
         }
 
         setFilteredUsers(filtered);
-        setCurrentPage(1); // Reset to first page when filters change
-    }, [allUsers, searchTerm, roleFilter, statusFilter, verificationFilter, dateRange]);
+        // setCurrentPage(1); 
+    }, [searchTerm, roleFilter, statusFilter, verificationFilter, dateRange]);
 
     // Apply filters whenever any filter changes
     useEffect(() => {
@@ -206,7 +209,8 @@ const AllUsers = () => {
         const config = {
             admin: { bg: 'bg-purple-100', text: 'text-purple-700', label: 'Admin', icon: Shield },
             freelancer: { bg: 'bg-green-100', text: 'text-green-700', label: 'Mentor', icon: Briefcase },
-            buyer: { bg: 'bg-blue-100', text: 'text-blue-700', label: 'Student', icon: ShoppingBag }
+            buyer: { bg: 'bg-blue-100', text: 'text-blue-700', label: 'Student', icon: ShoppingBag },
+            agency: { bg: 'bg-purple-100', text: 'text-purple-700', label: 'Agency', icon: ShoppingBag },
         };
         const badge = config[role] || config.buyer;
         const Icon = badge.icon;
@@ -567,6 +571,17 @@ const AllUsers = () => {
                                 </div>
                             </div>
                         </div>
+                        <div className="bg-white p-4 rounded-xl border border-gray-200">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 bg-purple-100 rounded-lg">
+                                    <Building size={20} className="text-purple-600" />
+                                </div>
+                                <div>
+                                    <p className="text-xs text-gray-600">Agencies</p>
+                                    <p className="text-xl font-bold">{stats.agencies}</p>
+                                </div>
+                            </div>
+                        </div>
                         {/* <div className="bg-white p-4 rounded-xl border border-gray-200">
                             <div className="flex items-center gap-3">
                                 <div className="p-2 bg-yellow-100 rounded-lg">
@@ -577,7 +592,7 @@ const AllUsers = () => {
                                     <p className="text-xl font-bold">{stats.pending}</p>
                                 </div>
                             </div>
-                        </div> */}
+                        </div> 
                         <div className="bg-white p-4 rounded-xl border border-gray-200">
                             <div className="flex items-center gap-3">
                                 <div className="p-2 bg-red-100 rounded-lg">
@@ -588,7 +603,7 @@ const AllUsers = () => {
                                     <p className="text-xl font-bold">{stats.banned}</p>
                                 </div>
                             </div>
-                        </div>
+                        </div>*/}
                     </div>
 
                     {/* Filters */}
@@ -616,6 +631,7 @@ const AllUsers = () => {
                                     <option value="all">All Roles</option>
                                     <option value="freelancer">Mentor</option>
                                     <option value="buyer">Student</option>
+                                    <option value="agency">Student</option>
                                     <option value="admin">Admin</option>
                                 </select>
                                 <select
@@ -685,11 +701,11 @@ const AllUsers = () => {
                                                     <div className="flex items-center gap-3">
                                                         <img
                                                             src={user.profileImage || dummyUserImg}
-                                                            alt={user.firstName + ' ' + user.lastName}
+                                                            alt={user.agencyName || `${user.firstName} ${user.lastName}`}
                                                             className="w-10 h-10 rounded-full object-cover"
                                                         />
                                                         <div>
-                                                            <div className="font-medium text-gray-900">{user.firstName} {user.lastName}</div>
+                                                            <div className="font-medium text-gray-900">{user.agencyName || `${user.firstName} ${user.lastName}`}</div>
                                                             <div className="text-xs text-gray-500">{user.email}</div>
                                                             {user.badges && user.badges.length > 0 && (
                                                                 <div className="flex gap-1 mt-1">
@@ -738,13 +754,13 @@ const AllUsers = () => {
                                                         >
                                                             <Eye size={18} />
                                                         </button>
-                                                        <button
+                                                        {/* <button
                                                             onClick={() => handleEditUser(user?._id)}
                                                             className="p-2 text-gray-600 hover:text-primary hover:bg-gray-100 rounded-lg"
                                                             title="Edit User"
                                                         >
                                                             <Edit size={18} />
-                                                        </button>
+                                                        </button> */}
                                                         {/* <button
                                                             onClick={() => handleSendMessage(user?._id)}
                                                             className="p-2 text-gray-600 hover:text-primary hover:bg-gray-100 rounded-lg"
@@ -892,12 +908,12 @@ const AllUsers = () => {
                                     <div className="flex items-start gap-3 mb-3">
                                         <img
                                             src={user.profileImage || dummyUserImg}
-                                            alt={user.firstName + ' ' + user.lastName}
+                                            alt={user.agencyName || `${user.firstName} ${user.lastName}`}
                                             className="w-10 h-10 rounded-full object-cover"
                                         />
                                         <div className="flex-1">
                                             <div className="flex items-center justify-between">
-                                                <h3 className="font-medium text-gray-900">{user.name}</h3>
+                                                <h3 className="font-medium text-gray-900">{user.agencyName || `${user.firstName} ${user.lastName}`}</h3>
                                                 <div className="flex gap-1">
                                                     {getRoleBadge(user?.userType)}
                                                 </div>
@@ -959,12 +975,12 @@ const AllUsers = () => {
                                             >
                                                 <Eye size={18} />
                                             </button>
-                                            <button
+                                            {/* <button
                                                 onClick={() => handleEditUser(user?._id)}
                                                 className="p-2 text-gray-600 hover:text-primary hover:bg-gray-100 rounded-lg"
                                             >
                                                 <Edit size={18} />
-                                            </button>
+                                            </button> */}
                                             {/* <button
                                                 onClick={() => handleSendMessage(user?._id)}
                                                 className="p-2 text-gray-600 hover:text-primary hover:bg-gray-100 rounded-lg"
@@ -1206,12 +1222,12 @@ const AllUsers = () => {
                             <div className="flex items-start gap-4">
                                 <img
                                     src={selectedUser.profileImage || dummyUserImg}
-                                    alt={selectedUser.firstName + ' ' + selectedUser.lastName}
+                                    alt={selectedUser.agencyName || `${selectedUser.firstName} ${selectedUser.lastName}`}
                                     className="w-10 h-10 rounded-full object-cover"
                                 />
                                 <div className="flex-1">
                                     <div className="flex items-center gap-2">
-                                        <h4 className="text-xl font-bold text-gray-900">{selectedUser.name}</h4>
+                                        <h4 className="text-xl font-bold text-gray-900">{selectedUser.agencyName || `${selectedUser.firstName} ${selectedUser.lastName}`}</h4>
                                         {selectedUser.badges?.includes('top_rated') && (
                                             <span className="px-2 py-1 bg-yellow-100 text-yellow-700 text-xs rounded-full">
                                                 Top Rated
@@ -1372,13 +1388,13 @@ const AllUsers = () => {
 
                             {/* Actions */}
                             <div className="flex flex-wrap gap-3 pt-4">
-                                <button
+                                {/* <button
                                     onClick={() => handleEditUser(selectedUser?._id)}
                                     className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 flex items-center justify-center gap-2"
                                 >
                                     <Edit size={18} />
                                     Edit User
-                                </button>
+                                </button> */}
                                 <button
                                     onClick={() => handleViewMore(selectedUser?._id)}
                                     className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 flex items-center justify-center gap-2"
@@ -1441,7 +1457,7 @@ const AllUsers = () => {
                     <div className="bg-white rounded-xl max-w-md w-full p-6">
                         <h3 className="text-xl font-bold text-gray-900 mb-2">Verify User</h3>
                         <p className="text-gray-600 mb-6">
-                            Are you sure you want to verify "{selectedUser?.firstName + " " + selectedUser?.lastName}"? This will mark their account as verified.
+                            Are you sure you want to verify "{selectedUser?.agencyName || `${selectedUser?.firstName} ${selectedUser?.lastName}`}"? This will mark their account as verified.
                         </p>
                         <div className="flex gap-3">
                             <button
@@ -1470,7 +1486,7 @@ const AllUsers = () => {
                     <div className="bg-white rounded-xl max-w-md w-full p-6">
                         <h3 className="text-xl font-bold text-gray-900 mb-2">Suspend User</h3>
                         <p className="text-gray-600 mb-4">
-                            Are you sure you want to suspend "{selectedUser?.firstName + " " + selectedUser?.lastName}"?
+                            Are you sure you want to suspend "{selectedUser?.agencyName || `${selectedUser?.firstName} ${selectedUser?.lastName}`}"?
                         </p>
                         <div className="mb-4">
                             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -1517,7 +1533,7 @@ const AllUsers = () => {
                     <div className="bg-white rounded-xl max-w-md w-full p-6">
                         <h3 className="text-xl font-bold text-gray-900 mb-2">Ban User</h3>
                         <p className="text-gray-600 mb-4">
-                            Are you sure you want to ban "{selectedUser?.firstName + " " + selectedUser?.lastName}"? This action cannot be undone.
+                            Are you sure you want to ban "{selectedUser?.agencyName || `${selectedUser?.firstName} ${selectedUser?.lastName}`}"? This action cannot be undone.
                         </p>
                         <div className="mb-4">
                             <label className="block text-sm font-medium text-gray-700 mb-2">

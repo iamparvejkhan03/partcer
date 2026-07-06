@@ -438,13 +438,13 @@ const Earnings = () => {
                                                         <Info size={16} />
                                                     </button>
 
-                                                    <button
+                                                    {/* <button
                                                         onClick={() => navigate(`/freelancer/orders/${transaction.orderId}`)}
                                                         className="p-2 text-gray-600 hover:text-primary hover:bg-gray-100 rounded-lg transition-colors"
                                                         title="View Details"
                                                     >
                                                         <Eye size={18} />
-                                                    </button>
+                                                    </button> */}
                                                 </td>
                                             </tr>
                                         ))
@@ -718,12 +718,12 @@ const Earnings = () => {
                                 {/* <button className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
                                     Download Invoice
                                 </button> */}
-                                <Link
+                                {/* <Link
                                     to={`/freelancer/orders/${selectedTransaction.id}`}
                                     className="flex-1 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark text-center"
                                 >
                                     View Order
-                                </Link>
+                                </Link> */}
                             </div>
                         </div>
                     </div>

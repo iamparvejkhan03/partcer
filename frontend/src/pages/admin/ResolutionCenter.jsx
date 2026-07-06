@@ -33,6 +33,7 @@ import { AdminSidebar, AdminHeader, AdminContainer } from '../../components';
 import toast from 'react-hot-toast';
 import axiosInstance from '../../utils/axiosInstance';
 import { format } from 'date-fns';
+import { dummyUserImg } from '../../assets';
 
 const ResolutionCenter = () => {
     const [resolutions, setResolutions] = useState([]);
@@ -145,6 +146,7 @@ const ResolutionCenter = () => {
                 resolution.complaint?.toLowerCase().includes(term) ||
                 resolution.userId?.firstName?.toLowerCase().includes(term) ||
                 resolution.userId?.lastName?.toLowerCase().includes(term) ||
+                resolution.userId?.agencyName?.toLowerCase().includes(term) ||
                 resolution.mentorId?.firstName?.toLowerCase().includes(term) ||
                 resolution.mentorId?.lastName?.toLowerCase().includes(term)
             );
@@ -393,13 +395,13 @@ const ResolutionCenter = () => {
                                                     <td className="px-4 py-3">
                                                         <div className="flex items-center gap-2">
                                                             <img
-                                                                src={resolution.userId?.profileImage || 'https://via.placeholder.com/32'}
-                                                                alt={resolution.userId?.firstName}
+                                                                src={resolution.userId?.profileImage || dummyUserImg}
+                                                                alt={resolution.userId?.agencyName || `${resolution.userId?.firstName} ${resolution.userId?.lastName}`}
                                                                 className="w-8 h-8 rounded-full object-cover"
                                                             />
                                                             <div>
                                                                 <div className="text-sm font-medium text-gray-900">
-                                                                    {resolution.userId?.firstName} {resolution.userId?.lastName}
+                                                                    {resolution.userId?.agencyName || `${resolution.userId?.firstName} ${resolution.userId?.lastName}`}
                                                                 </div>
                                                                 <div className="text-xs text-gray-500">{resolution.userId?.email}</div>
                                                             </div>
@@ -408,13 +410,13 @@ const ResolutionCenter = () => {
                                                     <td className="px-4 py-3">
                                                         <div className="flex items-center gap-2">
                                                             <img
-                                                                src={resolution.mentorId?.profileImage || 'https://via.placeholder.com/32'}
-                                                                alt={resolution.mentorId?.firstName}
+                                                                src={resolution.mentorId?.profileImage || dummyUserImg}
+                                                                alt={resolution.mentorId?.agencyName || `${resolution.mentorId?.firstName} ${resolution.mentorId?.lastName}`}
                                                                 className="w-8 h-8 rounded-full object-cover"
                                                             />
                                                             <div>
                                                                 <div className="text-sm font-medium text-gray-900">
-                                                                    {resolution.mentorId?.firstName} {resolution.mentorId?.lastName}
+                                                                    {resolution.mentorId?.agencyName || `${resolution.mentorId?.firstName} ${resolution.mentorId?.lastName}`}
                                                                 </div>
                                                                 <div className="text-xs text-gray-500">{resolution.mentorId?.email}</div>
                                                             </div>
@@ -554,13 +556,13 @@ const ResolutionCenter = () => {
                                 </h4>
                                 <div className="flex items-start gap-3">
                                     <img
-                                        src={selectedResolution.userId?.profileImage || 'https://via.placeholder.com/48'}
-                                        alt={selectedResolution.userId?.firstName}
+                                        src={selectedResolution.userId?.profileImage || dummyUserImg}
+                                        alt={selectedResolution.userId?.agencyName || `${selectedResolution.userId?.firstName} ${selectedResolution.userId?.lastName}`}
                                         className="w-12 h-12 rounded-full object-cover"
                                     />
                                     <div>
                                         <p className="font-medium text-gray-900">
-                                            {selectedResolution.userId?.firstName} {selectedResolution.userId?.lastName}
+                                            {selectedResolution.userId?.agencyName || `${selectedResolution.userId?.firstName} ${selectedResolution.userId?.lastName}`}
                                         </p>
                                         <p className="text-sm text-gray-600">{selectedResolution.userId?.email}</p>
                                     </div>
@@ -575,13 +577,13 @@ const ResolutionCenter = () => {
                                 </h4>
                                 <div className="flex items-start gap-3">
                                     <img
-                                        src={selectedResolution.mentorId?.profileImage || 'https://via.placeholder.com/48'}
-                                        alt={selectedResolution.mentorId?.firstName}
+                                        src={selectedResolution.mentorId?.profileImage || dummyUserImg}
+                                        alt={selectedResolution.mentorId?.agencyName || `${selectedResolution.mentorId?.firstName} ${selectedResolution.mentorId?.lastName}`}
                                         className="w-12 h-12 rounded-full object-cover"
                                     />
                                     <div>
                                         <p className="font-medium text-gray-900">
-                                            {selectedResolution.mentorId?.firstName} {selectedResolution.mentorId?.lastName}
+                                            {selectedResolution.mentorId?.agencyName || `${selectedResolution.mentorId?.firstName} ${selectedResolution.mentorId?.lastName}`}
                                         </p>
                                         <p className="text-sm text-gray-600">{selectedResolution.mentorId?.email}</p>
                                     </div>

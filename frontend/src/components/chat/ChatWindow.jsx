@@ -171,7 +171,7 @@ const ChatWindow = ({
                     <div className="relative">
                         <Avatar
                             src={otherParticipant?.profileImage}
-                            name={`${otherParticipant?.firstName} ${otherParticipant?.lastName}`}
+                            name={otherParticipant?.agencyName ? otherParticipant.agencyName : `${otherParticipant.firstName} ${otherParticipant.lastName}`}
                             size="md"
                         />
                         {isOnline && (
@@ -181,7 +181,8 @@ const ChatWindow = ({
 
                     <div>
                         <h3 className="font-medium text-sm sm:text-base sm::font-semibold text-gray-900">
-                            {otherParticipant?.firstName} {otherParticipant?.lastName}
+                            {/* {otherParticipant?.firstName} {otherParticipant?.lastName} */}
+                            {otherParticipant?.agencyName ? otherParticipant.agencyName : `${otherParticipant.firstName} ${otherParticipant.lastName}`}
                         </h3>
                         <p className="text-sm text-gray-500">
                             {isOnline ? 'Online' : 'Offline'}

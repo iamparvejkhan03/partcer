@@ -82,7 +82,7 @@ export const createOrGetConversation = asyncHandler(async (req, res) => {
 
   await conversation.populate(
     "participants",
-    "firstName lastName profileImage userType",
+    "firstName lastName agencyName profileImage userType",
   );
 
   return res
@@ -157,7 +157,7 @@ export const getSavedMessages = asyncHandler(async (req, res) => {
   }
 
   const savedMessages = await SavedMessage.find(filter)
-    .populate("sender", "firstName lastName profileImage")
+    .populate("sender", "firstName lastName agencyName profileImage")
     .sort({ savedAt: -1 });
 
   return res
@@ -174,7 +174,7 @@ export const getResources = asyncHandler(async (req, res) => {
     isResource: true,
     "attachments.0": { $exists: true }, // Has attachments
   })
-    .populate("sender", "firstName lastName profileImage userType")
+    .populate("sender", "firstName lastName agencyName profileImage userType")
     .sort({ createdAt: -1 });
 
   return res
@@ -339,11 +339,11 @@ export const createMeeting = asyncHandler(async (req, res) => {
   });
 
   // Populate response
-  await meeting.populate("mentorId", "firstName lastName profileImage");
-  await meeting.populate("learnerId", "firstName lastName profileImage");
+  await meeting.populate("mentorId", "firstName lastName agencyName profileImage");
+  await meeting.populate("learnerId", "firstName lastName agencyName profileImage");
 
-  const student = await User.findById(meeting.learnerId).select("firstName lastName email");
-  const mentor = await User.findById(meeting.mentorId).select("firstName lastName");
+  const student = await User.findById(meeting.learnerId).select("firstName lastName agencyName userType email");
+  const mentor = await User.findById(meeting.mentorId).select("firstName lastName agencyName userType");
 
   if (student && mentor) {
     meetingNotificationForStudent(transporter, student, mentor, meeting, 'created')

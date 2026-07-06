@@ -104,8 +104,8 @@ export const addOrderReview = asyncHandler(async (req, res) => {
 
     await order.save();
 
-    const revieweeUser = await User.findById(reviewee).select("firstName lastName email");
-    const reviewerUser = await User.findById(reviewer).select("firstName lastName");
+    const revieweeUser = await User.findById(reviewee).select("firstName lastName agencyName email");
+    const reviewerUser = await User.findById(reviewer).select("firstName lastName agencyName email");
 
     if (revieweeUser && reviewerUser) {
         const reviewDetails = {
@@ -121,8 +121,8 @@ export const addOrderReview = asyncHandler(async (req, res) => {
 
     // Populate response
     await review.populate([
-        { path: "reviewer", select: "firstName lastName displayName profileImage" },
-        { path: "reviewee", select: "firstName lastName displayName profileImage" },
+        { path: "reviewer", select: "firstName lastName agencyName displayName profileImage" },
+        { path: "reviewee", select: "firstName lastName agencyName displayName profileImage" },
     ]);
 
     return res
@@ -319,8 +319,8 @@ export const updateReview = asyncHandler(async (req, res) => {
 
     // Populate response
     await review.populate([
-        { path: "reviewer", select: "firstName lastName displayName profileImage" },
-        { path: "reviewee", select: "firstName lastName displayName profileImage" },
+        { path: "reviewer", select: "firstName lastName agencyName displayName profileImage" },
+        { path: "reviewee", select: "firstName lastName agencyName displayName profileImage" },
     ]);
 
     return res
@@ -568,8 +568,8 @@ export const adminGetAllReviews = asyncHandler(async (req, res) => {
     sort[sortBy] = sortOrder === "desc" ? -1 : 1;
 
     const reviews = await Review.find(query)
-        .populate("reviewer", "firstName lastName email userType")
-        .populate("reviewee", "firstName lastName email userType")
+        .populate("reviewer", "firstName lastName agencyName email userType")
+        .populate("reviewee", "firstName lastName agencyName email userType")
         .populate("order", "orderId serviceType")
         .sort(sort)
         .limit(parseInt(limit))
@@ -637,12 +637,12 @@ export const adminGetReviewDetails = asyncHandler(async (req, res) => {
     const { reviewId } = req.params;
 
     const review = await Review.findById(reviewId)
-        .populate("reviewer", "firstName lastName email userType profileImage")
-        .populate("reviewee", "firstName lastName email userType profileImage")
+        .populate("reviewer", "firstName lastName agencyName email userType profileImage")
+        .populate("reviewee", "firstName lastName agencyName email userType profileImage")
         .populate("order", "orderId orderStatus amount serviceType period duration")
-        .populate("flags.flaggedBy", "firstName lastName email")
-        .populate("moderationHistory.moderatedBy", "firstName lastName email")
-        .populate("response.respondedBy", "firstName lastName");
+        .populate("flags.flaggedBy", "firstName lastName agencyName email")
+        .populate("moderationHistory.moderatedBy", "firstName lastName agencyName email")
+        .populate("response.respondedBy", "firstName lastName agencyName email");
 
     if (!review) {
         throw new ApiError(404, "Review not found");
