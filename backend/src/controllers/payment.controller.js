@@ -760,7 +760,7 @@ export const markOrderDelivered = asyncHandler(async (req, res) => {
     // Check if all sessions are approved
     const allApproved = await checkAllSessionsApproved(orderId);
     if (!allApproved) {
-        throw new ApiError(400, "All sessions must be approved before marking order as delivered");
+        throw new ApiError(400, "All sessions must be approved before making the final delivery.");
     }
 
     order.deliveryStatus = 'delivered';

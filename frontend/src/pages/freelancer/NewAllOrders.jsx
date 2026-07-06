@@ -29,6 +29,7 @@ import axiosInstance from '../../utils/axiosInstance';
 import { useAuth } from '../../contexts/AuthContext';
 import { format } from 'date-fns';
 import { useNotifications } from '../../contexts/NotificationContext';
+import { dummyUserImg } from '../../assets';
 
 const NewAllOrders = () => {
     const [orders, setOrders] = useState([]);
@@ -427,7 +428,7 @@ const NewAllOrders = () => {
 
                                         <div className="flex items-center gap-2 mb-3">
                                             <img
-                                                src={order.studentId?.profileImage || 'https://via.placeholder.com/32'}
+                                                src={order.studentId?.profileImage || dummyUserImg}
                                                 alt={order.studentId?.firstName || order.studentId?.agencyName || 'Student'}
                                                 className="w-6 h-6 rounded-full object-cover"
                                             />
@@ -503,7 +504,7 @@ const NewAllOrders = () => {
                                                 <td className="px-6 py-4">
                                                     <div className="flex items-center gap-2">
                                                         <img
-                                                            src={order.studentId?.profileImage || 'https://via.placeholder.com/32'}
+                                                            src={order.studentId?.profileImage || dummyUserImg}
                                                             alt={order.studentId?.firstName || order.studentId?.agencyName || 'Student'}
                                                             className="w-8 h-8 rounded-full object-cover"
                                                         />
@@ -710,7 +711,7 @@ const NewAllOrders = () => {
                                 </h4>
                                 <div className="flex items-start gap-3">
                                     <img
-                                        src={selectedOrder.studentId?.profileImage || 'https://via.placeholder.com/48'}
+                                        src={selectedOrder.studentId?.profileImage || dummyUserImg}
                                         alt={selectedOrder.studentId?.firstName || selectedOrder.studentId?.agencyName || 'Student'}
                                         className="w-12 h-12 rounded-full object-cover"
                                     />

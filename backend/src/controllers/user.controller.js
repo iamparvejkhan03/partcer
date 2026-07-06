@@ -463,6 +463,8 @@ const updateProfile = asyncHandler(async (req, res) => {
     languages,
     agencyName,
     notificationPreferences,
+    education,
+    experience,
   } = req.body;
 
   const user = await User.findById(req.user._id);
@@ -654,6 +656,30 @@ const updateProfile = asyncHandler(async (req, res) => {
       };
     } catch (error) {
       console.error("Error parsing notification preferences:", error);
+    }
+  }
+
+  if (education !== undefined) {
+    try {
+      if (typeof education === "string" && education.startsWith("[")) {
+        user.education = JSON.parse(education);
+      } else if (Array.isArray(education)) {
+        user.education = education;
+      }
+    } catch (error) {
+      console.error("Error parsing education:", error);
+    }
+  }
+
+  if (experience !== undefined) {
+    try {
+      if (typeof experience === "string" && experience.startsWith("[")) {
+        user.experience = JSON.parse(experience);
+      } else if (Array.isArray(experience)) {
+        user.experience = experience;
+      }
+    } catch (error) {
+      console.error("Error parsing experience:", error);
     }
   }
 
@@ -1171,7 +1197,7 @@ const getFreelancerPublicProfile = asyncHandler(async (req, res) => {
 
   // Convert to plain object so we can add the orderCount
   const freelancerObject = freelancer.toObject();
-  
+
   // Add orderCount to the response
   freelancerObject.orderCount = orderCount;
 

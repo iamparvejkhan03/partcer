@@ -54,7 +54,7 @@ function Header() {
                             <Link to={`/buyer/profile`}><img src={user?.profileImage} alt="userImage" className="h-10 w-10 rounded-full object-cover" /></Link>
                             :
                             <Link to={`/buyer/profile`} className="h-10 w-10 rounded-full bg-gradient-to-r from-gray-800 to-gray-950 flex items-center justify-center text-white font-semibold">
-                                {`${user?.displayName[0]}`}
+                                {`${user?.agencyName?.[0] || user?.firstName?.[0]}`}
                             </Link>
                     }
                 </div>

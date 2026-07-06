@@ -563,7 +563,7 @@ function AllProjects() {
                                 <option value="newest">Newest First</option>
                                 <option value="oldest">Oldest First</option>
                                 <option value="most_interested">Most Interested</option>
-                                <option value="least_interested">Least Interested</option>
+                                {/* <option value="least_interested">Least Interested</option> */}
                                 <option value="most_viewed">Most Viewed</option>
                             </select>
 

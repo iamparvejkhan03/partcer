@@ -23,7 +23,8 @@ import {
     Phone,
     MapPin,
     Award,
-    ArrowRight
+    ArrowRight,
+    Info
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { useAuth } from "../../contexts/AuthContext";
@@ -150,12 +151,17 @@ const ExperienceModal = ({ isOpen, onClose, onSave, initialData = null }) => {
                                     </label>
                                     <input
                                         type="date"
-                                        {...register("endDate")}
+                                        {...register("endDate", { required: !isCurrent ? "End date is required if it's not your current position" : false })}
                                         disabled={isCurrent}
                                         className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent ${isCurrent ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                                     />
                                 </div>
                             </div>
+
+                            {errors?.endDate && <p className="text-sm text-amber-500 flex items-center gap-2">
+                                <Info size={16} />
+                                {errors.endDate.message}
+                            </p>}
 
                             <div className="flex items-center gap-2">
                                 <input
@@ -192,9 +198,10 @@ const ExperienceModal = ({ isOpen, onClose, onSave, initialData = null }) => {
                                 </button>
                                 <button
                                     type="submit"
-                                    className="px-4 py-2 bg-primary hover:bg-primary/90 text-white rounded-lg font-medium"
+                                    className="px-4 py-2 bg-primary hover:bg-primary/90 text-white rounded-lg font-medium flex items-center justify-center gap-2"
                                 >
-                                    Save & Update
+                                    <Plus size={16} className="" />
+                                    <span>Add Education</span>
                                 </button>
                             </div>
                         </form>
@@ -311,12 +318,19 @@ const EducationModal = ({ isOpen, onClose, onSave, initialData = null }) => {
                                     </label>
                                     <input
                                         type="date"
-                                        {...register("endDate")}
+                                        {...register("endDate", { required: !isCurrent ? "End date is required if you're not currently studying here" : false })}
                                         disabled={isCurrent}
                                         className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent ${isCurrent ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                                     />
                                 </div>
                             </div>
+
+                            {errors.endDate && (
+                                <p className="mt-1 text-sm text-amber-600 flex items-center gap-2">
+                                    <Info size={16} />
+                                    {errors.endDate.message}
+                                </p>
+                            )}
 
                             <div className="flex items-center gap-2">
                                 <input
@@ -353,9 +367,10 @@ const EducationModal = ({ isOpen, onClose, onSave, initialData = null }) => {
                                 </button>
                                 <button
                                     type="submit"
-                                    className="px-4 py-2 bg-primary hover:bg-primary/90 text-white rounded-lg font-medium"
+                                    className="px-4 py-2 bg-primary hover:bg-primary/90 text-white rounded-lg font-medium flex items-center justify-center gap-2"
                                 >
-                                    Save & Update
+                                    <Plus size={16} className="" />
+                                    <span>Add Education</span>
                                 </button>
                             </div>
                         </form>
@@ -1117,83 +1132,57 @@ function Profile() {
         }
     };
 
-    const handleExperienceSave = async (data) => {
-        try {
-            let response;
-            if (editingExperience) {
-                response = await axiosInstance.patch(`/api/v1/users/experience/${editingExperience._id}`, data);
-            } else {
-                response = await axiosInstance.post('/api/v1/users/experience', data);
-            }
-
-            if (response.data.success) {
-                const freshUser = await fetchCurrentUser();
-                if (freshUser) {
-                    setExperiences(freshUser.experience || []);
-                }
-                toast.success(editingExperience ? 'Experience updated successfully!' : 'Experience added successfully!');
-            }
-        } catch (error) {
-            console.error('Experience save error:', error);
-            toast.error(error?.response?.data?.message || 'Failed to save experience');
+    const handleExperienceSave = (data) => {
+        if (editingExperience) {
+            const updatedExperiences = experiences.map(exp =>
+                exp._id === editingExperience._id ? { ...exp, ...data } : exp
+            );
+            setExperiences(updatedExperiences);
+            toast.success('Experience updated successfully!');
+        } else {
+            // Add new experience
+            const newExperience = {
+                ...data
+            };
+            setExperiences([...experiences, newExperience]);
+            toast.success('Experience added successfully!');
         }
+
+        setExperienceModalOpen(false);
+        setEditingExperience(null);
     };
 
-    const handleEducationSave = async (data) => {
-        try {
-            let response;
-            if (editingEducation) {
-                response = await axiosInstance.patch(`/api/v1/users/education/${editingEducation._id}`, data);
-            } else {
-                response = await axiosInstance.post('/api/v1/users/education', data);
-            }
-
-            if (response.data.success) {
-                const freshUser = await fetchCurrentUser();
-                if (freshUser) {
-                    setEducations(freshUser.education || []);
-                }
-                toast.success(editingEducation ? 'Education updated successfully!' : 'Education added successfully!');
-            }
-        } catch (error) {
-            console.error('Education save error:', error);
-            toast.error(error?.response?.data?.message || 'Failed to save education');
+    const handleEducationSave = (data) => {
+        if (editingEducation) {
+            const updatedEducations = educations.map(edu =>
+                edu._id === editingEducation._id ? { ...edu, ...data } : edu
+            );
+            setEducations(updatedEducations);
+            toast.success('Education updated successfully!');
+        } else {
+            // Add new education
+            const newEducation = {
+                ...data
+            };
+            setEducations([...educations, newEducation]);
+            toast.success('Education added successfully!');
         }
+
+        setEducationModalOpen(false);
+        setEditingEducation(null);
     };
 
-    const handleDeleteExperience = async (id) => {
+    const handleDeleteExperience = (id) => {
         if (window.confirm('Are you sure you want to delete this experience?')) {
-            try {
-                const response = await axiosInstance.delete(`/api/v1/users/experience/${id}`);
-                if (response.data.success) {
-                    const freshUser = await fetchCurrentUser();
-                    if (freshUser) {
-                        setExperiences(freshUser.experience || []);
-                    }
-                    toast.success('Experience deleted successfully!');
-                }
-            } catch (error) {
-                console.error('Delete experience error:', error);
-                toast.error(error?.response?.data?.message || 'Failed to delete experience');
-            }
+            setExperiences(experiences.filter(exp => exp._id !== id));
+            toast.success('Experience deleted successfully!');
         }
     };
 
-    const handleDeleteEducation = async (id) => {
+    const handleDeleteEducation = (id) => {
         if (window.confirm('Are you sure you want to delete this education?')) {
-            try {
-                const response = await axiosInstance.delete(`/api/v1/users/education/${id}`);
-                if (response.data.success) {
-                    const freshUser = await fetchCurrentUser();
-                    if (freshUser) {
-                        setEducations(freshUser.education || []);
-                    }
-                    toast.success('Education deleted successfully!');
-                }
-            } catch (error) {
-                console.error('Delete education error:', error);
-                toast.error(error?.response?.data?.message || 'Failed to delete education');
-            }
+            setEducations(educations.filter(edu => edu._id !== id));
+            toast.success('Education deleted successfully!');
         }
     };
 
@@ -1233,40 +1222,56 @@ function Profile() {
     const onSubmit = async (data) => {
         setLoading(true);
         try {
-            const formData = new FormData();
+            // Always convert arrays to JSON strings for consistency
+            const payload = {
+                firstName: data.firstName?.trim(),
+                lastName: data.lastName?.trim(),
+                phone: data.phoneNumber?.trim() || '',
+                gender: data.gender || '',
+                tagline: data.tagline?.trim() || '',
+                bio: data.bio?.trim() || '',
+                country: data.country || '',
+                freelancerType: data.freelancerType || 'independent',
+                englishLevel: data.englishLevel || '',
+                hourlyRate: data.hourlyRate ? parseFloat(data.hourlyRate) : 0,
+                experienceLevel: data.experienceLevel || '',
+                yearsOfExperience: data.yearsOfExperience ? parseInt(data.yearsOfExperience) : 0,
+                // Always stringify arrays for FormData
+                skills: JSON.stringify(selectedSkills || []),
+                categories: JSON.stringify(selectedCategories || []),
+                services: JSON.stringify(selectedServices || []),
+                languages: JSON.stringify(selectedLanguages || []),
+                education: JSON.stringify(educations || []),
+                experience: JSON.stringify(experiences || [])
+            };
 
-            // Append basic fields
-            formData.append('firstName', data.firstName);
-            formData.append('lastName', data.lastName);
-            formData.append('phone', data.phoneNumber || '');
-            formData.append('gender', data.gender || '');
-            formData.append('tagline', data.tagline || '');
-            formData.append('bio', data.bio || '');
-            formData.append('country', data.country || '');
+            let response;
 
-            // Append freelancer specific fields
-            formData.append('freelancerType', data.freelancerType);
-            formData.append('englishLevel', data.englishLevel);
-            formData.append('hourlyRate', data.hourlyRate);
-            formData.append('experienceLevel', data.experienceLevel);
-            formData.append('yearsOfExperience', data.yearsOfExperience);
-
-            // Append arrays as JSON strings
-            formData.append('skills', JSON.stringify(selectedSkills));
-            formData.append('categories', JSON.stringify(selectedCategories));
-            formData.append('services', JSON.stringify(selectedServices));
-            formData.append('languages', JSON.stringify(selectedLanguages));
-
-            // Append image if changed
             if (imageFile) {
+                const formData = new FormData();
                 formData.append('profileImage', imageFile);
-            }
 
-            const response = await axiosInstance.put('/api/v1/users/profile', formData, {
-                headers: {
-                    'Content-Type': 'multipart/form-data'
-                }
-            });
+                // Append each field as JSON string
+                Object.keys(payload).forEach(key => {
+                    formData.append(key, payload[key]);
+                });
+
+                response = await axiosInstance.put('/api/v1/users/profile', formData, {
+                    headers: {
+                        'Content-Type': 'multipart/form-data'
+                    }
+                });
+            } else {
+                // Send as JSON with arrays properly formatted
+                const jsonPayload = {
+                    ...payload,
+                    skills: selectedSkills || [],
+                    categories: selectedCategories || [],
+                    services: selectedServices || [],
+                    languages: selectedLanguages || []
+                };
+                response = await axiosInstance.put('/api/v1/users/profile', jsonPayload);
+            }
 
             if (response.data.success) {
                 const updatedUser = response.data.data;
@@ -1419,10 +1424,10 @@ function Profile() {
                             <div className="flex-1 h-1 bg-gray-200 rounded-full mr-3">
                                 <div
                                     className={`h-1 rounded-full transition-all duration-300 ${(watch('bio')?.length || 0) >= 900
-                                            ? (watch('bio')?.length || 0) >= 1000
-                                                ? 'bg-red-500'
-                                                : 'bg-orange-500'
-                                            : 'bg-primary'
+                                        ? (watch('bio')?.length || 0) >= 1000
+                                            ? 'bg-red-500'
+                                            : 'bg-orange-500'
+                                        : 'bg-primary'
                                         }`}
                                     style={{
                                         width: `${Math.min(((watch('bio')?.length || 0) / 1000) * 100, 100)}%`
@@ -1430,10 +1435,10 @@ function Profile() {
                                 />
                             </div>
                             <span className={`text-xs whitespace-nowrap ${(watch('bio')?.length || 0) > 900
-                                    ? (watch('bio')?.length || 0) >= 1000
-                                        ? 'text-red-500 font-medium'
-                                        : 'text-orange-500'
-                                    : 'text-gray-400'
+                                ? (watch('bio')?.length || 0) >= 1000
+                                    ? 'text-red-500 font-medium'
+                                    : 'text-orange-500'
+                                : 'text-gray-400'
                                 }`}>
                                 {watch('bio')?.length || 0}/1000
                             </span>
@@ -1634,7 +1639,7 @@ function Profile() {
             ) : (
                 <div className="space-y-4">
                     {experiences.map((exp) => (
-                        <div key={exp._id} className="bg-white p-4 rounded-lg border border-gray-200">
+                        <div key={exp?._id} className="bg-white p-4 rounded-lg border border-gray-200">
                             <div className="flex justify-between items-start">
                                 <div>
                                     <h3 className="font-semibold text-gray-900">{exp.jobTitle}</h3>

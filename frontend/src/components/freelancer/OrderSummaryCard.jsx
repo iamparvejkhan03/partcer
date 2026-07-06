@@ -271,7 +271,7 @@ const OrderSummaryCard = ({ order, sessionStats, sessions, user, onAction, onRef
                                 className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium flex items-center justify-center gap-2"
                             >
                                 <Send size={16} />
-                                Mark as Delivered
+                                Send Final Delivery
                             </button>
                         )}
 
@@ -485,7 +485,7 @@ const OrderSummaryCard = ({ order, sessionStats, sessions, user, onAction, onRef
                                 onClick={handleMarkAsDelivered}
                                 className="flex-1 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark"
                             >
-                                Mark as Delivered
+                                Send Final Delivery
                             </button>
                         </div>
                     </div>

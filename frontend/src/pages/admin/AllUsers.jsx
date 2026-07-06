@@ -631,7 +631,7 @@ const AllUsers = () => {
                                     <option value="all">All Roles</option>
                                     <option value="freelancer">Mentor</option>
                                     <option value="buyer">Student</option>
-                                    <option value="agency">Student</option>
+                                    <option value="agency">Agency</option>
                                     <option value="admin">Admin</option>
                                 </select>
                                 <select

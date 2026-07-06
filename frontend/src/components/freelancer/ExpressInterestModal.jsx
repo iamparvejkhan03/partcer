@@ -240,7 +240,7 @@ const ExpressInterestModal = ({ isOpen, onClose, projectDetails, onSubmit, isSub
                                     )}
                                 </div>
                                 <div className="flex items-center gap-1 text-sm">
-                                    <span className="text-gray-600">{user?.title || 'Data Engineer'}</span>
+                                    <span className="text-gray-600">{user?.tagline || 'Data Engineer'}</span>
                                     <span className="text-gray-300 mx-1">•</span>
                                     <div className="flex items-center gap-0.5">
                                         <Star size={12} className="fill-yellow-400 text-yellow-400" />
@@ -361,9 +361,9 @@ const ExpressInterestModal = ({ isOpen, onClose, projectDetails, onSubmit, isSub
                                             <span className="font-semibold"> {getDurationDisplayText()}</span>
                                             {selectedPeriod !== 'one_time' && (selectedDuration === 'standard' || selectedDuration === 'full_day') && ' — '} 
                                             {currency == 'USD' ? <span className="font-semibold text-green-900">
-                                                Learner pays {getCurrencySymbol()}{convertPrice(currentPricing.learnerPays).toLocaleString('en-US', { style: 'currency', currency: currency })}
+                                                You get {getCurrencySymbol()}{convertPrice(currentPricing.mentorFee).toLocaleString('en-US', { style: 'currency', currency: currency })}
                                             </span> : <span className="font-semibold text-green-900">
-                                                Learner pays {getCurrencySymbol()}{(currentPricing.learnerPays).toLocaleString()}
+                                                You get {getCurrencySymbol()}{(currentPricing.mentorFee).toLocaleString()}
                                             </span>}
                                         </p>
                                     </div>

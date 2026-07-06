@@ -209,7 +209,7 @@ const Checkout = () => {
             if (verifyResponse.success) {
                 toast.success('Payment successful! Your booking has been confirmed.');
                 setTimeout(() => {
-                    navigate(`/${user.userType}/orders/${verifyResponse.data.order._id}`);
+                    navigate(`/${user.userType}/orders`);
                 }, 2000);
             } else {
                 throw new Error(verifyResponse.message || 'Payment verification failed');

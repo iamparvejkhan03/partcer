@@ -25,6 +25,7 @@ import { AdminSidebar, AdminHeader, AdminContainer } from '../../components';
 import toast from 'react-hot-toast';
 import axiosInstance from '../../utils/axiosInstance';
 import { format } from 'date-fns';
+import { dummyUserImg } from '../../assets';
 
 const NewOrders = () => {
     const [orders, setOrders] = useState([]);
@@ -598,7 +599,7 @@ const NewOrders = () => {
                                     </h4>
                                     <div className="flex items-start gap-3">
                                         <img
-                                            src={selectedOrder.studentId?.profileImage || 'https://via.placeholder.com/48'}
+                                            src={selectedOrder.studentId?.profileImage || dummyUserImg}
                                             alt={selectedOrder.studentId?.agencyName || `${selectedOrder.studentId?.firstName} ${selectedOrder.studentId?.lastName}`}
                                             className="w-12 h-12 rounded-full object-cover"
                                         />
@@ -624,7 +625,7 @@ const NewOrders = () => {
                                     </h4>
                                     <div className="flex items-start gap-3">
                                         <img
-                                            src={selectedOrder.mentorId?.profileImage || 'https://via.placeholder.com/48'}
+                                            src={selectedOrder.mentorId?.profileImage || dummyUserImg}
                                             alt={selectedOrder.mentorId?.firstName}
                                             className="w-12 h-12 rounded-full object-cover"
                                         />

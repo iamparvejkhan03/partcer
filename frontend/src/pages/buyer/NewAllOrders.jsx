@@ -28,6 +28,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { format } from 'date-fns';
 import { useCurrency } from '../../hooks/useCurrency';
 import { formatOrderPrice } from '../../utils/currencyHelpers';
+import { dummyUserImg } from '../../assets';
 
 const NewAllOrders = () => {
     const [orders, setOrders] = useState([]);
@@ -390,7 +391,7 @@ const NewAllOrders = () => {
 
                                         <div className="flex items-center gap-2 mb-3">
                                             <img
-                                                src={order.mentorId?.profileImage || 'https://via.placeholder.com/32'}
+                                                src={order.mentorId?.profileImage || dummyUserImg}
                                                 alt={order.mentorId?.firstName}
                                                 className="w-6 h-6 rounded-full object-cover"
                                             />
@@ -477,7 +478,7 @@ const NewAllOrders = () => {
                                                 <td className="px-6 py-4">
                                                     <div className="flex items-center gap-2">
                                                         <img
-                                                            src={order.mentorId?.profileImage || 'https://via.placeholder.com/32'}
+                                                            src={order.mentorId?.profileImage || dummyUserImg}
                                                             alt={order.mentorId?.firstName}
                                                             className="w-8 h-8 rounded-full object-cover"
                                                         />
@@ -680,7 +681,7 @@ const NewAllOrders = () => {
                                 </h4>
                                 <div className="flex items-start gap-3">
                                     <img
-                                        src={selectedOrder.mentorId?.profileImage || 'https://via.placeholder.com/48'}
+                                        src={selectedOrder.mentorId?.profileImage || dummyUserImg}
                                         alt={selectedOrder.mentorId?.firstName}
                                         className="w-12 h-12 rounded-full object-cover"
                                     />
@@ -697,7 +698,7 @@ const NewAllOrders = () => {
                                                 View Profile
                                             </Link>
                                             <Link
-                                                to={`/buyer/orders/${selectedOrder?._id}`}
+                                                to={`/agency/chat?user=${selectedOrder?.mentorId?._id}`}
                                                 className="text-sm text-primary hover:underline"
                                             >
                                                 Send Message

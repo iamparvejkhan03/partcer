@@ -48,7 +48,7 @@ const SessionTab = ({ orderId, userType, order }) => {
             }
         } catch (error) {
             console.error('Error fetching sessions:', error);
-            toast.error('Failed to load sessions. Make sure an order is selected.');
+            toast.error('No sessions found. Make sure an order is selected from right panel.');
         } finally {
             setLoading(false);
         }
@@ -84,7 +84,7 @@ const SessionTab = ({ orderId, userType, order }) => {
         if (!session) return;
 
         // Use prompt to get updated description
-        const newDescription = prompt('Enter updated session details:', session.description);
+        const newDescription = session.description;
         if (newDescription === null) return;
         if (newDescription.trim().length < 10) {
             toast.error('Please provide session details (minimum 10 characters)');

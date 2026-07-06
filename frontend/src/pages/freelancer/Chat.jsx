@@ -475,7 +475,7 @@ const Chat = () => {
                                                         </div>
                                                         <div className="text-right">
                                                             <p className="text-sm font-semibold text-primary">
-                                                                ₹{order.amount}
+                                                                ₹{order.amount?.toFixed(2)}
                                                             </p>
                                                             {/* <span className={`text-xs px-2 py-0.5 rounded-full ${
                                                                 order.deliveryStatus === 'completed' 
