@@ -27,7 +27,8 @@ import {
     Search,
     Headphones,
     FolderCheck,
-    BanknoteArrowUp
+    BanknoteArrowUp,
+    ShoppingBag
 } from "lucide-react";
 import { Link, NavLink } from "react-router-dom";
 import { logo } from "../../assets";
@@ -75,7 +76,7 @@ const navigationItems = [
         type: 'link',
         name: 'Orders',
         path: '/freelancer/orders/all',
-        icon: <TrendingUp size={20} />
+        icon: <ShoppingBag size={20} />
     },
     {
         type: 'link',

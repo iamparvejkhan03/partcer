@@ -78,7 +78,7 @@ const navigationItems = [
         type: 'link',
         name: 'Orders',
         path: '/agency/orders',
-        icon: <Package size={20} />
+        icon: <ShoppingBag size={20} />
     },
     // {
     //     type: 'dropdown',
