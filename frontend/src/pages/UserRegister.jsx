@@ -220,20 +220,13 @@ function UserRegister() {
                                 {/* Last Name */}
                                 <div>
                                     <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-2">
-                                        Last Name <span className="text-primary">*</span>
+                                        Last Name (optional)
                                     </label>
                                     <div className="relative">
                                         <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                                         <input
                                             id="lastName"
                                             type="text"
-                                            {...register('lastName', {
-                                                required: 'Last name is required',
-                                                minLength: {
-                                                    value: 2,
-                                                    message: 'Last name must be at least 2 characters',
-                                                },
-                                            })}
                                             className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-colors ${errors.lastName ? 'border-red-300' : 'border-gray-300'
                                                 }`}
                                             placeholder="Enter last name"
