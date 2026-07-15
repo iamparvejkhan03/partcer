@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
-import { ChevronDown, Menu, X, Search, Plus, LogIn, LayoutDashboard, User, Settings, LogOut, Briefcase, FileText, ShoppingBag, Calendar, CreditCard, Star, HelpCircle, BanknoteArrowDown, BanknoteArrowUp, Users, MessageSquare } from 'lucide-react';
+import { ChevronDown, Menu, X, Search, Plus, LogIn, LayoutDashboard, User, Settings, LogOut, Briefcase, FileText, ShoppingBag, Calendar, CreditCard, Star, HelpCircle, BanknoteArrowDown, BanknoteArrowUp, Users, MessageSquare, MessageCircleMore } from 'lucide-react';
 import Container from './Container';
 import MegaMenu from './MegaMenu';
 import { useAuth } from "../contexts/AuthContext";
@@ -411,41 +411,45 @@ const Header = () => {
 
                         {/* Desktop Actions for logged-in users */}
                         {user && <div className="hidden lg:flex items-center gap-4 relative" ref={dropdownRef}>
-                            {/* Update the order button */}
-                            <button
-                                onClick={() => {
-                                    markOrdersAsViewed(); // Mark as viewed when navigating
-                                    navigate(user?.userType == 'buyer' ? '/buyer/orders' : user?.userType == 'agency' ? '/agency/orders' : '/freelancer/orders/all');
-                                }}
-                                className='text-white relative'
-                            >
-                                <ShoppingBag />
-                                {unreadOrders > 0 && (
-                                    <div className="absolute -top-2 -right-1 flex size-4 items-center justify-center rounded-full bg-red-500">
-                                        <p className="text-xs text-white font-semibold">
-                                            {unreadOrders > 9 ? '9+' : unreadOrders}
-                                        </p>
-                                    </div>
-                                )}
-                            </button>
 
-                            {/* Update the message button */ }
-                            <button
-                                onClick={() => {
-                                    markMessagesAsRead(); // Mark as read when navigating
-                                    navigate(`/${user?.userType}/chat`);
-                                }}
-                                className='text-white relative'
-                            >
-                                <MessageSquare />
-                                {unreadMessages > 0 && (
-                                    <div className="absolute -top-2 -right-1 flex size-4 items-center justify-center rounded-full bg-red-500">
-                                        <p className="text-xs text-white font-semibold">
-                                            {unreadMessages > 9 ? '9+' : unreadMessages}
-                                        </p>
-                                    </div>
-                                )}
-                            </button>
+                            {user?.userType !== 'admin' && (
+                                <>
+                                <button
+                                    onClick={() => {
+                                        markOrdersAsViewed();
+                                        navigate(user?.userType == 'buyer' ? '/buyer/orders' : user?.userType == 'agency' ? '/agency/orders' : '/freelancer/orders/all');
+                                    }}
+                                    className='text-white relative flex items-center gap-1'
+                                >
+                                    <ShoppingBag />
+                                    {unreadOrders > 0 && (
+                                        <div className="absolute -top-2 -right-1 flex size-4 items-center justify-center rounded-full bg-red-500">
+                                            <p className="text-xs text-white font-semibold">
+                                                {unreadOrders > 9 ? '9+' : unreadOrders}
+                                            </p>
+                                        </div>
+                                    )}
+                                    <span>Orders</span>
+                                </button>
+
+                                <button
+                                    onClick={() => {
+                                        markMessagesAsRead();
+                                        navigate(`/${user?.userType}/chat`);
+                                    }}
+                                    className='text-white relative flex items-center gap-1'
+                                >
+                                    <MessageCircleMore />
+                                    {unreadMessages > 0 && (
+                                        <div className="absolute -top-2 -right-1 flex size-4 items-center justify-center rounded-full bg-red-500">
+                                            <p className="text-xs text-white font-semibold">
+                                                {unreadMessages > 9 ? '9+' : unreadMessages}
+                                            </p>
+                                        </div>
+                                    )}
+                                    <span>Messages</span>
+                                </button>
+                            </>)}
 
                             {user && user?.userType == 'buyer' && (
                                 <Link to="/buyer/projects/create" className="flex items-center gap-2 text-black cursor-pointer transition bg-white px-3 py-2.5 rounded-md text-sm font-medium hover:bg-white/90">

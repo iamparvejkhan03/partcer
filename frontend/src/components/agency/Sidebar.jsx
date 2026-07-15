@@ -28,7 +28,8 @@ import {
     XCircle,
     FolderOpen,
     UserSearch,
-    Headphones
+    Headphones,
+    MessageCircleMore
 } from "lucide-react";
 import { Link, NavLink, useLocation } from "react-router-dom";
 import { logo } from "../../assets";
@@ -47,7 +48,7 @@ const navigationItems = [
         type: 'link',
         name: 'Message',
         path: '/agency/chat',
-        icon: <MessageSquare size={20} />
+        icon: <MessageCircleMore size={20} />
     },
     // {
     //     type: 'link',

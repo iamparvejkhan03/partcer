@@ -28,7 +28,8 @@ import {
     Headphones,
     FolderCheck,
     BanknoteArrowUp,
-    ShoppingBag
+    ShoppingBag,
+    MessageCircleMore
 } from "lucide-react";
 import { Link, NavLink } from "react-router-dom";
 import { logo } from "../../assets";
@@ -47,7 +48,7 @@ const navigationItems = [
         type: 'link',
         name: 'Message',
         path: '/freelancer/chat',
-        icon: <MessageSquare size={20} />
+        icon: <MessageCircleMore size={20} />
     },
     // {
     //     type: 'dropdown',
