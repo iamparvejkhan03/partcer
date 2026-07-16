@@ -190,7 +190,7 @@ function UserRegister() {
                                 {/* First Name */}
                                 <div>
                                     <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-2">
-                                        First Name <span className="text-primary">*</span>
+                                        First Name or Nick Name <span className="text-primary">*</span>
                                     </label>
                                     <div className="relative">
                                         <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -198,15 +198,15 @@ function UserRegister() {
                                             id="firstName"
                                             type="text"
                                             {...register('firstName', {
-                                                required: 'First name is required',
+                                                required: 'First name or nick name is required',
                                                 minLength: {
                                                     value: 2,
-                                                    message: 'First name must be at least 2 characters',
+                                                    message: 'First name or nick name must be at least 2 characters',
                                                 },
                                             })}
                                             className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-colors ${errors.firstName ? 'border-red-300' : 'border-gray-300'
                                                 }`}
-                                            placeholder="Enter first name"
+                                            placeholder="Enter first name or nick name"
                                         />
                                     </div>
                                     {errors.firstName && (
